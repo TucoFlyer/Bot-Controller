@@ -18,8 +18,8 @@ class JoystickThread(threading.Thread):
         self.device = device or self._default_joystick()
         self.axes = {}
         self._pending = {}
-        self.setDaemon(true)
-        for axes, info in self.devices.capabilities().get(evdev.ecodes.EV_ABS, []):
+        self.setDaemon(True)
+        for axis, info in self.device.capabilities().get(evdev.ecodes.EV_ABS, []):
             self.axes[axis] = (info, [None])
 
     def _default_joystick(self):
@@ -51,7 +51,7 @@ class JoystickThread(threading.Thread):
         for axis, (info, box) in self.axes.items():
             if box[0] is not None:
                 mapped = (box[0] - info.min) / (info.max - info.min)
-                s[evdev.evcodes.ABS[axis].lower().split('_')[1]] = mapped
+                s[evdev.ecodes.ABS[axis].lower().split('_')[1]] = mapped
         return s
 
 def set_servo_pulse(channel, usec):
