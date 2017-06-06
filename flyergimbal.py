@@ -12,6 +12,7 @@ import fyproto
 import socket
 
 MSG_GIMBAL = b'\x01'
+MSG_FLYER_SENSORS = b'\x02'
 PORT = 9024
 CONTROLLER = ('10.32.0.1', PORT)
 FLYER = ('10.32.0.8', PORT)
@@ -46,6 +47,12 @@ class ReceiverThread(threading.Thread):
                         self.callback(packet)
                     except:
                         traceback.print_exc()
+
+            elif src == FLYER and len(packet) > 0 and packet[:1] == MSG_FLYER_SENSORS:
+                print("Flyer Sensors: ", struct.unpack('<' + 'i' * ((len(packet)//4)), packet[1:]))
+
+            else:
+                print("UDP from ", srcaddr, binascii.b2a_hex(pkt))
 
 
 class GimbalPort:
