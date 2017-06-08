@@ -29,7 +29,7 @@ def shader(frame):
             for ch in range(3)   
         ]
 
-        bright = int(max(0, min(31, 1.0 + 10 * math.pow(sum(rgb), 4.5))))
+        bright = int(max(0, min(31, 1.0 + 4.0 * math.pow(sum(rgb), 4.5))))
         r = int(max(0, min(255, 0.5 + 0xff * rgb[0])))
         g = int(max(0, min(255, 0.5 + 0xff * rgb[1])))
         b = int(max(0, min(255, 0.5 + 0xff * rgb[2])))
