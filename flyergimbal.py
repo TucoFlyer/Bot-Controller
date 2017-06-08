@@ -7,6 +7,7 @@ import threading
 import traceback
 import queue
 import time
+import binascii
 
 import fyproto
 import socket
@@ -49,10 +50,12 @@ class ReceiverThread(threading.Thread):
                         traceback.print_exc()
 
             elif src == FLYER and len(packet) > 0 and packet[:1] == MSG_FLYER_SENSORS:
-                print("Flyer Sensors: ", struct.unpack('<' + 'i' * ((len(packet)//4)), packet[1:]))
+                if self.verbose:
+                    print("Flyer Sensors: ", struct.unpack('<' + 'i' * ((len(packet)//4)), packet[1:]))
 
             else:
-                print("UDP from ", srcaddr, binascii.b2a_hex(pkt))
+                if self.verbose:
+                    print("UDP from ", src, binascii.b2a_hex(packet))
 
 
 class GimbalPort:
