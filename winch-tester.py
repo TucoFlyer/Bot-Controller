@@ -18,7 +18,7 @@ while True:
     time.sleep(1.0/100.0)
     controls = js.state()
 
-    velocity_target = int(pow(deadzone(controls.get('ry', 0)), 3.0) * 500)
+    velocity_target = int(deadzone(controls.get('ry', 0)) * 0x1000)
     accel_max = 100
     force_min = 10
     force_max = 100000
