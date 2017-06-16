@@ -1,0 +1,14 @@
+[package]
+name = "tucoflyer"
+version = "0.1.0"
+authors = ["micah"]
+
+[dependencies]
+byteorder = "1.0.0"
+websocket = "0.20.1"
+hyper = "0.11.0"
+crc16 = "0.3.3"
+nom = "3.0.0"
+tokio-proto = "0.1.1"
+tokio-core = "0.1.8"
+tokio-io = "0.1.2"
