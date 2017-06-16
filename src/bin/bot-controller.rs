@@ -1,50 +1,28 @@
-extern crate websocket;
+extern crate tokio_core;
+extern crate tucoflyer;
 
-use std::thread;
-use websocket::OwnedMessage;
-use websocket::sync::Server;
+use tucoflyer::{BotConfig, WinchConfig, vec3};
+use tokio_core::reactor::Core;
+
 
 fn main() {
-    let server = Server::bind("127.0.0.1:8893").unwrap();
 
-    println!("Created server?");
+    let mut core = Core::new().unwrap();
+    let handle = core.handle();
 
-    for request in server.filter_map(Result::ok) {
-        // Spawn a new thread for each connection.
-        thread::spawn(move || {
-            if !request.protocols().contains(&"tucoflyer".to_string()) {
-                request.reject().unwrap();
-                return;
-            }
+    let config = BotConfig {
+        controller_addr: "10.32.0.1:9024".parse().unwrap(),
+        flyer_addr: "10.32.0.8:9024".parse().unwrap(),
+        winches: vec![
+            WinchConfig { addr: "10.32.0.10:9024".parse().unwrap(), loc: vec3(10.0, 10.0, 0.0) },
+            WinchConfig { addr: "10.32.0.11:9024".parse().unwrap(), loc: vec3(10.0, -10.0, 0.0) },
+            WinchConfig { addr: "10.32.0.12:9024".parse().unwrap(), loc: vec3(-10.0, -10.0, 0.0) },
+            WinchConfig { addr: "10.32.0.13:9024".parse().unwrap(), loc: vec3(-10.0, 10.0, 0.0) },
+        ],
+    };
 
-            let mut client = request.use_protocol("tucoflyer").accept().unwrap();
+    println!("config: {:?}", config);
 
-            let ip = client.peer_addr().unwrap();
 
-            println!("Connection from {}", ip);
-
-            let message = OwnedMessage::Text("Hello".to_string());
-            client.send_message(&message).unwrap();
-
-            let (mut receiver, mut sender) = client.split().unwrap();
-
-            for message in receiver.incoming_messages() {
-                let message = message.unwrap();
-
-                match message {
-                    OwnedMessage::Close(_) => {
-                        let message = OwnedMessage::Close(None);
-                        sender.send_message(&message).unwrap();
-                        println!("Client {} disconnected", ip);
-                        return;
-                    }
-                    OwnedMessage::Ping(ping) => {
-                        let message = OwnedMessage::Pong(ping);
-                        sender.send_message(&message).unwrap();
-                    }
-                    _ => sender.send_message(&message).unwrap(),
-                }
-            }
-        });
-    }
 }
+

@@ -1,5 +1,8 @@
-use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+//! Communication protocol for the Feiyu Tech gimbals, especially
+//! the Mini3D we're using on this robot.
 
+/*
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
 trait PacketFormat {
 
@@ -36,3 +39,4 @@ mod tests {
 		assert!(blah(5) == 5);
 	}
 }
+*/
