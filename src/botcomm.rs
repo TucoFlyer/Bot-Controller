@@ -2,12 +2,13 @@
 //! modules via a custom UDP protocol.
 
 use std::net::SocketAddr;
-use cgmath::Vector3;
+use cgmath::Point3;
+
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct WinchConfig {
 	pub addr: SocketAddr,
-	pub loc: Vector3<f64>
+	pub loc: Point3<f64>
 }
 
 #[derive(Clone, PartialEq, Debug)]

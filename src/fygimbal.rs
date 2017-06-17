@@ -1,6 +1,15 @@
 //! Communication protocol for the Feiyu Tech gimbals, especially
 //! the Mini3D we're using on this robot.
 
+
+pub trait FyPacket {
+
+
+	
+}
+
+
+
 /*
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 

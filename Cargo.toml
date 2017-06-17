@@ -4,10 +4,14 @@ name = "tucoflyer"
 version = "0.1.0"
 authors = ["micah"]
 license = "MIT"
-respository = "https://github.com/TucoFlyer/Bot-Controller"
+description = "Control software for a camera robot that hovers on nylon cords"
+readme = "README.md"
+repository = "https://github.com/TucoFlyer/Bot-Controller"
 
 [dependencies]
 
+gilrs = "0.4.4"
+palette = "0.2"
 futures = "0.1.14"
 byteorder = "1.0.0"
 websocket = "0.20.1"

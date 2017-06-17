@@ -2,12 +2,144 @@
 
 use tokio_core::reactor;
 use tokio_periodic::PeriodicTimer;
+use std::{io, thread, iter};
 use std::time::Duration;
 use std::io::Error;
-use futures::Future;
-use futures::Stream;
+use std::net::SocketAddr;
+use std::sync::Mutex;
+use futures::{Future, Stream, Sink, StartSend, Poll, Async, AsyncSink};
+use futures::sync::mpsc;
+use cgmath::{Point3, Rotation, Rotation3, Basis3, Rad, Angle};
 
 
+#[derive(Clone, PartialEq, Debug)]
+enum LedInfo {
+    FlyerRing { loc: Point3<f64> },
+    FlyerTop { dir: i32, loc: f64 },
+    Winch { dir: i32, loc: f64 }
+}
+
+
+fn proportion(item: i32, size: i32) -> f64 {
+    item as f64 / (size - 1) as f64
+}
+
+fn flyer_ledinfo() -> Vec<LedInfo> {
+    // Short navigation LED strips on top
+    let top = (0..3).flat_map(|dir| {
+        const SIZE :i32 = 6;
+        (0..SIZE).map(move |n| LedInfo::FlyerTop { dir, loc: proportion(n, SIZE) })
+    });
+
+    // Multiple full rings near the camera
+    let rings = (0..2).flat_map(|level| {
+        const SIZE :i32 = 36;
+        let z = proportion(level - 1, 2);
+        (0..SIZE).map(move |n| {
+            let axis = Point3::new(1.0, 0.0, z);
+            let angle = Rad::full_turn() * proportion(n, SIZE);
+            let r: Basis3<f64> = Rotation3::from_angle_z(angle);
+            let loc = r.rotate_point(axis); 
+            LedInfo::FlyerRing { loc }
+        })
+    });
+
+    top.chain(rings).collect()
+}
+
+fn winch_ledinfo(dir: i32) -> Vec<LedInfo> {
+    // Short LED strips on the side of each winch
+    const SIZE :i32 = 8;
+    (0..SIZE).map(move |n| LedInfo::Winch { dir, loc: proportion(n, SIZE) }).collect()
+}
+
+
+#[derive(Clone, PartialEq, Eq, Debug)]
+struct LedPixel {
+    brightness: u8,
+    red: u8,
+    green: u8,
+    blue: u8
+}
+
+enum AnimMode {
+    Off
+}
+
+struct SharedState {
+    mode: AnimMode,
+}
+
+pub struct Animator {
+    state: Mutex<SharedState>,
+}
+
+
+struct TestSink;
+
+impl Sink for TestSink {
+    type SinkItem = Vec<u8>;
+    type SinkError = ();
+
+    fn start_send(&mut self, item: Self::SinkItem) -> StartSend<Self::SinkItem, Self::SinkError> {
+        println!("Sunk: {:?}", item);
+        Ok(AsyncSink::Ready)
+    }
+
+    fn poll_complete(&mut self) -> Poll<(), Self::SinkError> {
+        Ok(Async::Ready(()))
+    }
+
+    fn close(&mut self) -> Poll<(), Self::SinkError> {
+        Ok(().into())
+    }
+}
+
+pub fn try_it() {
+    let leds = flyer_ledinfo();
+    let sink = TestSink {};
+    let (tx, rx) = mpsc::channel(10);
+    let ani = animate(leds, tx);
+
+    let mut core = reactor::Core::new().unwrap();
+    let handle = core.handle();
+    core.run(sink.send_all(rx));
+}
+
+
+fn frame_timer(handle: &reactor::Handle, fps: f64) -> PeriodicTimer {
+    let t = PeriodicTimer::new(&handle).unwrap();
+    t.reset(Duration::new(0, (1e9 / fps) as u32)).unwrap();
+    t
+}
+
+
+fn animate(leds: Vec<LedInfo>, sink: mpsc::Sender<Vec<u8>>) -> Animator {
+    const FPS: f64 = 100.0;
+    let state = Mutex::new(SharedState {
+        mode: AnimMode::Off
+    });
+
+    let thr = thread::spawn(|| {
+        let mut core = reactor::Core::new().unwrap();
+        let handle = core.handle();
+        let frames = frame_timer(&handle, FPS).and_then(|x| {
+            println!("item {:?}", x);
+            // Ok(vec![LedPixel { brightness: 0, red: 0, green: 0, blue: 0 }])
+            Ok(vec![1,2,3])
+        });
+        
+        let panic_sink = sink.sink_map_err(|e| panic!("{}", e));
+        let panic_stream = frames.map_err(|e| panic!("{}", e));
+        core.run(panic_sink.send_all(panic_stream));
+    });
+
+    Animator { state }
+}
+
+
+
+/*
 pub struct Animator {
     target_fps: f64,
     actual_fps: f64,
@@ -15,29 +147,16 @@ pub struct Animator {
 }
 
 
+
+
 impl Animator {
 
     pub fn new(handle: &reactor::Handle, fps: f64) -> Result<Animator, Error> {
 
-        let timer = PeriodicTimer::new(handle)?;
-        timer.reset(Duration::new(0, (1e9 / fps) as u32))?;
-
-        let f = timer.for_each(|foo| {
-            println!("frame");
-            Ok(())
-        });
-
-        handle.spawn(f.map_err(|_| {}));
-
-        Ok(Animator {
-            frame: 0,
-            actual_fps: 0.0,
-            target_fps: 0.0,
-        })
     }
 
 }
-
+*/
 
 //   let mut frame = 0;
 
