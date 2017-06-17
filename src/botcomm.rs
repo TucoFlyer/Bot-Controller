@@ -4,16 +4,16 @@
 use std::net::SocketAddr;
 use cgmath::Vector3;
 
-#[derive(Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct WinchConfig {
 	pub addr: SocketAddr,
-	pub loc: Vector3<f64>,
+	pub loc: Vector3<f64>
 }
 
-#[derive(Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct BotConfig {
 	pub controller_addr: SocketAddr,
 	pub flyer_addr: SocketAddr,
-	pub winches: Vec<WinchConfig>,
+	pub winches: Vec<WinchConfig>
 }
 

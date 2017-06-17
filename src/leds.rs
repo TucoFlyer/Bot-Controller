@@ -1,15 +1,45 @@
 //! LED lighting for the 'bot
 
+use tokio_core::reactor;
+use tokio_periodic::PeriodicTimer;
+use std::time::Duration;
+use std::io::Error;
+use futures::Future;
+use futures::Stream;
 
-// use std::net::UdpSocket;
 
-// const MAX_LEDS :usize = 200;
-// const MSG_LEDS :u8 = 5;
+pub struct Animator {
+    target_fps: f64,
+    actual_fps: f64,
+    frame: u64
+}
 
-// fn main() {
-//     let dest = "127.0.0.1:9024";
-//     let s = UdpSocket::bind("0.0.0.0:0").expect("cant has socket");
-//     let mut frame = 0;
+
+impl Animator {
+
+    pub fn new(handle: &reactor::Handle, fps: f64) -> Result<Animator, Error> {
+
+        let timer = PeriodicTimer::new(handle)?;
+        timer.reset(Duration::new(0, (1e9 / fps) as u32))?;
+
+        let f = timer.for_each(|foo| {
+            println!("frame");
+            Ok(())
+        });
+
+        handle.spawn(f.map_err(|_| {}));
+
+        Ok(Animator {
+            frame: 0,
+            actual_fps: 0.0,
+            target_fps: 0.0,
+        })
+    }
+
+}
+
+
+//   let mut frame = 0;
 
 //     loop {
 //         const PACKET_SIZE :usize = MAX_LEDS * 4 + 1;

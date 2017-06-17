@@ -1,8 +1,12 @@
 extern crate tokio_core;
 extern crate tucoflyer;
+extern crate futures;
 
 use tucoflyer::{BotConfig, WinchConfig, vec3};
 use tokio_core::reactor::Core;
+
+use futures::future;
+use tucoflyer::leds;
 
 
 fn main() {
@@ -23,6 +27,8 @@ fn main() {
 
     println!("config: {:?}", config);
 
+    drop(leds::Animator::new(&handle, 10.0));
 
+    drop(core.run(future::empty::<(),()>()));
 }
 
