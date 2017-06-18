@@ -1,26 +1,27 @@
 use std::net::UdpSocket;
+use std::{thread, time};
 
 const MAX_LEDS :usize = 200;
 const MSG_LEDS :u8 = 5;
 
 fn main() {
-    let dest = "127.0.0.1:9024";
+    let dest = "10.32.0.8:9024";
     let s = UdpSocket::bind("0.0.0.0:0").expect("cant has socket");
-    let mut frame = 0;
+    let mut frame: u64 = 0;
 
     loop {
         const PACKET_SIZE :usize = MAX_LEDS * 4 + 1;
         let mut packet :[u8; PACKET_SIZE] = [0; PACKET_SIZE];
 
-	packet[0] = MSG_LEDS;
+    	packet[0] = MSG_LEDS;
 
         let blips = [
-            (frame as f64 * 0.02,  (0.8, 1.0, 0.2)),
-            (frame as f64 * 0.03,  (0.2, 0.6, 0.9)),
-            (-frame as f64 * 0.01, (0.9, 0.3, 0.2)),
+            (frame as f64 * 0.002,  (0.8, 1.0, 0.2)),
+            (frame as f64 * 0.003,  (0.2, 0.6, 0.9)),
+            (frame as f64 * -0.001, (0.9, 0.3, 0.2)),
         ];
 
-        for n in 0..(MAX_LEDS-1) {
+        for n in 0..MAX_LEDS {
 
             let mut r :f64 = 0.0;
             let mut g :f64 = 0.0;
@@ -47,6 +48,8 @@ fn main() {
 
         s.send_to(&packet, dest).expect("send is sad");
         frame = frame + 1;
+        const FPS :f64 = 150.0;
+        thread::sleep(time::Duration::new(0, (1e9 / FPS) as u32));
     }
 }
 
