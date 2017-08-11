@@ -10,52 +10,52 @@ use botcomm::BotSender;
 
 
 struct Controller {
-	bus: Bus,
-	bot_sender: BotSender,
+    bus: Bus,
+    bot_sender: BotSender,
 }
 
 
 impl Controller {
 
-	fn new(bus: Bus, bot_sender: BotSender) -> Controller {
-		Controller { bus, bot_sender }
-	}
+    fn new(bus: Bus, bot_sender: BotSender) -> Controller {
+        Controller { bus, bot_sender }
+    }
 
-	fn poll(self: &mut Controller) {
-		match self.bus.receiver.recv() {
+    fn poll(self: &mut Controller) {
+        match self.bus.receiver.recv() {
 
-			Ok(Message::WinchStatus(id, status)) => {
-				//println!("{:?} = {:?}", id, status);
-			},
+            Ok(Message::WinchStatus(id, status)) => {
+                //println!("{:?} = {:?}", id, status);
+            },
 
-			Ok(Message::FlyerSensors(sensors)) => {
-				//println!("{:?}", sensors);
-			},
+            Ok(Message::FlyerSensors(sensors)) => {
+                //println!("{:?}", sensors);
+            },
 
-			Ok(Message::Command( Command::ManualControlValue( ManualControlAxis::RelativeZ, v ))) => {
-				self.simple_control(v);
-			}
+            Ok(Message::Command( Command::ManualControlValue( ManualControlAxis::RelativeZ, v ))) => {
+                self.simple_control(v);
+            }
 
-			Ok(Message::Command( Command::ManualControlReset )) => {
-				self.simple_control(0.0);
-			}
+            Ok(Message::Command( Command::ManualControlReset )) => {
+                self.simple_control(0.0);
+            }
 
-			_ => (),
-		}
-	}
+            _ => (),
+        }
+    }
 
-	fn simple_control(self: &mut Controller, v: f32) {
+    fn simple_control(self: &mut Controller, v: f32) {
 
-		let cmd = WinchCommand {
-			velocity_target: (v * 4096.0) as i32,
-			accel_max: 100,
-			force_min: 10,
-			force_max: 10000,
-		};
+        let cmd = WinchCommand {
+            velocity_target: (v * 4096.0) as i32,
+            accel_max: 100,
+            force_min: 10,
+            force_max: 10000,
+        };
 
-		println!("{:?}", cmd);
-		self.bot_sender.winch_command(0, cmd);
-	}
+        println!("{:?}", cmd);
+        self.bot_sender.winch_command(0, cmd);
+    }
 
 }
 
@@ -64,7 +64,7 @@ pub fn start(bus: Bus, botsender: BotSender) {
     let mut controller = Controller::new(bus, botsender);
     thread::spawn(move || {
         loop {
-        	controller.poll();
+            controller.poll();
         }
     });
 }

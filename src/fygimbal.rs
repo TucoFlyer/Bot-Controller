@@ -5,7 +5,7 @@
 pub trait FyPacket {
 
 
-	
+    
 }
 
 
@@ -15,20 +15,20 @@ use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
 trait PacketFormat {
 
-	
+    
 }
 
 pub enum PacketFormat {
-	BootPacket,
-	GimbalPacket
+    BootPacket,
+    GimbalPacket
 }
 
 pub struct FyPacket {
-	format:
-	command
-	framing
-	target
-	data
+    format:
+    command
+    framing
+    target
+    data
 
 }
 
@@ -41,11 +41,11 @@ pub struct FyCodec;
 
 #[cfg(test)]
 mod tests {
-	use super::*;
+    use super::*;
 
-	#[test]
-	fn try_it() {
-		assert!(blah(5) == 5);
-	}
+    #[test]
+    fn try_it() {
+        assert!(blah(5) == 5);
+    }
 }
 */
