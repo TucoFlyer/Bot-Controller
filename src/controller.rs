@@ -6,6 +6,7 @@ use std::thread;
 use std::time::Duration;
 use std::sync::mpsc;
 use multiqueue;
+use config::BotConfig;
 use botcomm::BotSender;
 
 
@@ -17,7 +18,7 @@ struct Controller {
 
 impl Controller {
 
-    fn new(bus: Bus, bot_sender: BotSender) -> Controller {
+    fn new(bus: Bus, bot_sender: BotSender, config: BotConfig) -> Controller {
         Controller { bus, bot_sender }
     }
 
@@ -60,9 +61,9 @@ impl Controller {
 }
 
 
-pub fn start(bus: Bus, botsender: BotSender) {
-    let mut controller = Controller::new(bus, botsender);
+pub fn start(bus: Bus, botsender: BotSender, config: BotConfig) {
     thread::spawn(move || {
+        let mut controller = Controller::new(bus, botsender, config);
         loop {
             controller.poll();
         }

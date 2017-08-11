@@ -1,11 +1,13 @@
+extern crate rand;
 
 #[macro_use]
 extern crate serde_derive;
 extern crate serde;
 extern crate serde_json;
+extern crate bincode;
 
 extern crate multiqueue;
-extern crate bincode;
+
 extern crate gilrs;
 extern crate palette;
 extern crate crc16;
@@ -15,11 +17,7 @@ extern crate nom;
 
 extern crate hyper;
 extern crate websocket;
-extern crate futures;
-extern crate tokio_proto;
-extern crate tokio_core;
-extern crate tokio_io;
-extern crate tokio_periodic;
+extern crate qrcode;
 
 mod fygimbal;
 mod leds;
@@ -30,6 +28,7 @@ pub use bus::*;
 pub mod interface;
 pub mod controller;
 pub mod botcomm;
+pub mod watchdog;
 
 mod config;
-pub use config::{BotConfig, WinchConfig};
+pub use config::{BotConfig, WinchConfig, WebConfig};
