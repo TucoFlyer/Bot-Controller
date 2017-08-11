@@ -6,13 +6,9 @@ extern crate cgmath;
 use tokio_core::reactor::Core;
 use futures::future;
 use cgmath::Point3;
-use tucoflyer::{BotConfig, WinchConfig, leds};
-
+use tucoflyer::{BotConfig, WinchConfig, Bus, interface, controller, botcomm};
 
 fn main() {
-
-    let mut core = Core::new().unwrap();
-    let handle = core.handle();
 
     let config = BotConfig {
         controller_addr: "10.32.0.1:9024".parse().unwrap(),
@@ -25,11 +21,14 @@ fn main() {
         ],
     };
 
+    let bus = Bus::new();
+    interface::gamepad::start(bus.clone());
+    let comm = botcomm::start(bus.clone(), config.clone()).expect("Failed to start bot networking");
+    controller::start(bus.clone(), comm.sender().unwrap());
+
+    let mut core = Core::new().unwrap();
+    let handle = core.handle();
     println!("config: {:?}", config);
-
-
-    leds::try_it();
-
-    drop(core.run(future::empty::<(),()>()));
+    drop(core.run(future::empty::<(),()>()));   
 }
 
