@@ -1,31 +1,33 @@
 //! Bot control via websockets
 
-use serde_json;
 use bus::{Message, Bus};
-use std::io::prelude::*;
 use config::WebConfig;
-use std::thread;
-use std::fs::File;
-use std::net::TcpStream;
-use websocket;
-use qrcode::QrCode;
-use rand::os::OsRng;
-use rand::Rng;
-use staticfile::Static;
 use iron;
 use mount::Mount;
 use multiqueue;
-use std::time;
+use qrcode::QrCode;
+use rand::os::OsRng;
+use rand::Rng;
+use serde_json;
+use staticfile::Static;
+use std::fs::File;
+use std::io::prelude::*;
+use std::io;
+use std::net::TcpStream;
 use std::sync::{mpsc, Arc, Mutex};
+use std::thread;
+use websocket;
 
 
 pub fn start(bus: Bus, config: WebConfig) {
     let secret_key = make_random_string();
     let url = http_url(&config, &secret_key);
     let connect_string = make_connect_string(&url);
-    store_connect_string(&connect_string, &config.connection_file_path);
+
     start_http(&config);
-    start_ws(bus, config, secret_key);
+    start_ws(bus, &config, secret_key);
+
+    store_connect_string(&connect_string, &config.connection_file_path).expect("can't write to connection info file");
     show_connect_string(&connect_string);
 }
 
@@ -37,7 +39,7 @@ fn start_http(config: &WebConfig) {
 
     m.mount("/ws", {
         let url = ws_url(config);
-        move |req: &mut iron::Request| {
+        move |_req: &mut iron::Request| {
             Ok(iron::Response::with((iron::status::Ok, url.clone())))
         }
     });
@@ -48,7 +50,7 @@ fn start_http(config: &WebConfig) {
     });
 }
 
-fn start_ws(bus: Bus, config: WebConfig, secret_key: String) {
+fn start_ws(bus: Bus, config: &WebConfig, secret_key: String) {
     let addr = config.ws_addr.clone();
     thread::spawn(move || {
         // Websocket acceptor thread
@@ -89,9 +91,10 @@ fn make_connect_string(url: &str) -> String {
     format!("{}\n\n{}", url, make_qr_code(url))
 }
 
-fn store_connect_string(s: &str, path: &str) {
-    let mut f = File::create(path).expect("can't write to connection info file");
-    writeln!(f, "{}\n", s);
+fn store_connect_string(s: &str, path: &str) -> io::Result<()> {
+    let mut f = File::create(path)?;
+    writeln!(f, "{}\n", s)?;
+    Ok(())
 }
 
 fn show_connect_string(s: &str) {

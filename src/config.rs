@@ -1,6 +1,6 @@
 //! Bot configuration
 
-use std::net::{SocketAddr, UdpSocket};
+use std::net::SocketAddr;
 use cgmath::Point3;
 
 

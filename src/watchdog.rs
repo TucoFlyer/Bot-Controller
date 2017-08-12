@@ -5,7 +5,7 @@ use std::{thread, time};
 use bus::{Bus, Message};
 
 
-pub fn run(bus: Bus) {
+pub fn run(_bus: Bus) {
 
 	// fix me: Check for outgoing messages before declaring that we're running
 

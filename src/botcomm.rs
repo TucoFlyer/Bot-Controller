@@ -1,7 +1,7 @@
 //! This module is about communicating with our many robot
 //! modules via a custom UDP protocol.
 
-use bus::{Bus, Message, WinchStatus, WinchCommand};
+use bus::{Bus, Message, WinchCommand};
 use std::thread;
 use bincode;
 use config::BotConfig;
@@ -83,12 +83,12 @@ impl BotCommunicator {
 }
 
 impl BotSender {
-    pub fn winch_command(self: &BotSender, id: usize, cmd: WinchCommand) {
+    pub fn winch_command(self: &BotSender, id: usize, cmd: WinchCommand) -> io::Result<()> {
         let addr = self.config.winches[id].addr;
         let limit = bincode::Bounded(2048);
         let packet = (BOT_MSG_WINCH_COMMAND, cmd);
         let buf = bincode::serialize(&packet, limit).unwrap();
-        self.socket.send_to(&buf[..], &addr);
-        println!("{:?} {:?}", buf, addr);
+        self.socket.send_to(&buf[..], &addr)?;
+        Ok(())
     }
 }
