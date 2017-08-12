@@ -21,6 +21,7 @@ pub struct BotConfig {
 pub struct WebConfig {
     pub http_addr: SocketAddr,
     pub ws_addr: SocketAddr,
-    pub connection_file_path: &'static str,
+    pub web_root_path: String,
+    pub connection_file_path: String,
 }
 

@@ -22,7 +22,8 @@ fn main() {
     let web_config = WebConfig {
         http_addr: "10.0.0.5:8080".parse().unwrap(),
         ws_addr: "10.0.0.5:8081".parse().unwrap(),
-        connection_file_path: "connection.txt",
+        connection_file_path: "connection.txt".to_owned(),
+        web_root_path: "html".to_owned(),
     };
 
     interface::web::start(bus.clone(), web_config);

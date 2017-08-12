@@ -15,7 +15,9 @@ extern crate cgmath;
 extern crate byteorder;
 extern crate nom;
 
-extern crate hyper;
+extern crate iron;
+extern crate staticfile;
+extern crate mount;
 extern crate websocket;
 extern crate qrcode;
 

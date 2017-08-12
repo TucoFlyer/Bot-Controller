@@ -2,20 +2,18 @@
 
 use multiqueue;
 
-
 #[derive(Clone)]
 pub struct Bus {
-    pub sender: multiqueue::MPMCSender<Message>,
-    pub receiver: multiqueue::MPMCReceiver<Message>,
+    pub sender: multiqueue::BroadcastSender<Message>,
+    pub receiver: multiqueue::BroadcastReceiver<Message>,
 }
 
 impl Bus {
     pub fn new() -> Bus {
-        let (sender, receiver) = multiqueue::mpmc_queue(512);
+        let (sender, receiver) = multiqueue::broadcast_queue(512);
         Bus { sender, receiver }
     }
 }
-
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum Command {
@@ -24,14 +22,12 @@ pub enum Command {
     ManualControlValue(ManualControlAxis, f32)
 }
 
-
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum Message {
     Command(Command),
     FlyerSensors(FlyerSensors),
     WinchStatus(usize, WinchStatus)
 }
-
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum ControllerMode {

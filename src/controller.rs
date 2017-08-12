@@ -26,11 +26,11 @@ impl Controller {
         match self.bus.receiver.recv() {
 
             Ok(Message::WinchStatus(id, status)) => {
-                //println!("{:?} = {:?}", id, status);
+                //println!("ctrl {:?} = {:?}", id, status);
             },
 
             Ok(Message::FlyerSensors(sensors)) => {
-                //println!("{:?}", sensors);
+                //println!("ctrl {:?}", sensors);
             },
 
             Ok(Message::Command( Command::ManualControlValue( ManualControlAxis::RelativeZ, v ))) => {
