@@ -106,8 +106,18 @@ struct ClientState {
     authenticated: bool,
 }
 
+#[derive(Serialize)]
+pub struct AuthChallenge {
+    challenge: String,
+}
+
+#[derive(Deserialize)]
+pub struct AuthResponse {
+    authenticate: String,
+}
+
 fn handle_ws_client(client: websocket::sync::Client<TcpStream>, bus: Bus, secret_key: String) {
-    let challenge = make_random_string();
+    let challenge = AuthChallenge { challenge: make_random_string() };
     let (mut receiver, mut sender) = client.split().unwrap();
     let client_state = Arc::new(Mutex::new(ClientState {
         alive: true,
@@ -122,7 +132,7 @@ fn handle_ws_client(client: websocket::sync::Client<TcpStream>, bus: Bus, secret
     start_ws_bus_receiver(client_state.clone(), bus.receiver.add_stream(), rx_client_in);
     send_ws_challenge(&client_state, &challenge, &mut sender);
     start_ws_message_sender(client_state.clone(), rx_client_out, sender);
-    handle_ws_message_loop(client_state, receiver, bus, challenge);
+    handle_ws_message_loop(client_state, receiver, bus, &challenge);
 }
 
 fn start_ws_bus_receiver(client_state: Arc<Mutex<ClientState>>, bus_receiver: multiqueue::BroadcastReceiver<Message>, rx_client_in: mpsc::SyncSender<Message>) {
@@ -143,8 +153,9 @@ fn start_ws_bus_receiver(client_state: Arc<Mutex<ClientState>>, bus_receiver: mu
     });
 }
 
-fn send_ws_challenge(client_state: &Arc<Mutex<ClientState>>, challenge: &String, sender: &mut websocket::sync::sender::Writer<TcpStream>) {
-    let message = websocket::OwnedMessage::Text(challenge.clone());
+fn send_ws_challenge(client_state: &Arc<Mutex<ClientState>>, challenge: &AuthChallenge, sender: &mut websocket::sync::sender::Writer<TcpStream>) {
+    let json = serde_json::to_string(&challenge).unwrap();
+    let message = websocket::OwnedMessage::Text(json);
     if sender.send_message(&message).is_err() {
         client_state.lock().unwrap().alive = false;
     }
@@ -177,7 +188,7 @@ fn start_ws_message_sender(client_state: Arc<Mutex<ClientState>>, rx_client_out:
     });
 }
 
-fn handle_ws_message_loop(client_state: Arc<Mutex<ClientState>>, mut receiver: websocket::sync::receiver::Reader<TcpStream>, bus: Bus, challenge: String) {
+fn handle_ws_message_loop(client_state: Arc<Mutex<ClientState>>, mut receiver: websocket::sync::receiver::Reader<TcpStream>, bus: Bus, challenge: &AuthChallenge) {
     for message in receiver.incoming_messages() {
         let message = match message {
             Ok(m) => m,

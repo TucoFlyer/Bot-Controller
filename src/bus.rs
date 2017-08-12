@@ -26,7 +26,7 @@ pub enum Command {
 pub enum Message {
     Command(Command),
     FlyerSensors(FlyerSensors),
-    WinchStatus(usize, WinchStatus)
+    WinchStatus(usize, WinchStatus),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
