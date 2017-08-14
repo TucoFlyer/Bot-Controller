@@ -23,7 +23,7 @@ fn main() {
         http_addr: "10.0.0.5:8080".parse().unwrap(),
         ws_addr: "10.0.0.5:8081".parse().unwrap(),
         connection_file_path: "connection.txt".to_owned(),
-        web_root_path: "web".to_owned(),
+        web_root_path: "web/build".to_owned(),
     };
 
     interface::web::start(bus.clone(), web_config);
