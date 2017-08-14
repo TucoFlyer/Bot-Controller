@@ -46,18 +46,14 @@ impl Controller {
     }
 
     fn simple_control(self: &mut Controller, v: f32) {
-
         let cmd = WinchCommand {
             velocity_target: (v * 4096.0) as i32,
             accel_max: 100,
             force_min: 10,
             force_max: 10000,
         };
-
-        println!("{:?}", cmd);
         self.bot_sender.winch_command(0, cmd);
     }
-
 }
 
 
