@@ -22,10 +22,10 @@ class Chart extends React.Component {
             console.log(e);
         });
 
-        var chart = this.refs.chart;
-        chart.addTimeSeries(series[0], { strokeStyle: 'rgba(255, 96, 96, 1)', lineWidth: 3 });
-        chart.addTimeSeries(series[1], { strokeStyle: 'rgba(96, 255, 96, 1)', lineWidth: 3 });
-        chart.addTimeSeries(series[2], { strokeStyle: 'rgba(96, 96, 255, 1)', lineWidth: 3 });
+        // var chart = this.refs.chart;
+        // chart.addTimeSeries(series[0], { strokeStyle: 'rgba(255, 96, 96, 1)', lineWidth: 3 });
+        // chart.addTimeSeries(series[1], { strokeStyle: 'rgba(96, 255, 96, 1)', lineWidth: 3 });
+        // chart.addTimeSeries(series[2], { strokeStyle: 'rgba(96, 96, 255, 1)', lineWidth: 3 });
 
         var ts1 = this.refs.chart.addTimeSeries({},{ strokeStyle: 'rgba(0, 255, 0, 1)', fillStyle: 'rgba(0, 255, 0, 0.2)', lineWidth: 4 });
         var ts2 = this.refs.chart.addTimeSeries({},{ strokeStyle: 'rgba(255, 0, 0, 1)', fillStyle: 'rgba(255, 0, 0, 0.2)', lineWidth: 4 });
