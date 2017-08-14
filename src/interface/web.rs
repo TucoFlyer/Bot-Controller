@@ -88,13 +88,12 @@ fn make_qr_code(url: &str) -> String {
 }
 
 fn make_connect_string(url: &str) -> String {
-    format!("{}\n\n{}", url, make_qr_code(url))
+    format!("{}\n\n{}\n", url, make_qr_code(url))
 }
 
 fn store_connect_string(s: &str, path: &str) -> io::Result<()> {
     let mut f = File::create(path)?;
-    writeln!(f, "{}\n", s)?;
-    Ok(())
+    writeln!(f, "{}", s.replace("\n", "\r\n"))
 }
 
 fn show_connect_string(s: &str) {
