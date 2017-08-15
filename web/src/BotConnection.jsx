@@ -35,12 +35,10 @@ export default class BotConnection extends Component {
 
     handleSocketMessage(evt) {
         var json = JSON.parse(evt.data);
-        var time = new Date().getTime();
 
         if (Array.isArray(json)) {
             // Burst of message bus activity
             for (var msg of json) {
-                msg.timestamp = time;
                 this.events.emit('message', msg);
             }
 
@@ -55,8 +53,10 @@ export default class BotConnection extends Component {
 
     handleChallenge(msg) {
         var key = window.location.hash.substring(1);
-        var digest = Base64.stringify(hmacSHA512(msg.challenge, key))
-        this.socket.send(JSON.stringify({ authenticate: digest }));
+        if (key.length >= 1) {
+            var digest = Base64.stringify(hmacSHA512(msg.challenge, key))
+            this.socket.send(JSON.stringify({ authenticate: digest }));
+        }
     }
 
     componentDidMount() {

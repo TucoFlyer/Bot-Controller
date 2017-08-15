@@ -1,11 +1,13 @@
 //! Command and status busses shared between components and threads
 
 use multiqueue;
+use std::time::Instant;
+
 
 #[derive(Clone)]
 pub struct Bus {
-    pub sender: multiqueue::BroadcastSender<Message>,
-    pub receiver: multiqueue::BroadcastReceiver<Message>,
+    pub sender: multiqueue::BroadcastSender<TimestampedMessage>,
+    pub receiver: multiqueue::BroadcastReceiver<TimestampedMessage>,
 }
 
 impl Bus {
@@ -15,28 +17,43 @@ impl Bus {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Command {
     SetMode(ControllerMode),
     ManualControlReset,
     ManualControlValue(ManualControlAxis, f32)
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct TimestampedMessage {
+    pub timestamp: Instant,
+    pub message: Message,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Message {
     Command(Command),
     FlyerSensors(FlyerSensors),
     WinchStatus(usize, WinchStatus),
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+impl Message {
+    pub fn timestamp(self) -> TimestampedMessage {
+        TimestampedMessage {
+            timestamp: Instant::now(),
+            message: self
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum ControllerMode {
     Halted,
     Manual,
     Normal,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum ManualControlAxis {
     CameraYaw,
     CameraPitch,
@@ -45,7 +62,7 @@ pub enum ManualControlAxis {
     RelativeZ,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct XBandTelemetry {
     pub edge_count: u32,
     pub speed_measure: u32,
@@ -54,7 +71,7 @@ pub struct XBandTelemetry {
 
 const NUM_LIDAR_SENSORS : usize = 4;
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct LIDARTelemetry {
     pub ranges: [u32; NUM_LIDAR_SENSORS],
     pub counters: [u32; NUM_LIDAR_SENSORS],
@@ -62,20 +79,20 @@ pub struct LIDARTelemetry {
 
 const NUM_ANALOG_SENSORS : usize = 8;
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct AnalogTelemetry {
     pub values: [u32; NUM_ANALOG_SENSORS],
     pub counter: u32,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Vec16 {
     pub x: i16,
     pub y: i16,
     pub z: i16,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Quat16 {
     pub w: i16,
     pub x: i16,
@@ -83,7 +100,7 @@ pub struct Quat16 {
     pub z: i16,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct IMUTelemetry {
     pub accelerometer: Vec16,
     pub magnetometer: Vec16,
@@ -97,7 +114,7 @@ pub struct IMUTelemetry {
     pub counter: u32,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct FlyerSensors {
     pub xband: XBandTelemetry,
     pub lidar: LIDARTelemetry,
@@ -105,13 +122,13 @@ pub struct FlyerSensors {
     pub imu: IMUTelemetry,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ForceTelemetry {
     pub measure: i32,
     pub counter: u32,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct WinchCommand {
     pub velocity_target: i32,
     pub accel_max: u32,
@@ -119,7 +136,7 @@ pub struct WinchCommand {
     pub force_max: i32,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct WinchSensors {
     pub force: ForceTelemetry,
     pub position: i32,
@@ -127,13 +144,13 @@ pub struct WinchSensors {
     pub accel: i32,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct WinchMotorControl {
     pub pwm: i32,
     pub ramp_velocity: i32,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct WinchStatus {
     pub command_counter: u32,
     pub tick_counter: u32,

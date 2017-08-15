@@ -8,4 +8,5 @@ use std::env;
 fn main() {
     env::set_current_dir("web").unwrap();
     Exec::shell("npm run build").join().unwrap();
+    println!("cargo:rerun-if-changed=web");
 }

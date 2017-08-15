@@ -23,25 +23,28 @@ impl Controller {
     }
 
     fn poll(self: &mut Controller) {
-        match self.bus.receiver.recv() {
+        if let Ok(timestampedMessage) = self.bus.receiver.recv() {
+            match timestampedMessage.message {
 
-            Ok(Message::WinchStatus(id, status)) => {
-                //println!("ctrl {:?} = {:?}", id, status);
-            },
+                Message::WinchStatus(id, status) => {
+                    //println!("ctrl {:?} = {:?}", id, status);
+                },
 
-            Ok(Message::FlyerSensors(sensors)) => {
-                //println!("ctrl {:?}", sensors);
-            },
+                Message::FlyerSensors(sensors) => {
+                    //println!("ctrl {:?}", sensors);
+                },
 
-            Ok(Message::Command( Command::ManualControlValue( ManualControlAxis::RelativeZ, v ))) => {
-                self.simple_control(v);
+                Message::Command( Command::ManualControlValue( ManualControlAxis::RelativeZ, v )) => {
+                    self.simple_control(v);
+                },
+
+                Message::Command( Command::ManualControlReset ) => {
+                    self.simple_control(0.0);
+                },
+
+                _ => (),
+
             }
-
-            Ok(Message::Command( Command::ManualControlReset )) => {
-                self.simple_control(0.0);
-            }
-
-            _ => (),
         }
     }
 

@@ -23,11 +23,13 @@ class BotChart extends React.Component {
     componentDidMount() {
         var path = this.props.path;
         var series = this.refs.chart.addTimeSeries({},{ strokeStyle: 'rgba(95, 255, 95, 1)', lineWidth: 1 });
+        var time_reference = new Date().getTime();
 
-        this.messageListener = (msg) => {
-            var value = jp.query(msg, path);
+        this.messageListener = (tsm) => {
+            var timestamp = time_reference + 1e3 * tsm.timestamp;
+            var value = jp.query(tsm.message, path);
             if (value.length) {
-                series.append(msg.timestamp, value[0]);
+                series.append(timestamp, value[0]);
             }
         };
 

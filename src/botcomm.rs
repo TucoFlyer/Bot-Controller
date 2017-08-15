@@ -55,7 +55,7 @@ fn handle_bot_message(bus: &Bus, config: &BotConfig, addr: SocketAddr, code: u8,
                 if winch.addr == addr {
                     match bincode::deserialize(msg) {
                         Err(_) => (),
-                        Ok(status) => drop(bus.sender.try_send(Message::WinchStatus(id, status))),
+                        Ok(status) => drop(bus.sender.try_send(Message::WinchStatus(id, status).timestamp())),
                     }
                 }
             }
@@ -65,7 +65,7 @@ fn handle_bot_message(bus: &Bus, config: &BotConfig, addr: SocketAddr, code: u8,
             if config.flyer_addr == addr {
                 match bincode::deserialize(msg) {
                     Err(_) => (),
-                    Ok(sensors) => drop(bus.sender.try_send(Message::FlyerSensors(sensors))),
+                    Ok(sensors) => drop(bus.sender.try_send(Message::FlyerSensors(sensors).timestamp())),
                 }
             }
         }

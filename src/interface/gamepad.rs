@@ -52,7 +52,7 @@ pub fn start( bus: Bus ) {
                 }
 
                 match cmd {
-                    Some(c) => drop(bus.sender.try_send(Message::Command(c))),
+                    Some(c) => drop(bus.sender.try_send(Message::Command(c).timestamp())),
                     None => (),
                 }
             }
