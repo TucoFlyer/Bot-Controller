@@ -112,10 +112,11 @@ struct ClientFlags {
     authenticated: AtomicBool,
 }
 
-const SEND_BATCH_MILLIS : u64 = 10;
-const MAX_SEND_LATENCY : f64 = 0.4;
-const PING_INTERVAL : f64 = 0.1;
-const PING_TIMEOUT : f64 = 4.0;
+// All times in milliseconds
+const SEND_BATCH_PERIOD : u64 = 10;
+const MAX_SEND_LATENCY : f64 = 400.0;
+const PING_INTERVAL : f64 = 100.0;
+const PING_TIMEOUT : f64 = 10000.0;
 
 #[derive(Debug, Clone)]
 struct ClientFlowControl {
@@ -133,8 +134,9 @@ struct ClientInfo {
 
 impl ClientInfo {
     fn relative_time(&self, instant: Instant) -> f64 {
+        // Use millisecond floats on the websocket interface, it's convenient for Javascript
         let duration = instant.duration_since(self.time_ref);
-        duration.as_secs() as f64 + duration.subsec_nanos() as f64 * 1e-9
+        duration.as_secs() as f64 * 1e3 + duration.subsec_nanos() as f64 * 1e-6
     }
 
     fn kill(&self) {
@@ -240,9 +242,9 @@ fn start_ws_message_sender(client_info: ClientInfo, rx_client_out: mpsc::Receive
 
             let now = client_info.relative_time(Instant::now());
             let flow_control = client_info.flow_control.lock().unwrap().clone();
-            let timed_out = now - flow_control.last_ping >= PING_TIMEOUT;
-            let need_ping = now - flow_control.last_ping >= PING_INTERVAL;
-            let can_send = now - flow_control.last_pong <= MAX_SEND_LATENCY;
+            let need_ping = (now - flow_control.last_ping) >= PING_INTERVAL;
+            let can_send = (now - flow_control.last_pong) <= MAX_SEND_LATENCY;
+            let timed_out = (now - flow_control.last_pong) >= PING_TIMEOUT;
 
             if timed_out {
                 break;
@@ -261,7 +263,7 @@ fn start_ws_message_sender(client_info: ClientInfo, rx_client_out: mpsc::Receive
                 }
             }
 
-            thread::sleep(Duration::from_millis(SEND_BATCH_MILLIS));
+            thread::sleep(Duration::from_millis(SEND_BATCH_PERIOD));
         }
 
         client_info.kill();

@@ -15,6 +15,9 @@ export default class BotConnection extends Component {
     constructor() {
         super();
         this.events = new EventEmitter();
+        this.time_offset = null;
+        this.frame_request = null;
+        this.message_frame_batch = [];
     }
 
     getChildContext() {
@@ -37,9 +40,29 @@ export default class BotConnection extends Component {
         var json = JSON.parse(evt.data);
 
         if (Array.isArray(json)) {
-            // Burst of message bus activity
+
+            // Update time offset from first message
+            if (this.time_offset == null) {
+                this.time_offset = new Date().getTime() - json[0].timestamp;
+            }
+
+            // Annotate all messages with local timestamp
             for (var msg of json) {
-                this.events.emit('message', msg);
+                msg.local_timestamp = this.time_offset + msg.timestamp;
+            }
+
+            // Burst of message bus activity, as soon as it arrives
+            this.events.emit('messages', json);
+
+            // Batch messages into UI frames
+            this.message_frame_batch = this.message_frame_batch.concat(json);
+            if (!this.frame_request) {
+                this.frame_request = window.requestAnimationFrame(() => {
+                    var batch = this.message_frame_batch;
+                    this.frame_request = null;
+                    this.message_frame_batch = [];
+                    this.events.emit('frame', batch);
+                });
             }
 
         } else if (json.challenge) {
@@ -70,6 +93,10 @@ export default class BotConnection extends Component {
         if (this.socket) {
             this.socket.close();
             this.socket = null;
+        }
+        if (this.frame_request) {
+            window.cancelAnimationFrame(this.frame_request);
+            this.frame_request = null;
         }
     }
 

@@ -21,23 +21,40 @@ class BotChart extends React.Component {
     }
 
     componentDidMount() {
-        var path = this.props.path;
         var series = this.refs.chart.addTimeSeries({},{ strokeStyle: 'rgba(95, 255, 95, 1)', lineWidth: 1 });
-        var time_reference = new Date().getTime();
+        this.last_trigger = null;
 
-        this.messageListener = (tsm) => {
-            var timestamp = time_reference + 1e3 * tsm.timestamp;
-            var value = jp.query(tsm.message, path);
-            if (value.length) {
-                series.append(timestamp, value[0]);
+        this.messageListener = (messages) => {
+            // Downsample potentially multiple messages to a single latest point, so we can avoid falling behind when CPU constrained
+
+            var value_accum = 0;
+            var value_count = 0;
+            var latest_timestamp = null;
+
+            for (var m of messages) {
+                var timestamp = m.local_timestamp;
+                var value = jp.query(m.message, this.props.path);
+                var trigger_value = jp.query(m.message, this.props.trigger);
+                if (value.length && trigger_value.length) {
+                    if (trigger_value !== this.last_trigger) {
+                        this.last_trigger = trigger_value;
+                        value_accum += value[0];
+                        value_count += 1;
+                        latest_timestamp = timestamp;
+                    }
+                }
+            }
+
+            if (value_count > 0) {
+                series.append(latest_timestamp, value_accum / value_count);
             }
         };
 
-        this.context.botConnection.events.on('message', this.messageListener);
+        this.context.botConnection.events.on('frame', this.messageListener);
     }
 
     componentWillUnmount() {
-        this.context.botConnection.events.removeListener('message', this.messageListener);
+        this.context.botConnection.events.removeListener('frame', this.messageListener);
     }
 }
 
