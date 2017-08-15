@@ -13,7 +13,7 @@ use staticfile::Static;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io;
-use std::net::TcpStream;
+use std::net::{TcpStream, IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 use websocket;
@@ -21,7 +21,7 @@ use websocket;
 
 pub fn start(bus: Bus, config: WebConfig) {
     let secret_key = make_random_string();
-    let url = http_url(&config, &secret_key);
+    let url = http_uri(&config, &secret_key);
     let connect_string = make_connect_string(&url);
 
     start_http(&config);
@@ -31,16 +31,22 @@ pub fn start(bus: Bus, config: WebConfig) {
     show_connect_string(&connect_string);
 }
 
+fn all_if_addr() -> IpAddr {
+    // Bind to all interfaces; we need at least localhost and the LAN
+    IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0))
+}
+
 fn start_http(config: &WebConfig) {
-    let addr = config.http_addr.clone();
+    let addr = SocketAddr::new(all_if_addr(), config.http_addr.port());
     let mut m = Mount::new();
 
     m.mount("/", Static::new(&config.web_root_path));
 
     m.mount("/ws", {
-        let url = ws_url(config);
+        let body = json!({ "uri": ws_uri(config) });
         move |_req: &mut iron::Request| {
-            Ok(iron::Response::with((iron::status::Ok, url.clone())))
+            let body = serde_json::to_string(&body).unwrap();
+            Ok(iron::Response::with((iron::status::Ok, body)))
         }
     });
 
@@ -51,7 +57,7 @@ fn start_http(config: &WebConfig) {
 }
 
 fn start_ws(bus: Bus, config: &WebConfig, secret_key: String) {
-    let addr = config.ws_addr.clone();
+    let addr = SocketAddr::new(all_if_addr(), config.ws_addr.port());
     thread::spawn(move || {
         // Websocket acceptor thread
         let server = websocket::sync::Server::bind(addr).expect("failed to bind to WebSocket server port");
@@ -66,11 +72,11 @@ fn start_ws(bus: Bus, config: &WebConfig, secret_key: String) {
     });
 }
 
-fn http_url(config: &WebConfig, secret_key: &str) -> String {
+fn http_uri(config: &WebConfig, secret_key: &str) -> String {
     format!("http://{}/#{}", config.http_addr, secret_key)
 }
 
-fn ws_url(config: &WebConfig) -> String {
+fn ws_uri(config: &WebConfig) -> String {
     format!("ws://{}", config.ws_addr)
 }
 

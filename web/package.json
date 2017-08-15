@@ -3,10 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "crypto-js": "^3.1.9-1",
+    "events": "^1.1.1",
+    "isomorphic-fetch": "^2.2.1",
+    "jsonpath": "^0.2.12",
+    "prop-types": "^15.5.10",
     "react": "^15.6.1",
     "react-dom": "^15.6.1",
     "react-scripts": "1.0.11",
-    "react-smoothie": "^0.2.1"
+    "react-smoothie": "^0.2.1",
+    "react-window-size": "^1.1.0",
+    "reconnecting-websocket": "^3.1.1"
   },
   "scripts": {
     "start": "react-scripts start",
