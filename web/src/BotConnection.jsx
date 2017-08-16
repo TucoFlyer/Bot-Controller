@@ -6,6 +6,7 @@ import Base64 from 'crypto-js/enc-base64';
 import fetch from 'isomorphic-fetch';
 import ReconnectingWebSocket from 'reconnecting-websocket';
 
+
 export default class BotConnection extends Component {
 
     static childContextTypes = {
@@ -15,9 +16,8 @@ export default class BotConnection extends Component {
     constructor() {
         super();
         this.events = new EventEmitter();
-        this.time_offset = null;
+        this.socket = null;
         this.frame_request = null;
-        this.message_frame_batch = [];
     }
 
     getChildContext() {
@@ -38,30 +38,45 @@ export default class BotConnection extends Component {
 
     handleSocketMessage(evt) {
         var json = JSON.parse(evt.data);
+        var time_offset = null;
+        var last_timestamp = null;
+        var model = {
+            flyer: null,
+            winches: [],
+        };
 
-        if (Array.isArray(json)) {
+        if (Array.isArray(json) && json.length > 0) {
 
-            // Update time offset from first message
-            if (this.time_offset == null) {
-                this.time_offset = new Date().getTime() - json[0].timestamp;
+            // Update time offset from first message, restart if timestamps go backward.
+            if (json[0].timestamp < last_timestamp) {
+                time_offset = null;
+            }
+            last_timestamp = json[0].timestamp;
+            if (time_offset === null) {
+                time_offset = new Date().getTime() - json[0].timestamp;
             }
 
-            // Annotate all messages with local timestamp
+            // Annotate all messages with local timestamp, and update the model
             for (var msg of json) {
-                msg.local_timestamp = this.time_offset + msg.timestamp;
+                msg.local_timestamp = time_offset + msg.timestamp;
+
+                if (msg.message.WinchStatus) {
+                    model.winches[msg.message.WinchStatus[0]] = msg;
+                }
+
+                if (msg.message.FlyerSensors) {
+                    model.flyer = msg;
+                }
             }
 
-            // Burst of message bus activity, as soon as it arrives
+            // Event for access to a raw message burst
             this.events.emit('messages', json);
 
             // Batch messages into UI frames
-            this.message_frame_batch = this.message_frame_batch.concat(json);
             if (!this.frame_request) {
                 this.frame_request = window.requestAnimationFrame(() => {
-                    var batch = this.message_frame_batch;
                     this.frame_request = null;
-                    this.message_frame_batch = [];
-                    this.events.emit('frame', batch);
+                    this.events.emit('frame', model);
                 });
             }
 

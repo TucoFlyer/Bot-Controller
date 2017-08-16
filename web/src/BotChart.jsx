@@ -21,41 +21,32 @@ class BotChart extends React.Component {
     }
 
     componentDidMount() {
-        var series = this.refs.chart.addTimeSeries({},{ strokeStyle: 'rgba(95, 255, 95, 1)', lineWidth: 1 });
+        this.series = this.refs.chart.addTimeSeries({},{ strokeStyle: 'rgba(95, 255, 95, 1)', lineWidth: 1 });
         this.last_trigger = null;
-
-        this.messageListener = (messages) => {
-            // Downsample potentially multiple messages to a single latest point, so we can avoid falling behind when CPU constrained
-
-            var value_accum = 0;
-            var value_count = 0;
-            var latest_timestamp = null;
-
-            for (var m of messages) {
-                var timestamp = m.local_timestamp;
-                var value = jp.query(m.message, this.props.path);
-                var trigger_value = jp.query(m.message, this.props.trigger);
-                if (value.length && trigger_value.length) {
-                    if (trigger_value !== this.last_trigger) {
-                        this.last_trigger = trigger_value;
-                        value_accum += value[0];
-                        value_count += 1;
-                        latest_timestamp = timestamp;
-                    }
-                }
-            }
-
-            if (value_count > 0) {
-                series.append(latest_timestamp, value_accum / value_count);
-            }
-        };
-
-        this.context.botConnection.events.on('frame', this.messageListener);
+        this.frameListener = this.onFrame.bind(this);
+        this.context.botConnection.events.on('frame', this.frameListener);
     }
 
     componentWillUnmount() {
-        this.context.botConnection.events.removeListener('frame', this.messageListener);
+        this.context.botConnection.events.removeListener('frame', this.frameListener);
     }
+
+    onFrame(model) {
+        // Most recent value
+        var value = jp.query(model, this.props.value);
+        // When the packet arrived (relevant data may or may not be new)
+        var timestamp = jp.query(model, this.props.timestamp);
+        // Trigger for updates (indicates that data has been refreshed)
+        var trigger = jp.query(model, this.props.trigger);
+
+console.log(model, value, this.props.value, timestamp, trigger);
+
+        if (timestamp.length && value.length && trigger.length && trigger !== this.last_trigger) {
+            this.last_trigger = trigger;
+            this.series.append(timestamp, value[0]);
+        }
+    }
+
 }
 
 export default windowSize(BotChart);
