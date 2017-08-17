@@ -1,34 +1,76 @@
-import React from 'react';
-import BotChart from './BotChart';
-import BotConnection from './BotConnection';
+import React, { Component } from 'react';
+import { Nav, NavItem, NavLink } from 'reactstrap';
+import { NavLink as RRNavLink } from 'react-router-dom';
+import { Route, Switch } from 'react-router';
+
 import './App.css';
+import Home from './pages/Home';
+import FlyerAnalog from './pages/FlyerAnalog';
+import WinchSensors from './pages/WinchSensors';
 
-export default class App extends React.Component {
+
+export default class App extends Component {
+
+    constructor(props) {
+        super(props);
+        this.state = {
+            winchList: [0, 1, 2, 3],
+        };
+    }
+
     render() {
-        return <div className="App">
-            <BotConnection>
+        return (
+            <div className="App">
+                <div className="AppLogo">
+                    <img src="/tuco-flyer.png" alt="Tuco Flyer logo" />
+                </div>
 
-                <h1>Tuco Flyer</h1>
+                <Nav pills>
+                    <NavItem>
+                        <NavLink exact to="/" activeClassName="active" tag={RRNavLink}> Home </NavLink>
+                    </NavItem>
+                    <NavItem>
+                        <NavLink to="/flyer" activeClassName="active" tag={RRNavLink}> Flyer </NavLink>
+                    </NavItem>
+                    <NavItem>
+                        <NavLink to="/winch" activeClassName="active" tag={RRNavLink}> Winch </NavLink>
+                    </NavItem>
+                </Nav>
+    			<Switch>
 
-                <h2>Winch force feedback</h2>
-                <BotChart
-                    value="winches[0].message.WinchStatus[1].sensors.force.measure"
-                    trigger="winches[0].message.WinchStatus[1].sensors.force.counter"
-                    timestamp="winches[0].local_timestamp" />
+    				<Route path="/flyer">
+                        <div>
+                            <Nav pills>
+                                <NavItem>
+                                    <NavLink to="/flyer/analog" activeClassName="active" tag={RRNavLink}> Analog </NavLink>
+                                </NavItem>
+                            </Nav>
+                            <Switch>
+                                <Route path="/flyer/analog" component={FlyerAnalog} />
+                            </Switch>
+                        </div>
+                    </Route>
 
-                <h2>Winch position feedback</h2>
-                <BotChart
-                    value="winches[0].message.WinchStatus[1].sensors.position"
-                    trigger="winches[0].message.WinchStatus[1].tick_counter"
-                    timestamp="winches[0].local_timestamp" />
+                    <Route path="/winch">
+                        <div>
+                            <Nav pills>
+                                {this.state.winchList.map(function (id) { return (
+                                    <NavItem key={`winch-${id}`}>
+                                        <NavLink to={`/winch/${id}`} activeClassName="active" tag={RRNavLink}> Bot {id} </NavLink>
+                                    </NavItem>
+                                )})}
+                            </Nav>
+                            <Switch>
+                                <Route path="/winch/:winchId" component={WinchSensors} />
+                            </Switch>
+                        </div>
+                    </Route>
 
-                <h2>Winch PWM command</h2>
-                <BotChart
-                    value="winches[0].message.WinchStatus[1].command.velocity_target"
-                    trigger="winches[0].message.WinchStatus[1].tick_counter"
-                    timestamp="winches[0].local_timestamp" />
+                    <Route path="/" component={Home} />
 
-            </BotConnection>
-        </div>;
+    			</Switch>
+
+            </div>
+        );
     }
 }

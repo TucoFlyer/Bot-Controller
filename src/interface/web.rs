@@ -74,7 +74,7 @@ fn start_ws(bus: Bus, config: &WebConfig, secret_key: String) {
 }
 
 fn http_uri(config: &WebConfig, secret_key: &str) -> String {
-    format!("http://{}/#{}", config.http_addr, secret_key)
+    format!("http://{}/#?k={}", config.http_addr, secret_key)
 }
 
 fn ws_uri(config: &WebConfig) -> String {

@@ -1,20 +1,4 @@
-body {
-  margin: 0;
-  padding: 0;
-  font: 10px;
-  font-family: sans-serif;
-  background: black;
-  color: #eee;
-}
-
-h1 {
-	font-size: 20px;
-	text-align: left;
-	margin: 0.2em 0.5em;
-}
-
-h2 {
-	font-size: 18px;
-	text-align: left;
-	margin: 0.2em 0.5em;
+html, body {
+ 	height: 100%;
+ 	width: 100%;
 }
