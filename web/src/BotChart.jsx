@@ -42,16 +42,25 @@ export class Series extends Component {
         return null;
     }
 
+    static propTypes ={
+        noBounds: PropTypes.bool
+    }
+
     static contextTypes = {
         botConnection: PropTypes.instanceOf(BotConnection)
     }
 
     componentDidMount() {
-        this.series = this.props.chart.reactSmoothie.addTimeSeries({}, {
+        console.log(this.props.noBounds);
+        this.series = this.props.chart.reactSmoothie.addTimeSeries({
+            resetBounds: !this.props.noBounds,
+            resetBoundsInterval: this.props.resetBoundsInterval || 3000,
+        }, {
             strokeStyle: this.props.strokeStyle || '#3e8135',
             fillStyle: this.props.fillStyle,
-            lineWidth: this.props.lineWidth || 1
-        })
+            lineWidth: this.props.lineWidth || 1,
+        });
+        console.log(this.series);
         this.lastTrigger = null;
         this.onFrame = this.onFrame.bind(this);
         this.context.botConnection.events.on('frame', this.onFrame);
@@ -78,6 +87,14 @@ export class Series extends Component {
         if (trigger !== this.lastTrigger) {
             this.lastTrigger = trigger;
             this.series.append(timestamp, value);
+            if (this.props.noBounds) {
+                // Smoothie automatically sets these according to the single
+                // data point even when the resetBounds timer is disabled. Undo that,
+                // our noBounds option means this series shouldn't contribute
+                // to the bounds at all.
+                this.series.minValue = Number.NaN;
+                this.series.maxValue = Number.NaN;
+            }
         }
     }
 }

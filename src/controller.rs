@@ -72,8 +72,8 @@ impl ControllerState {
         WinchCommand {
             velocity_target: (self.debug_control_axis * 4096.0) as i32,
             accel_max: 100,
-            force_min: -30000,
-            force_max: 500000,
+            force_min: -50000,
+            force_max: 700000,
         }
     }
 
