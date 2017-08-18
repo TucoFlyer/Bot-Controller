@@ -1,7 +1,7 @@
 //! Controller thread, responding to commands and status updates, generating motor control packets
 
 
-use bus::{Bus, Message, Command, WinchCommand, ManualControlAxis};
+use bus::{Bus, Message, Command, FlyerSensors, WinchStatus, WinchCommand, ManualControlAxis};
 use std::thread;
 use std::time::Duration;
 use std::sync::mpsc;
@@ -13,13 +13,19 @@ use botcomm::BotSender;
 struct Controller {
     bus: Bus,
     bot_sender: BotSender,
+    state: ControllerState,
 }
-
 
 impl Controller {
 
     fn new(bus: Bus, bot_sender: BotSender, config: BotConfig) -> Controller {
-        Controller { bus, bot_sender }
+        Controller {
+            bus,
+            bot_sender,
+            state: ControllerState {
+                debug_control_axis: 0.0,                
+            }
+        }
     }
 
     fn poll(self: &mut Controller) {
@@ -27,19 +33,21 @@ impl Controller {
             match timestampedMessage.message {
 
                 Message::WinchStatus(id, status) => {
-                    //println!("ctrl {:?} = {:?}", id, status);
+                    // Each winch status update results in a command packet to close the loop
+                    self.bot_sender.winch_command(id, self.state.winch_control_loop(id, status));
                 },
 
                 Message::FlyerSensors(sensors) => {
-                    //println!("ctrl {:?}", sensors);
+                    // Flyer sensor input stores state for collision avoidance
+                    self.state.flyer_sensor_update(sensors);
                 },
 
                 Message::Command( Command::ManualControlValue( ManualControlAxis::RelativeZ, v )) => {
-                    self.simple_control(v);
+                    self.state.debug_control_axis = v;
                 },
 
                 Message::Command( Command::ManualControlReset ) => {
-                    self.simple_control(0.0);
+                    self.state.debug_control_axis = 0.0;
                 },
 
                 _ => (),
@@ -47,16 +55,28 @@ impl Controller {
             }
         }
     }
+}
 
-    fn simple_control(self: &mut Controller, v: f32) {
-        let cmd = WinchCommand {
-            velocity_target: (v * 4096.0) as i32,
-            accel_max: 100,
-            force_min: 10,
-            force_max: 10000,
-        };
-        self.bot_sender.winch_command(0, cmd);
+struct ControllerState {
+    debug_control_axis: f32,
+}
+
+impl ControllerState {
+
+    fn flyer_sensor_update(self: &mut ControllerState , sensors: FlyerSensors) {
+        // collision avoidance and navigation feedback here, probably no direct packet sends as a result?
     }
+
+    fn winch_control_loop(self: &mut ControllerState, id: usize, status: WinchStatus) -> WinchCommand {
+
+        WinchCommand {
+            velocity_target: (self.debug_control_axis * 4096.0) as i32,
+            accel_max: 100,
+            force_min: -30000,
+            force_max: 500000,
+        }
+    }
+
 }
 
 

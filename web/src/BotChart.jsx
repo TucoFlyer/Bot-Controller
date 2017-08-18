@@ -4,12 +4,11 @@ import windowSize from 'react-window-size';
 import PropTypes from 'prop-types';
 import BotConnection from './BotConnection';
 
-
-class UnresponsiveChartBase extends Component {
+export const Chart = windowSize( class extends Component {
     render() {
         return <div>
             <SmoothieComponent
-                ref={ (s) => this.smoothie = s }
+                ref={ (s) => this.reactSmoothie = s }
                 width={this.props.width || window.innerWidth}
                 height={this.props.height || 100}
                 millisPerPixel={this.props.millisPerPixel || 15}
@@ -30,15 +29,13 @@ class UnresponsiveChartBase extends Component {
 
             {React.Children.map(this.props.children, child => {
                 if (child.type === Series) {
-                    return React.cloneElement(child, { chart: this })
+                    return React.cloneElement(child, { chart: this });
                 }
                 return child;
             })}
         </div>;
     }
-}
-
-export const Chart = windowSize(UnresponsiveChartBase);
+});
 
 export class Series extends Component {
     render() {
@@ -50,17 +47,18 @@ export class Series extends Component {
     }
 
     componentDidMount() {
-        this.series = this.props.chart.smoothie.addTimeSeries({}, {
+        this.series = this.props.chart.reactSmoothie.addTimeSeries({}, {
             strokeStyle: this.props.strokeStyle || '#3e8135',
             fillStyle: this.props.fillStyle,
             lineWidth: this.props.lineWidth || 1
-        });
+        })
         this.lastTrigger = null;
         this.onFrame = this.onFrame.bind(this);
         this.context.botConnection.events.on('frame', this.onFrame);
     }
 
     componentWillUnmount() {
+        this.props.chart.reactSmoothie.smoothie.removeTimeSeries(this.series);
         this.context.botConnection.events.removeListener('frame', this.onFrame);
     }
 
