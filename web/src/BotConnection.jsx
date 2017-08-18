@@ -3,7 +3,6 @@ import PropTypes from 'prop-types';
 import EventEmitter from 'events';
 import hmacSHA512 from 'crypto-js/hmac-sha512';
 import Base64 from 'crypto-js/enc-base64';
-import fetch from 'isomorphic-fetch';
 import ReconnectingWebSocket from 'reconnecting-websocket';
 import LocalStorageMixin from 'react-localstorage'
 import reactMixin from 'react-mixin';
