@@ -1,7 +1,9 @@
 import React from 'react';
+import { Button, ButtonToolbar } from 'reactstrap';
+import { NavLink as RRNavLink } from 'react-router-dom';
 import { Chart, Series } from '../BotChart';
 
-const WinchSensors = (props) => {
+export default (props) => {
     const id = parseInt(props.match.params.winchId, 10);
     const force_trigger = (model) => model.winches[id].message.WinchStatus[1].sensors.force.counter;
     const tick_trigger = (model) => model.winches[id].message.WinchStatus[1].tick_counter;
@@ -17,6 +19,7 @@ const WinchSensors = (props) => {
                 value={ (model) => model.winches[id].message.WinchStatus[1].sensors.force.measure }
                 trigger={force_trigger} timestamp={winch_timestamp} />
             <Series
+                fullDataRate
                 strokeStyle='#71b1b3'
                 value={ (model) => model.winches[id].message.WinchStatus[1].sensors.force.filtered }
                 trigger={force_trigger} timestamp={winch_timestamp} />
@@ -29,7 +32,6 @@ const WinchSensors = (props) => {
                 value={ (model) => model.winches[id].message.WinchStatus[1].command.force_max }
                 trigger={force_trigger} timestamp={winch_timestamp} />
         </Chart>
-
 
         <h6>Position feedback</h6>
         <Chart>
@@ -45,7 +47,8 @@ const WinchSensors = (props) => {
                 trigger={tick_trigger} timestamp={winch_timestamp} />
         </Chart>
 
+        <ButtonToolbar>
+            <Button to={`/winch/${id}/timing`} color="info" tag={RRNavLink}> Timing check </Button>
+        </ButtonToolbar>
     </div>
 }
-
-export default WinchSensors;

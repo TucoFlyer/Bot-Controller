@@ -113,7 +113,8 @@ struct ClientFlags {
 }
 
 // All times in milliseconds
-const SEND_BATCH_PERIOD : u64 = 10;
+const MIN_BATCH_PERIOD : f64 = 2.0;
+const MAX_BATCH_PERIOD : f64 = 300.0;
 const MAX_SEND_LATENCY : f64 = 400.0;
 const PING_INTERVAL : f64 = 100.0;
 const PING_TIMEOUT : f64 = 10000.0;
@@ -122,6 +123,7 @@ const PING_TIMEOUT : f64 = 10000.0;
 struct ClientFlowControl {
     last_ping: f64,
     last_pong: f64,
+    last_pong_latency: f64,
 }
 
 #[derive(Clone)]
@@ -186,13 +188,14 @@ fn handle_ws_client(client: websocket::sync::Client<TcpStream>, bus: Bus, secret
         flow_control: Arc::new(Mutex::new(ClientFlowControl {
             last_ping: -PING_INTERVAL,
             last_pong: 0.0,
+            last_pong_latency: 0.0,
         })),
     };
 
     // Bounded queue for messages waiting to go to this client.
     // Messages can be dropped in ws_bus_receiver when this is full,
     // and they can be coalesced in ws_message_sender.
-    let (rx_client_in, rx_client_out) = mpsc::sync_channel(1024);
+    let (rx_client_in, rx_client_out) = mpsc::sync_channel(2048);
 
     start_ws_bus_receiver(client_info.clone(), bus.receiver.add_stream(), rx_client_in);
     send_ws_challenge(&client_info, &mut sender);
@@ -202,6 +205,8 @@ fn handle_ws_client(client: websocket::sync::Client<TcpStream>, bus: Bus, secret
 
 fn start_ws_bus_receiver(client_info: ClientInfo, bus_receiver: multiqueue::BroadcastReceiver<TimestampedMessage>, rx_client_in: mpsc::SyncSender<TimestampedMessage>) {
     thread::spawn(move || {
+        let mut lost_packets : usize = 0;
+
         loop {
             let msg = match bus_receiver.recv() {
                 Ok(msg) => msg,
@@ -210,12 +215,23 @@ fn start_ws_bus_receiver(client_info: ClientInfo, bus_receiver: multiqueue::Broa
             if !client_info.is_alive() {
                 break;
             }
-
-            // Drop messages if the client can't keep up
-            drop(rx_client_in.try_send(msg));
+            if rx_client_in.try_send(msg).is_err() {
+                // If we lost packets here, the batching flow control mechanism has failed
+                // and we don't have anything better to do. Instead of silently losing data
+                // let's end the connection.
+                break;
+            }
         }
         client_info.kill();
     });
+}
+
+fn send_lost_packet_marker(client_info: &ClientInfo, sender: &mut websocket::sync::sender::Writer<TcpStream>) {
+    let json = serde_json::to_string(&client_info.challenge).unwrap();
+    let message = websocket::OwnedMessage::Text(json);
+    if sender.send_message(&message).is_err() {
+        client_info.kill();
+    }
 }
 
 fn send_ws_challenge(client_info: &ClientInfo, sender: &mut websocket::sync::sender::Writer<TcpStream>) {
@@ -238,6 +254,7 @@ fn start_ws_message_sender(client_info: ClientInfo, rx_client_out: mpsc::Receive
         // WebSocket senders iterate in batches somewhat slower than our internal control loop rate,
         // and we can skip cycles to control backlog and latency.
 
+        let mut batch_period = MIN_BATCH_PERIOD;
         while client_info.is_alive() {
 
             let now = client_info.relative_time(Instant::now());
@@ -263,7 +280,12 @@ fn start_ws_message_sender(client_info: ClientInfo, rx_client_out: mpsc::Receive
                 }
             }
 
-            thread::sleep(Duration::from_millis(SEND_BATCH_PERIOD));
+            // Base this connection's batch size on its filtered latency
+            let filter_rate = 0.03;
+            let filter_target = flow_control.last_pong_latency * 1.8;
+            batch_period += filter_rate * (filter_target - batch_period);
+            batch_period = batch_period.max(MIN_BATCH_PERIOD).min(MAX_BATCH_PERIOD);
+            thread::sleep(Duration::from_millis(batch_period as u64));
         }
 
         client_info.kill();
@@ -294,9 +316,11 @@ fn handle_ws_message_loop(client_info: ClientInfo, mut receiver: websocket::sync
 fn handle_ws_pong(client_info: &ClientInfo, bus: &Bus, message: Vec<u8>) {
     if let Ok(message) = String::from_utf8(message) {
         if let Ok(timestamp) = message.parse::<f64>() {
+            let now = client_info.relative_time(Instant::now());
             if let Ok(mut flow_control) = client_info.flow_control.lock() {
                 if timestamp <= flow_control.last_ping + 0.01 {
                     flow_control.last_pong = timestamp;
+                    flow_control.last_pong_latency = now - timestamp;
                     return;
                 }
             }

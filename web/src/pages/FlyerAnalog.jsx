@@ -5,7 +5,7 @@ const colors = [ '#95172f', '#951776', '#641795', '#172095', '#179195', '#17953b
 const analog_trigger = (model) => model.flyer.message.FlyerSensors.analog.counter;
 const flyer_timestamp = (model) => model.flyer.local_timestamp;
 
-const FlyerAnalog = () => {
+export default (props) => {
     let series = [];
     for (let id in colors) {
         series.push(<Series
@@ -21,5 +21,3 @@ const FlyerAnalog = () => {
         </Chart>
     </div>;
 }
-
-export default FlyerAnalog;

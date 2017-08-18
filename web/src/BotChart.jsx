@@ -35,7 +35,7 @@ export const Chart = windowSize( class extends Component {
     }
 
     static childContextTypes = {
-        chart: PropTypes.instanceOf(Chart)
+        chart: PropTypes.instanceOf(Component)
     }
 
     getChildContext() {
@@ -54,7 +54,7 @@ export class Series extends Component {
 
     static contextTypes = {
         botConnection: PropTypes.instanceOf(BotConnection),
-        chart: PropTypes.instanceOf(Chart)
+        chart: PropTypes.instanceOf(Component)
     }
 
     componentDidMount() {
@@ -112,7 +112,7 @@ export class Series extends Component {
         catch (e) {
             return;
         }
-        if (trigger !== this.lastTrigger) {
+        if (trigger !== null && trigger !== undefined && trigger !== this.lastTrigger) {
             this.lastTrigger = trigger;
             this.series.append(timestamp, value);
             if (this.props.noBounds) {
