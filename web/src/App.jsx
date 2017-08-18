@@ -19,10 +19,12 @@ export default () => (
             <NavItem><NavLink to="/flyer" activeClassName="active" tag={RRNavLink}> Flyer </NavLink></NavItem>
             <NavItem><NavLink to="/winch" activeClassName="active" tag={RRNavLink}> Winch </NavLink></NavItem>
         </Nav>
+
     	<Switch>
             <Route path="/winch" component={Winches} />
             <Route path="/flyer" component={Flyer} />
             <Route path="/" component={Home} />
     	</Switch>
+
     </div>
 );

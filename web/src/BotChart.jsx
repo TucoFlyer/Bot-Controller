@@ -7,7 +7,7 @@ import { BotConnection, BotModel } from './BotConnection';
 export const Chart = windowSize( class extends Component {
     // Lots of opinionated defaults for Smoothie here.
     // Some of it is to make the charts fit in with our visual theme.
-    // Disable interpolation by default; it looks cool but hinders analysis.
+    // Disable interpolation by default; it looks cool but hinders analysis and eats CPU
     render() {
         return <div>
             <SmoothieComponent
@@ -114,7 +114,11 @@ export class Series extends Component {
         }
         if (trigger !== null && trigger !== undefined && trigger !== this.lastTrigger) {
             this.lastTrigger = trigger;
-            this.series.append(timestamp, value);
+
+            // Normally we'd use series.append() in Smoothie, but try writing directly to avoid the 'duplicate' teimstamp detection
+            this.series.data.push([timestamp, value]);
+            console.log(timestamp, value, this.series.data.length);
+
             if (this.props.noBounds) {
                 // Smoothie automatically sets these according to the single
                 // data point even when the resetBounds timer is disabled. Undo that,

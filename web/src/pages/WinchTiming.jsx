@@ -8,11 +8,17 @@ export default (props) => {
 
     return <div>
 
-        <h6>Timing check</h6>
-        <Chart height="64" millisPerPixel="2">
+        <Chart millisPerPixel="2">
             <Series
                 fullDataRate
-                value={ (model) => ( tick_trigger(model) & 7 ) }
+                strokeStyle="#f00"
+                value={ (model) => ( tick_trigger(model) / 8 % 1 ) }
+                trigger={tick_trigger} timestamp={winch_timestamp} />
+
+            <Series
+                fullDataRate
+                strokeStyle="#00f"
+                value={ (model) => (winch_timestamp(model) / 1000 % 1) }
                 trigger={tick_trigger} timestamp={winch_timestamp} />
         </Chart>
 

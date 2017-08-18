@@ -12,7 +12,7 @@ export default (props) => {
     return <div>
 
         <h6>Force feedback</h6>
-        <Chart height="200">
+        <Chart height="150">
             <Series
                 fullDataRate
                 strokeStyle='#bbb'
