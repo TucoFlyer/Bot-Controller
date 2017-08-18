@@ -2,9 +2,12 @@ import React, { Component } from 'react';
 import SmoothieComponent from 'react-smoothie';
 import windowSize from 'react-window-size';
 import PropTypes from 'prop-types';
-import BotConnection from './BotConnection';
+import { BotConnection, BotModel } from './BotConnection';
 
 export const Chart = windowSize( class extends Component {
+    // Lots of opinionated defaults for Smoothie here.
+    // Some of it is to make the charts fit in with our visual theme.
+    // Disable interpolation by default; it looks cool but hinders analysis.
     render() {
         return <div>
             <SmoothieComponent
@@ -12,7 +15,8 @@ export const Chart = windowSize( class extends Component {
                 width={this.props.width || window.innerWidth}
                 height={this.props.height || 100}
                 millisPerPixel={this.props.millisPerPixel || 15}
-           
+                interpolation={this.props.interpolation || 'step'}
+
                 grid={Object.assign({
                     fillStyle: '#fff',
                     strokeStyle: 'rgba(166,197,103,0.20)',
@@ -26,14 +30,16 @@ export const Chart = windowSize( class extends Component {
                     fillStyle: '#444',
                 }, this.props.labels || {})}
             />
-
-            {React.Children.map(this.props.children, child => {
-                if (child.type === Series) {
-                    return React.cloneElement(child, { chart: this });
-                }
-                return child;
-            })}
+            { this.props.children }
         </div>;
+    }
+
+    static childContextTypes = {
+        chart: PropTypes.instanceOf(Chart)
+    }
+
+    getChildContext() {
+        return { chart: this };
     }
 });
 
@@ -47,12 +53,12 @@ export class Series extends Component {
     }
 
     static contextTypes = {
-        botConnection: PropTypes.instanceOf(BotConnection)
+        botConnection: PropTypes.instanceOf(BotConnection),
+        chart: PropTypes.instanceOf(Chart)
     }
 
     componentDidMount() {
-        console.log(this.props.noBounds);
-        this.series = this.props.chart.reactSmoothie.addTimeSeries({
+        this.series = this.context.chart.reactSmoothie.addTimeSeries({
             resetBounds: !this.props.noBounds,
             resetBoundsInterval: this.props.resetBoundsInterval || 3000,
         }, {
@@ -60,18 +66,40 @@ export class Series extends Component {
             fillStyle: this.props.fillStyle,
             lineWidth: this.props.lineWidth || 1,
         });
-        console.log(this.series);
         this.lastTrigger = null;
-        this.onFrame = this.onFrame.bind(this);
-        this.context.botConnection.events.on('frame', this.onFrame);
+
+        if (this.props.fullDataRate) {
+            // Store data for each message in a batch potentially (more detail)
+            this.onMessages = this.onMessages.bind(this);
+            this.context.botConnection.events.on('messages', this.onMessages);
+        } else {
+            // Only evaluate the model once per frame (smoother)
+            this.onFrame = this.onFrame.bind(this);
+            this.context.botConnection.events.on('frame', this.onFrame);
+        }
     }
 
     componentWillUnmount() {
-        this.props.chart.reactSmoothie.smoothie.removeTimeSeries(this.series);
+        if (this.context.chart.reactSmoothie) {
+            this.context.chart.reactSmoothie.smoothie.removeTimeSeries(this.series);
+        }
+        this.context.botConnection.events.removeListener('messages', this.onMessages);
         this.context.botConnection.events.removeListener('frame', this.onFrame);
     }
 
     onFrame(model) {
+        this.updateFromModel(model);
+    }
+
+    onMessages(messages) {
+        let model = new BotModel();
+        for (let msg of messages) {
+            model.update(msg);
+            this.updateFromModel(model);
+        }
+    }
+
+    updateFromModel(model) {
         let value, timestamp, trigger;
         try {
             // Most recent value

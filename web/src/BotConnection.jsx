@@ -8,7 +8,23 @@ import LocalStorageMixin from 'react-localstorage'
 import reactMixin from 'react-mixin';
 import queryString from 'query-string';
 
-class BotConnection extends Component {
+export class BotModel {
+    constructor() {
+        this.flyer = {};
+        this.winches = [];
+    }
+
+    update(msg) {
+        if (msg.message.WinchStatus) {
+            this.winches[msg.message.WinchStatus[0]] = msg;
+        }
+        if (msg.message.FlyerSensors) {
+            this.flyer = msg;
+        }
+    }
+}
+
+export class BotConnection extends Component {
 
     static childContextTypes = {
         botConnection: PropTypes.instanceOf(BotConnection)
@@ -38,12 +54,14 @@ class BotConnection extends Component {
         });
     }
 
+    static updateModel(model, msg) {
+        // Based on message type, file the message's data into a unified JSON model
+
+    }
+
     handleSocketMessage(evt) {
         const json = JSON.parse(evt.data);
-        const model = {
-            flyer: null,
-            winches: [],
-        };
+        const model = new BotModel();
         let time_offset = null;
         let last_timestamp = null;
         
@@ -61,14 +79,7 @@ class BotConnection extends Component {
             // Annotate all messages with local timestamp, and update the model
             for (let msg of json) {
                 msg.local_timestamp = time_offset + msg.timestamp;
-
-                if (msg.message.WinchStatus) {
-                    model.winches[msg.message.WinchStatus[0]] = msg;
-                }
-
-                if (msg.message.FlyerSensors) {
-                    model.flyer = msg;
-                }
+                model.update(msg);
             }
 
             // Event for access to a raw message burst
@@ -130,5 +141,3 @@ class BotConnection extends Component {
 }
 
 reactMixin(BotConnection.prototype, LocalStorageMixin);
-
-export default BotConnection;

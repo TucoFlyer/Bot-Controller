@@ -12,6 +12,7 @@ const WinchSensors = (props) => {
         <h6>Force feedback</h6>
         <Chart height="200">
             <Series
+                fullDataRate
                 strokeStyle='#bbb'
                 value={ (model) => model.winches[id].message.WinchStatus[1].sensors.force.measure }
                 trigger={force_trigger} timestamp={winch_timestamp} />
@@ -20,15 +21,11 @@ const WinchSensors = (props) => {
                 value={ (model) => model.winches[id].message.WinchStatus[1].sensors.force.filtered }
                 trigger={force_trigger} timestamp={winch_timestamp} />
             <Series
-                noBounds
-                lineWidth="2"
-                strokeStyle='#c44'
+                noBounds strokeStyle='#b8383d'
                 value={ (model) => model.winches[id].message.WinchStatus[1].command.force_min }
                 trigger={force_trigger} timestamp={winch_timestamp} />
             <Series
-                noBounds
-                lineWidth="2"
-                strokeStyle='#c44'
+                noBounds strokeStyle='#b8383d'
                 value={ (model) => model.winches[id].message.WinchStatus[1].command.force_max }
                 trigger={force_trigger} timestamp={winch_timestamp} />
         </Chart>
