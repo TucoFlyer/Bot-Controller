@@ -124,31 +124,30 @@ pub struct FlyerSensors {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ForceTelemetry {
-    pub measure: i32,
-    pub filtered: i32,
+    pub measure: i32,           // Uncalibrated, (+) = increasing tension
+    pub filtered: f32,          // Same units, just low-pass filtered prior to limit testing
     pub counter: u32,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct WinchCommand {
-    pub velocity_target: i32,
-    pub accel_max: u32,
-    pub force_min: i32,
-    pub force_max: i32,
+    pub velocity_target: f32,   // Encoder position units per second
+    pub accel_max: f32,         // Encoder units per second per second, peak
+    pub force_min: f32,         // Uncalibrated load cell units, no negative motion below
+    pub force_max: f32,         // Uncalibrated load cell unitsNo positive motion above this filtered force value
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct WinchSensors {
     pub force: ForceTelemetry,
-    pub position: i32,
-    pub velocity: i32,
-    pub accel: i32,
+    pub position: i32,          // Integrated position in encoder units, from hardware
+    pub velocity: i32,          // Instantaneous velocity in encoder units per tick, from hardware
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct WinchMotorControl {
     pub pwm: i32,
-    pub ramp_velocity: i32,
+    pub ramp_velocity: f32,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]

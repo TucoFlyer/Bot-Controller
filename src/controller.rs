@@ -70,10 +70,10 @@ impl ControllerState {
     fn winch_control_loop(self: &mut ControllerState, id: usize, status: WinchStatus) -> WinchCommand {
 
         WinchCommand {
-            velocity_target: (self.debug_control_axis * 4096.0) as i32,
-            accel_max: 100,
-            force_min: -50000,
-            force_max: 700000,
+            velocity_target: (self.debug_control_axis * 4096.0),
+            accel_max: 100.0,
+            force_min: -50000.0,
+            force_max: 700000.0,
         }
     }
 
