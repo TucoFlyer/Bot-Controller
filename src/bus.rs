@@ -125,6 +125,7 @@ pub struct FlyerSensors {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ForceTelemetry {
     pub measure: i32,
+    pub filtered: i32,
     pub counter: u32,
 }
 
