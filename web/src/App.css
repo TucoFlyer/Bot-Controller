@@ -1,14 +1,14 @@
 .AppLogo {
-	background: #b8383d;
-	text-align: center;
+    background: #b8383d;
+    text-align: center;
 }
 
 .AppLogo img {
-	width: 80%;
-	max-width: 500px;
-	padding: 4px 0;
+    width: 80%;
+    max-width: 500px;
+    padding: 4px 0;
 }
 
 .App .nav, p, h1, h2, h3, h4, h5, h6 {
-	margin: 10px 4px;
+    margin: 10px 4px;
 }

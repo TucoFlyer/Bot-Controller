@@ -7,11 +7,11 @@ import BotConnection from './BotConnection';
 import './index.css';
 
 const root = (
-	<BotConnection>
-		<HashRouter>
-			<App/>
-		</HashRouter>
-	</BotConnection>
+    <BotConnection>
+        <HashRouter>
+            <App/>
+        </HashRouter>
+    </BotConnection>
 );
 
 ReactDOM.render(root, document.getElementById('root'));

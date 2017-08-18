@@ -65,7 +65,7 @@ export class Series extends Component {
     }
 
     onFrame(model) {
-        var value, timestamp, trigger;
+        let value, timestamp, trigger;
         try {
             // Most recent value
             value = this.props.value(model);
