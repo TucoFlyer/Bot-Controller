@@ -132,7 +132,7 @@ pub struct ForceTelemetry {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct WinchCommand {
     pub velocity_target: f32,   // Encoder position units per second
-    pub accel_max: f32,         // Encoder units per second per second, peak
+    pub accel_rate: f32,        // Encoder units per second per second for velocity ramp
     pub force_min: f32,         // Uncalibrated load cell units, no negative motion below
     pub force_max: f32,         // Uncalibrated load cell unitsNo positive motion above this filtered force value
 }
