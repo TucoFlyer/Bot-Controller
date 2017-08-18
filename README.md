@@ -6,4 +6,5 @@ Central controller software for the Tuco Flyer bot.
 * Communicates with each of the microcontroller boards via Ethernet
 * Receives SDI video via a Blackmagic card
 * Local control with an Xbox 360 joystick
-
+* Remote control with a web dashboard
+* WebSockets API
