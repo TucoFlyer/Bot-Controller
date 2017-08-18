@@ -115,9 +115,9 @@ export class Series extends Component {
         if (trigger !== null && trigger !== undefined && trigger !== this.lastTrigger) {
             this.lastTrigger = trigger;
 
-            // Normally we'd use series.append() in Smoothie, but try writing directly to avoid the 'duplicate' teimstamp detection
+            // Directly push new data instead of using series.append,
+            // we don't need or want smoothie's duplicate/reverse timestamp detection
             this.series.data.push([timestamp, value]);
-            console.log(timestamp, value, this.series.data.length);
 
             if (this.props.noBounds) {
                 // Smoothie automatically sets these according to the single
