@@ -150,8 +150,8 @@ pub struct WinchSensors {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct WinchMotorControl {
-    pub pwm: i32,                   // Final PWM value being sent to hardware
-    pub ramp_velocity: f32,         // Current velocity target for PID, including accel_rate ramp
+    pub pwm: f32,                   // Current motor PWM state, updated by the PID loop, clamped to [-1, 1]
+    pub ramp_velocity: f32,         // Current acting velocity_target due to accel_rate limit
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]

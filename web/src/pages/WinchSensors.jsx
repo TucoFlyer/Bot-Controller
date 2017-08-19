@@ -11,7 +11,7 @@ export default (props) => {
 
     return <div>
 
-        <h6>Velocity feedback &amp; target</h6>
+        <h6>Velocity feedback, target, ramp</h6>
         <Chart>
             <Series
                 value={ (model) => model.winches[id].message.WinchStatus[1].sensors.velocity }
@@ -20,9 +20,13 @@ export default (props) => {
                 strokeStyle="#b28a70"
                 value={ (model) => model.winches[id].message.WinchStatus[1].command.velocity_target }
                 trigger={tick_trigger} timestamp={winch_timestamp} />
+            <Series
+                strokeStyle="#bbb"
+                value={ (model) => model.winches[id].message.WinchStatus[1].motor.ramp_velocity }
+                trigger={tick_trigger} timestamp={winch_timestamp} />
         </Chart>
 
-        <h6>Force feedback &amp; limits</h6>
+        <h6>Force feedback, limits</h6>
         <Chart>
             <Series
                 fullDataRate
