@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, ButtonToolbar } from 'reactstrap';
+import { Nav, NavItem, NavLink } from 'reactstrap';
 import { NavLink as RRNavLink } from 'react-router-dom';
 import { Chart, Series } from '../BotChart';
 
@@ -10,24 +10,6 @@ export default (props) => {
     const winch_timestamp = (model) => model.winches[id].local_timestamp;
 
     return <div>
-
-        <h6>Velocity feedback, target, ramp</h6>
-        <Chart>
-            <Series
-                value={ () => 0 } strokeStyle='#aaa'
-                trigger={tick_trigger} timestamp={winch_timestamp} />
-            <Series
-                value={ (model) => model.winches[id].message.WinchStatus[1].sensors.velocity }
-                trigger={tick_trigger} timestamp={winch_timestamp} />
-            <Series
-                strokeStyle="#bbb"
-                value={ (model) => model.winches[id].message.WinchStatus[1].motor.ramp_velocity }
-                trigger={tick_trigger} timestamp={winch_timestamp} />
-            <Series
-                strokeStyle="#b28a70"
-                value={ (model) => model.winches[id].message.WinchStatus[1].command.velocity_target }
-                trigger={tick_trigger} timestamp={winch_timestamp} />
-        </Chart>
 
         <h6>Force feedback, limits</h6>
         <Chart>
@@ -51,16 +33,23 @@ export default (props) => {
                 trigger={force_trigger} timestamp={winch_timestamp} />
         </Chart>
 
-        <h6>PID loop state</h6>
+        <h6>Velocity feedback, target, ramp</h6>
         <Chart>
             <Series
                 value={ () => 0 } strokeStyle='#aaa'
                 trigger={tick_trigger} timestamp={winch_timestamp} />
             <Series
-                value={ (model) => model.winches[id].message.WinchStatus[1].motor.vel_err }
+                value={ (model) => model.winches[id].message.WinchStatus[1].sensors.velocity }
+                trigger={tick_trigger} timestamp={winch_timestamp} />
+            <Series
+                strokeStyle="#bbb"
+                value={ (model) => model.winches[id].message.WinchStatus[1].motor.ramp_velocity }
+                trigger={tick_trigger} timestamp={winch_timestamp} />
+            <Series
+                strokeStyle="#b28a70"
+                value={ (model) => model.winches[id].message.WinchStatus[1].command.velocity_target }
                 trigger={tick_trigger} timestamp={winch_timestamp} />
         </Chart>
-
 
         <h6>Position feedback</h6>
         <Chart>
@@ -69,19 +58,5 @@ export default (props) => {
                 trigger={tick_trigger} timestamp={winch_timestamp} />
         </Chart>
 
-        <h6>PWM command</h6>
-        <Chart>
-            <Series
-                value={ () => 0 } strokeStyle='#aaa'
-                trigger={tick_trigger} timestamp={winch_timestamp} />
-            <Series
-                value={ (model) => model.winches[id].message.WinchStatus[1].motor.pwm }
-                trigger={tick_trigger} timestamp={winch_timestamp} />
-        </Chart>
-
-
-        <ButtonToolbar>
-            <Button to={`/winch/${id}/timing`} color="info" tag={RRNavLink}> Timing check </Button>
-        </ButtonToolbar>
     </div>
 }
