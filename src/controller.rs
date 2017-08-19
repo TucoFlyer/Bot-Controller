@@ -71,11 +71,11 @@ impl ControllerState {
 
         WinchCommand {
             velocity_target: (self.debug_control_axis * 16000.0),
-            accel_rate: 4000.0,
+            accel_rate: 10000.0,
             force_min: -50000.0,
             force_max: 700000.0,
-            force_filter_param: 0.93,
-            pwm_gain_p: 0.0,
+            force_filter_param: 0.91,
+            pwm_gain_p: 4e-7,
             pwm_gain_i: 0.0,
             pwm_gain_d: 0.0,
         }
