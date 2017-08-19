@@ -131,23 +131,27 @@ pub struct ForceTelemetry {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct WinchCommand {
-    pub velocity_target: f32,   // Encoder position units per second
-    pub accel_rate: f32,        // Encoder units per second per second for velocity ramp
-    pub force_min: f32,         // Uncalibrated load cell units, no negative motion below
-    pub force_max: f32,         // Uncalibrated load cell unitsNo positive motion above this filtered force value
+    pub velocity_target: f32,       // Encoder position units per second
+    pub force_filter_param: f32,    // IIR filter parameter in range [0,1] for force sensor
+    pub force_min: f32,             // Uncalibrated load cell units, no negative motion below
+    pub force_max: f32,             // Uncalibrated load cell unitsNo positive motion above this filtered force value
+    pub accel_rate: f32,            // Encoder units per second per second for velocity ramp
+    pub pwm_gain_p: f32,            // PWM gain proportional to velocity error
+    pub pwm_gain_i: f32,            // PWM gain proportional to integral of velocity error
+    pub pwm_gain_d: f32,            // PWM gain proportional to integral of velocity error
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct WinchSensors {
     pub force: ForceTelemetry,
-    pub position: i32,          // Integrated position in encoder units, from hardware
-    pub velocity: i32,          // Instantaneous velocity in encoder units per tick, from hardware
+    pub position: i32,              // Integrated position in encoder units, from hardware
+    pub velocity: i32,              // Instantaneous velocity in encoder units per tick, from hardware
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct WinchMotorControl {
-    pub pwm: i32,
-    pub ramp_velocity: f32,
+    pub pwm: i32,                   // Final PWM value being sent to hardware
+    pub ramp_velocity: f32,         // Current velocity target for PID, including accel_rate ramp
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]

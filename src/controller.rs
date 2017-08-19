@@ -74,6 +74,10 @@ impl ControllerState {
             accel_rate: 4000.0,
             force_min: -50000.0,
             force_max: 700000.0,
+            force_filter_param: 0.10,
+            pwm_gain_p: 0.0,
+            pwm_gain_i: 0.0,
+            pwm_gain_d: 0.0,
         }
     }
 
