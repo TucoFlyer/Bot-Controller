@@ -1,6 +1,4 @@
 import React from 'react';
-import { Nav, NavItem, NavLink } from 'reactstrap';
-import { NavLink as RRNavLink } from 'react-router-dom';
 import { Chart, Series } from '../BotChart';
 
 export default (props) => {
