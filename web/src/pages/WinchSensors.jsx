@@ -11,8 +11,19 @@ export default (props) => {
 
     return <div>
 
-        <h6>Force feedback</h6>
-        <Chart height="150">
+        <h6>Velocity feedback &amp; target</h6>
+        <Chart>
+            <Series
+                value={ (model) => model.winches[id].message.WinchStatus[1].sensors.velocity }
+                trigger={tick_trigger} timestamp={winch_timestamp} />
+            <Series
+                strokeStyle="#b28a70"
+                value={ (model) => model.winches[id].message.WinchStatus[1].command.velocity_target }
+                trigger={tick_trigger} timestamp={winch_timestamp} />
+        </Chart>
+
+        <h6>Force feedback &amp; limits</h6>
+        <Chart>
             <Series
                 fullDataRate
                 strokeStyle='#bbb'
@@ -37,13 +48,6 @@ export default (props) => {
         <Chart>
             <Series
                 value={ (model) => model.winches[id].message.WinchStatus[1].sensors.position }
-                trigger={tick_trigger} timestamp={winch_timestamp} />
-        </Chart>
-
-        <h6>Velocity target</h6>
-        <Chart>
-            <Series
-                value={ (model) => model.winches[id].message.WinchStatus[1].command.velocity_target }
                 trigger={tick_trigger} timestamp={winch_timestamp} />
         </Chart>
 

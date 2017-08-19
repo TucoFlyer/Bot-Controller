@@ -145,7 +145,7 @@ pub struct WinchCommand {
 pub struct WinchSensors {
     pub force: ForceTelemetry,
     pub position: i32,              // Integrated position in encoder units, from hardware
-    pub velocity: i32,              // Instantaneous velocity in encoder units per tick, from hardware
+    pub velocity: f32,              // Calculated instantaneous velocity at each tick
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
