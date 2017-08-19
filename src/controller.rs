@@ -42,7 +42,7 @@ impl Controller {
                     self.state.flyer_sensor_update(sensors);
                 },
 
-                Message::Command( Command::ManualControlValue( ManualControlAxis::RelativeZ, v )) => {
+                Message::Command( Command::ManualControlValue( ManualControlAxis::RelativeY, v )) => {
                     self.state.debug_control_axis = v;
                 },
 
