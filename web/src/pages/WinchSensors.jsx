@@ -40,12 +40,20 @@ export default (props) => {
                 trigger={tick_trigger} timestamp={winch_timestamp} />
         </Chart>
 
-        <h6>PWM command</h6>
+        <h6>Velocity target</h6>
         <Chart>
             <Series
                 value={ (model) => model.winches[id].message.WinchStatus[1].command.velocity_target }
                 trigger={tick_trigger} timestamp={winch_timestamp} />
         </Chart>
+
+        <h6>PWM command</h6>
+        <Chart>
+            <Series
+                value={ (model) => model.winches[id].message.WinchStatus[1].motor.pwm }
+                trigger={tick_trigger} timestamp={winch_timestamp} />
+        </Chart>
+
 
         <ButtonToolbar>
             <Button to={`/winch/${id}/timing`} color="info" tag={RRNavLink}> Timing check </Button>

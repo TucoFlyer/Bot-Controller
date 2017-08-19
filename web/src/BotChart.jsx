@@ -126,6 +126,10 @@ export class Series extends Component {
                 // to the bounds at all.
                 this.series.minValue = Number.NaN;
                 this.series.maxValue = Number.NaN;
+            } else {
+                // Calculate bounds right away
+                this.series.minValue = this.series.minValue < value ? this.series.minValue : value;
+                this.series.maxValue = this.series.maxValue > value ? this.series.maxValue : value;
             }
         }
     }
