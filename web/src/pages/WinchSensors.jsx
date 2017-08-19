@@ -39,6 +39,7 @@ export default (props) => {
                 value={ () => 0 } strokeStyle='#aaa'
                 trigger={tick_trigger} timestamp={winch_timestamp} />
             <Series
+                fullDataRate
                 value={ (model) => model.winches[id].message.WinchStatus[1].sensors.velocity }
                 trigger={tick_trigger} timestamp={winch_timestamp} />
             <Series

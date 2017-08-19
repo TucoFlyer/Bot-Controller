@@ -7,7 +7,7 @@ import { BotConnection, BotModel } from './BotConnection';
 export const Chart = windowSize( class extends Component {
     // Lots of opinionated defaults for Smoothie here.
     // Some of it is to make the charts fit in with our visual theme.
-    // Disable interpolation by default; it looks cool but hinders analysis and eats CPU
+    // Disable bezier interpolation by default; it looks cool but hinders analysis and eats CPU
     render() {
         return <div>
             <SmoothieComponent
@@ -15,7 +15,7 @@ export const Chart = windowSize( class extends Component {
                 width={this.props.width || window.innerWidth}
                 height={this.props.height || 100}
                 millisPerPixel={this.props.millisPerPixel || 15}
-                interpolation={this.props.interpolation || 'step'}
+                interpolation={this.props.interpolation || 'linear'}
 
                 grid={Object.assign({
                     fillStyle: '#fff',
