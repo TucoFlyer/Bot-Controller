@@ -14,20 +14,31 @@ export default (props) => {
         <h6>Velocity feedback, target, ramp</h6>
         <Chart>
             <Series
-                value={ (model) => model.winches[id].message.WinchStatus[1].sensors.velocity }
+                value={ () => 0 } strokeStyle='#aaa'
                 trigger={tick_trigger} timestamp={winch_timestamp} />
             <Series
-                strokeStyle="#b28a70"
-                value={ (model) => model.winches[id].message.WinchStatus[1].command.velocity_target }
+                value={ (model) => model.winches[id].message.WinchStatus[1].sensors.velocity }
                 trigger={tick_trigger} timestamp={winch_timestamp} />
             <Series
                 strokeStyle="#bbb"
                 value={ (model) => model.winches[id].message.WinchStatus[1].motor.ramp_velocity }
                 trigger={tick_trigger} timestamp={winch_timestamp} />
+            <Series
+                strokeStyle="#b28a70"
+                value={ (model) => model.winches[id].message.WinchStatus[1].command.velocity_target }
+                trigger={tick_trigger} timestamp={winch_timestamp} />
         </Chart>
 
         <h6>Force feedback, limits</h6>
         <Chart>
+            <Series
+                noBounds strokeStyle='#b8383d'
+                value={ (model) => model.winches[id].message.WinchStatus[1].command.force_min }
+                trigger={force_trigger} timestamp={winch_timestamp} />
+            <Series
+                noBounds strokeStyle='#b8383d'
+                value={ (model) => model.winches[id].message.WinchStatus[1].command.force_max }
+                trigger={force_trigger} timestamp={winch_timestamp} />
             <Series
                 fullDataRate
                 strokeStyle='#bbb'
@@ -38,18 +49,13 @@ export default (props) => {
                 strokeStyle='#71b1b3'
                 value={ (model) => model.winches[id].message.WinchStatus[1].sensors.force.filtered }
                 trigger={force_trigger} timestamp={winch_timestamp} />
-            <Series
-                noBounds strokeStyle='#b8383d'
-                value={ (model) => model.winches[id].message.WinchStatus[1].command.force_min }
-                trigger={force_trigger} timestamp={winch_timestamp} />
-            <Series
-                noBounds strokeStyle='#b8383d'
-                value={ (model) => model.winches[id].message.WinchStatus[1].command.force_max }
-                trigger={force_trigger} timestamp={winch_timestamp} />
         </Chart>
 
         <h6>PID loop state</h6>
         <Chart>
+            <Series
+                value={ () => 0 } strokeStyle='#aaa'
+                trigger={tick_trigger} timestamp={winch_timestamp} />
             <Series
                 value={ (model) => model.winches[id].message.WinchStatus[1].motor.vel_err }
                 trigger={tick_trigger} timestamp={winch_timestamp} />
@@ -65,6 +71,9 @@ export default (props) => {
 
         <h6>PWM command</h6>
         <Chart>
+            <Series
+                value={ () => 0 } strokeStyle='#aaa'
+                trigger={tick_trigger} timestamp={winch_timestamp} />
             <Series
                 value={ (model) => model.winches[id].message.WinchStatus[1].motor.pwm }
                 trigger={tick_trigger} timestamp={winch_timestamp} />
