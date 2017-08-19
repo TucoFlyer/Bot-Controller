@@ -48,6 +48,14 @@ export default (props) => {
                 trigger={force_trigger} timestamp={winch_timestamp} />
         </Chart>
 
+        <h6>PID loop state</h6>
+        <Chart>
+            <Series
+                value={ (model) => model.winches[id].message.WinchStatus[1].motor.vel_err }
+                trigger={tick_trigger} timestamp={winch_timestamp} />
+        </Chart>
+
+
         <h6>Position feedback</h6>
         <Chart>
             <Series
