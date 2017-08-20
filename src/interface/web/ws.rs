@@ -26,24 +26,12 @@ pub fn start(bus: Bus, config: &WebConfig, secret_key: String) {
     });
 }
 
-struct ClientFlags {
-    alive: AtomicBool,
-    authenticated: AtomicBool,
-}
-
 // All times in milliseconds
 const MIN_BATCH_PERIOD : f64 = 2.0;
 const MAX_BATCH_PERIOD : f64 = 300.0;
 const MAX_SEND_LATENCY : f64 = 400.0;
 const PING_INTERVAL : f64 = 100.0;
 const PING_TIMEOUT : f64 = 10000.0;
-
-#[derive(Debug, Clone)]
-struct ClientFlowControl {
-    last_ping: f64,
-    last_pong: f64,
-    last_pong_latency: f64,
-}
 
 #[derive(Clone)]
 struct ClientInfo {
@@ -60,14 +48,39 @@ impl ClientInfo {
         let duration = instant.duration_since(self.time_ref);
         duration.as_secs() as f64 * 1e3 + duration.subsec_nanos() as f64 * 1e-6
     }
+}
 
+struct ClientFlags {
+    alive: AtomicBool,
+    authenticated: AtomicBool,
+}
+
+impl ClientFlags {
     fn kill(&self) {
-        self.flags.alive.store(false, Ordering::SeqCst);
+        self.alive.store(false, Ordering::SeqCst);
     }
 
     fn is_alive(&self) -> bool {
-        self.flags.alive.load(Ordering::SeqCst)
+        self.alive.load(Ordering::SeqCst)
     }
+}
+
+#[derive(Debug, Clone)]
+struct ClientFlowControl {
+    last_ping: f64,
+    last_pong: f64,
+    last_pong_latency: f64,
+}
+
+#[derive(Serialize, Clone, Debug)]
+enum MessageToClient {
+    Auth(AuthChallenge),
+    Stream(Vec<LocalTimestampedMessage>),
+}
+
+#[derive(Deserialize, Clone, Debug)]
+enum MessageToServer {
+    Auth(AuthResponse),
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -75,12 +88,12 @@ struct AuthChallenge {
     pub challenge: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Clone, Debug)]
 struct AuthResponse {
     pub authenticate: String,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Clone, Debug)]
 struct LocalTimestampedMessage {
     pub timestamp: f64,
     pub message: Message,
@@ -95,8 +108,35 @@ impl LocalTimestampedMessage {
     }
 }
 
+struct MessageSender {
+    client_flags: Arc<ClientFlags>,
+    sender: websocket::sync::sender::Writer<TcpStream>,
+}
+
+impl MessageSender {
+    fn send(self: &mut MessageSender, message: &MessageToClient) {
+        let json = serde_json::to_string(message).unwrap();
+        self.send_ws_message(&websocket::OwnedMessage::Text(json));
+    }
+
+    fn ping(self: &mut MessageSender, timestamp: f64) {
+        self.send_ws_message(&websocket::OwnedMessage::Ping(timestamp.to_string().into_bytes()));
+    }
+
+    fn close(self: &mut MessageSender) {
+        self.client_flags.kill();
+        self.send_ws_message(&websocket::OwnedMessage::Close(None));
+    }
+
+    fn send_ws_message(self: &mut MessageSender, message: &websocket::OwnedMessage) {
+        if self.sender.send_message(message).is_err() {
+            self.client_flags.kill();
+        }
+    }
+}
+
 fn handle_ws_client(client: websocket::sync::Client<TcpStream>, bus: Bus, secret_key: String) {
-    let (receiver, mut sender) = client.split().unwrap();
+    let (receiver, sender) = client.split().unwrap();
 
     let client_info = ClientInfo {
         time_ref: Instant::now(),
@@ -113,13 +153,19 @@ fn handle_ws_client(client: websocket::sync::Client<TcpStream>, bus: Bus, secret
         })),
     };
 
+    let mut sender = MessageSender {
+        client_flags: client_info.flags.clone(),
+        sender
+    };
+
+    sender.send(&MessageToClient::Auth(client_info.challenge.clone()));
+
     // Bounded queue for messages waiting to go to this client.
     // Messages can be dropped in ws_bus_receiver when this is full,
     // and they can be coalesced in ws_message_sender.
     let (rx_client_in, rx_client_out) = mpsc::sync_channel(2048);
 
     start_ws_bus_receiver(client_info.clone(), bus.receiver.add_stream(), rx_client_in);
-    send_ws_challenge(&client_info, &mut sender);
     start_ws_message_sender(client_info.clone(), rx_client_out, sender);
     handle_ws_message_loop(client_info, receiver, bus);
 }
@@ -131,7 +177,7 @@ fn start_ws_bus_receiver(client_info: ClientInfo, bus_receiver: multiqueue::Broa
                 Ok(msg) => msg,
                 _ => break,
             };
-            if !client_info.is_alive() {
+            if !client_info.flags.is_alive() {
                 break;
             }
             if rx_client_in.try_send(msg).is_err() {
@@ -141,32 +187,19 @@ fn start_ws_bus_receiver(client_info: ClientInfo, bus_receiver: multiqueue::Broa
                 break;
             }
         }
-        client_info.kill();
+        client_info.flags.kill();
     });
 }
 
-fn send_ws_challenge(client_info: &ClientInfo, sender: &mut websocket::sync::sender::Writer<TcpStream>) {
-    let json = serde_json::to_string(&client_info.challenge).unwrap();
-    let message = websocket::OwnedMessage::Text(json);
-    if sender.send_message(&message).is_err() {
-        client_info.kill();
-    }
-}
-
-fn start_ws_message_sender(client_info: ClientInfo, rx_client_out: mpsc::Receiver<TimestampedMessage>, mut sender: websocket::sync::sender::Writer<TcpStream>) {
+fn start_ws_message_sender(client_info: ClientInfo, rx_client_out: mpsc::Receiver<TimestampedMessage>, mut sender: MessageSender) {
     thread::spawn(move || {
         let convert_msg = |msg| { LocalTimestampedMessage::from(msg, &client_info) };
-        let mut send = |ws_msg| {
-            if sender.send_message(&ws_msg).is_err() {
-                client_info.kill();
-            }
-        };
 
         // WebSocket senders iterate in batches somewhat slower than our internal control loop rate,
         // and we can skip cycles to control backlog and latency.
 
         let mut batch_period = MIN_BATCH_PERIOD;
-        while client_info.is_alive() {
+        while client_info.flags.is_alive() {
 
             let now = client_info.relative_time(Instant::now());
             let flow_control = client_info.flow_control.lock().unwrap().clone();
@@ -180,14 +213,13 @@ fn start_ws_message_sender(client_info: ClientInfo, rx_client_out: mpsc::Receive
 
             if need_ping {
                 client_info.flow_control.lock().unwrap().last_ping = now;
-                send(websocket::OwnedMessage::Ping(now.to_string().into_bytes()));
+                sender.ping(now);
             }
 
             if can_send {
                 let msgvec : Vec<LocalTimestampedMessage> = rx_client_out.try_iter().map(&convert_msg).collect();
                 if !msgvec.is_empty() {
-                    let json = serde_json::to_string(&msgvec).unwrap();
-                    send(websocket::OwnedMessage::Text(json));    
+                    sender.send(&MessageToClient::Stream(msgvec));
                 }
             }
 
@@ -198,9 +230,7 @@ fn start_ws_message_sender(client_info: ClientInfo, rx_client_out: mpsc::Receive
             batch_period = batch_period.max(MIN_BATCH_PERIOD).min(MAX_BATCH_PERIOD);
             thread::sleep(Duration::from_millis(batch_period as u64));
         }
-
-        client_info.kill();
-        send(websocket::OwnedMessage::Close(None)); 
+        sender.close();
     });
 }
 
@@ -217,11 +247,11 @@ fn handle_ws_message_loop(client_info: ClientInfo, mut receiver: websocket::sync
 
             _ => (),
         };
-        if !client_info.is_alive() {
+        if !client_info.flags.is_alive() {
             break;
         }
     }
-    client_info.kill();
+    client_info.flags.kill();
 }
 
 fn handle_ws_pong(client_info: &ClientInfo, message: Vec<u8>) {
@@ -238,7 +268,7 @@ fn handle_ws_pong(client_info: &ClientInfo, message: Vec<u8>) {
         }
     }
     // Reject unparseable timestamps, reject timestamps from the future.
-    client_info.kill();
+    client_info.flags.kill();
 }
 
 fn handle_ws_text(_client_info: &ClientInfo, _bus: &Bus, message: String) {
