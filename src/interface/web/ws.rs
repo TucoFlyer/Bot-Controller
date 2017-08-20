@@ -90,7 +90,7 @@ struct AuthChallenge {
 
 #[derive(Deserialize, Clone, Debug)]
 struct AuthResponse {
-    pub authenticate: String,
+    pub digest: String,
 }
 
 #[derive(Serialize, Clone, Debug)]

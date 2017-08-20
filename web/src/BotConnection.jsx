@@ -64,26 +64,28 @@ export class BotConnection extends Component {
         const model = new BotModel();
         let time_offset = null;
         let last_timestamp = null;
-        
-        if (Array.isArray(json) && json.length > 0) {
 
-            // Update time offset from first message, restart if timestamps go backward.
-            if (json[0].timestamp < last_timestamp) {
+        if (json.Stream) {
+            const msglist = json.Stream;
+            const last_msg = msglist[msglist.length - 1];
+
+            // Update time offset from last message, restart if timestamps go backward.
+            if (last_msg.timestamp < last_timestamp) {
                 time_offset = null;
             }
-            last_timestamp = json[0].timestamp;
+            last_timestamp = last_msg.timestamp;
             if (time_offset === null) {
-                time_offset = new Date().getTime() - json[0].timestamp;
+                time_offset = new Date().getTime() - last_msg.timestamp;
             }
 
             // Annotate all messages with local timestamp, and update the model
-            for (let msg of json) {
+            for (let msg of msglist) {
                 msg.local_timestamp = time_offset + msg.timestamp;
                 model.update(msg);
             }
 
             // Event for access to a raw message burst
-            this.events.emit('messages', json);
+            this.events.emit('messages', msglist);
 
             // Batch messages into UI frames
             if (!this.frame_request) {
@@ -93,9 +95,9 @@ export class BotConnection extends Component {
                 });
             }
 
-        } else if (json.challenge) {
+        } else if (json.Auth) {
             // Authentication challenge
-            this.handleChallenge(json);
+            this.handleChallenge(json.Auth);
 
         } else {
             console.log("Unrecognized message ", json);
@@ -106,7 +108,8 @@ export class BotConnection extends Component {
         const key = this.state.key;
         if (key) {
             const digest = Base64.stringify(hmacSHA512(msg.challenge, key))
-            this.socket.send(JSON.stringify({ authenticate: digest }));
+            const json = { Auth: { digest }};
+            this.socket.send(JSON.stringify(json));
         }
     }
 
