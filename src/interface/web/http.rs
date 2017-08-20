@@ -25,7 +25,6 @@ pub fn start(config: &WebConfig) {
             Ok(iron::Response::with((iron::status::Ok, body)))
         });
 
-        // Static HTTP server thread
         iron::Iron::new(m).http(addr).expect("failed to start built-in HTTP server");
     });
 }

@@ -28,10 +28,7 @@ pub fn make_random_string() -> String {
 
 fn make_qr_code(url: &str) -> String {
     let code = QrCode::new(url).unwrap();
-    code.render::<char>()
-        .quiet_zone(false)
-        .module_dimensions(2, 1)
-        .build()
+    code.render::<char>().quiet_zone(false).module_dimensions(2, 1).build()
 }
 
 fn make_connect_string(url: &str) -> String {

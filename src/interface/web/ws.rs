@@ -10,28 +10,86 @@ use std::time::{Duration, Instant};
 use websocket;
 use interface::web::make_random_string;
 
-pub fn start(bus: Bus, config: &WebConfig, secret_key: String) {
-    let addr = config.ws_bind_addr();
-    thread::spawn(move || {
-        // Websocket acceptor thread
-        let server = websocket::sync::Server::bind(addr).expect("failed to bind to WebSocket server port");
-        for request in server.filter_map(Result::ok) {
-            let secret_key = secret_key.clone();
-            let bus = bus.clone();
-            thread::spawn(move || {
-                // Per-connection thread
-                handle_ws_client(request.accept().unwrap(), bus, secret_key);
-            });
-        }
-    });
-}
-
 // All times in milliseconds
 const MIN_BATCH_PERIOD : f64 = 2.0;
 const MAX_BATCH_PERIOD : f64 = 300.0;
 const MAX_SEND_LATENCY : f64 = 400.0;
 const PING_INTERVAL : f64 = 100.0;
 const PING_TIMEOUT : f64 = 10000.0;
+
+pub fn start(bus: Bus, config: &WebConfig, secret_key: String) {
+    let addr = config.ws_bind_addr();
+    thread::spawn(move || {
+        // Websocket acceptor thread
+
+        let server = websocket::sync::Server::bind(addr).expect("failed to bind to WebSocket server port");
+        for request in server.filter_map(Result::ok) {
+            let secret_key = secret_key.clone();
+            let bus = bus.clone();
+            thread::spawn(move || {
+                // Per-connection thread
+
+                let (receiver, sender) = request.accept().unwrap().split().unwrap();
+                let client_info = ClientInfo::new(secret_key);
+
+                // Message sender thread, with a port for queueing new outgoing messages
+                let send_port = MessageSendThread::new(client_info.clone(), sender).start();
+
+                // Start authentication by offering the client a challenge
+                send_port.direct.send(MessageToClient::Auth(client_info.challenge.clone()));
+
+                // Start the message pump that reads from 'bus' and writes to 'send_port'
+                start_ws_bus_receiver(&client_info, &bus, &send_port);
+
+                // Now handle incoming messages 
+                ws_message_loop(client_info, receiver, bus, send_port);
+            });
+        }
+    });
+}
+
+fn start_ws_bus_receiver(client_info: &ClientInfo, bus: &Bus, send_port: &MessageSendPort) {
+    // This thread just shuttles messages from the (fast, must not block)
+    // internal message bus to the per-connection batching fifo buffer.
+
+    let bus_receiver = bus.receiver.add_stream();
+    let send_port = send_port.clone();
+    let client_flags = client_info.flags.clone();
+
+    thread::spawn(move || {
+        loop {
+            let msg = match bus_receiver.recv() {
+                Ok(msg) => msg,
+                _ => break,
+            };
+            if !client_flags.is_alive() {
+                break;
+            }
+            if send_port.stream.try_send(msg).is_err() {
+                // If we lost packets here, the batching flow control mechanism has failed
+                // and we don't have anything better to do. Instead of silently losing data
+                // let's end the connection.
+                break;
+            }
+        }
+        client_flags.kill();
+    });
+}
+
+fn ws_message_loop(client_info: ClientInfo, mut receiver: websocket::sync::receiver::Reader<TcpStream>, bus: Bus, send_port: MessageSendPort) {
+    let client_flags = client_info.flags.clone();
+    let handler = MessageHandler::new(client_info, bus, send_port);
+    for message in receiver.incoming_messages() {
+        let message = match message {
+            Ok(m) => handler.handle(m),
+            Err(_) => break,
+        };
+        if !client_flags.is_alive() {
+            break;
+        }
+    }
+    client_flags.kill();
+}
 
 #[derive(Clone)]
 struct ClientInfo {
@@ -43,6 +101,23 @@ struct ClientInfo {
 }
 
 impl ClientInfo {
+    fn new(secret_key: String) -> ClientInfo {
+        ClientInfo {
+            time_ref: Instant::now(),
+            challenge: AuthChallenge { challenge: make_random_string() },
+            secret_key,
+            flags: Arc::new(ClientFlags {
+                alive: AtomicBool::new(true),
+                authenticated: AtomicBool::new(false),
+            }),
+            flow_control: Arc::new(Mutex::new(ClientFlowControl {
+                last_ping: -PING_INTERVAL,
+                last_pong: 0.0,
+                last_pong_latency: 0.0,
+            })),
+        }
+    }
+
     fn relative_time(&self, instant: Instant) -> f64 {
         // Use millisecond floats on the websocket interface, it's convenient for Javascript
         let duration = instant.duration_since(self.time_ref);
@@ -74,8 +149,10 @@ struct ClientFlowControl {
 
 #[derive(Serialize, Clone, Debug)]
 enum MessageToClient {
-    Auth(AuthChallenge),
     Stream(Vec<LocalTimestampedMessage>),
+    Auth(AuthChallenge),
+    AuthStatus(bool),
+    Error(String),    
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -108,169 +185,162 @@ impl LocalTimestampedMessage {
     }
 }
 
-struct MessageSender {
-    client_flags: Arc<ClientFlags>,
-    sender: websocket::sync::sender::Writer<TcpStream>,
+#[derive(Clone, Debug)]
+struct MessageSendPort {
+    pub stream: mpsc::SyncSender<TimestampedMessage>,
+    pub direct: mpsc::SyncSender<MessageToClient>,
 }
 
-impl MessageSender {
-    fn send(self: &mut MessageSender, message: &MessageToClient) {
+struct MessageWriter {
+    client_flags: Arc<ClientFlags>,
+    writer: websocket::sync::sender::Writer<TcpStream>,
+}
+
+impl MessageWriter {
+    fn send(self: &mut MessageWriter, message: &MessageToClient) {
         let json = serde_json::to_string(message).unwrap();
         self.send_ws_message(&websocket::OwnedMessage::Text(json));
     }
 
-    fn ping(self: &mut MessageSender, timestamp: f64) {
+    fn ping(self: &mut MessageWriter, timestamp: f64) {
         self.send_ws_message(&websocket::OwnedMessage::Ping(timestamp.to_string().into_bytes()));
     }
 
-    fn close(self: &mut MessageSender) {
+    fn close(self: &mut MessageWriter) {
         self.client_flags.kill();
         self.send_ws_message(&websocket::OwnedMessage::Close(None));
     }
 
-    fn send_ws_message(self: &mut MessageSender, message: &websocket::OwnedMessage) {
-        if self.sender.send_message(message).is_err() {
+    fn send_ws_message(self: &mut MessageWriter, message: &websocket::OwnedMessage) {
+        if self.writer.send_message(message).is_err() {
             self.client_flags.kill();
         }
     }
 }
 
-fn handle_ws_client(client: websocket::sync::Client<TcpStream>, bus: Bus, secret_key: String) {
-    let (receiver, sender) = client.split().unwrap();
-
-    let client_info = ClientInfo {
-        time_ref: Instant::now(),
-        challenge: AuthChallenge { challenge: make_random_string() },
-        secret_key,
-        flags: Arc::new(ClientFlags {
-            alive: AtomicBool::new(true),
-            authenticated: AtomicBool::new(false),
-        }),
-        flow_control: Arc::new(Mutex::new(ClientFlowControl {
-            last_ping: -PING_INTERVAL,
-            last_pong: 0.0,
-            last_pong_latency: 0.0,
-        })),
-    };
-
-    let mut sender = MessageSender {
-        client_flags: client_info.flags.clone(),
-        sender
-    };
-
-    sender.send(&MessageToClient::Auth(client_info.challenge.clone()));
-
-    // Bounded queue for messages waiting to go to this client.
-    // Messages can be dropped in ws_bus_receiver when this is full,
-    // and they can be coalesced in ws_message_sender.
-    let (rx_client_in, rx_client_out) = mpsc::sync_channel(2048);
-
-    start_ws_bus_receiver(client_info.clone(), bus.receiver.add_stream(), rx_client_in);
-    start_ws_message_sender(client_info.clone(), rx_client_out, sender);
-    handle_ws_message_loop(client_info, receiver, bus);
+/// The message sender is the only thread that can write directly to the WebSocket.
+/// It mostly batches together stream messages, but we also provide a small channel
+/// for sending direct messages outside the stream.
+struct MessageSendThread {
+    pub port: MessageSendPort,
+    writer: MessageWriter,
+    client_info: ClientInfo,
+    stream_reader: mpsc::Receiver<TimestampedMessage>,
+    direct_reader: mpsc::Receiver<MessageToClient>,
 }
 
-fn start_ws_bus_receiver(client_info: ClientInfo, bus_receiver: multiqueue::BroadcastReceiver<TimestampedMessage>, rx_client_in: mpsc::SyncSender<TimestampedMessage>) {
-    thread::spawn(move || {
-        loop {
-            let msg = match bus_receiver.recv() {
-                Ok(msg) => msg,
-                _ => break,
-            };
-            if !client_info.flags.is_alive() {
-                break;
-            }
-            if rx_client_in.try_send(msg).is_err() {
-                // If we lost packets here, the batching flow control mechanism has failed
-                // and we don't have anything better to do. Instead of silently losing data
-                // let's end the connection.
-                break;
-            }
+impl MessageSendThread {
+    fn new(client_info: ClientInfo, writer: websocket::sync::sender::Writer<TcpStream>) -> MessageSendThread {
+        let (stream, stream_reader) = mpsc::sync_channel(2048);
+        let (direct, direct_reader) = mpsc::sync_channel(32);
+        let client_flags = client_info.flags.clone();
+        MessageSendThread {
+            port: MessageSendPort { stream, direct },
+            writer: MessageWriter { client_flags, writer },
+            client_info,
+            stream_reader,
+            direct_reader,
         }
-        client_info.flags.kill();
-    });
-}
+    }
 
-fn start_ws_message_sender(client_info: ClientInfo, rx_client_out: mpsc::Receiver<TimestampedMessage>, mut sender: MessageSender) {
-    thread::spawn(move || {
-        let convert_msg = |msg| { LocalTimestampedMessage::from(msg, &client_info) };
+    fn start(mut self: MessageSendThread) -> MessageSendPort {
+        let port = self.port.clone();
+        thread::spawn(move || {
+            // WebSocket senders iterate in batches somewhat slower than our internal control loop rate,
+            // and we can skip cycles to control backlog and latency.
 
-        // WebSocket senders iterate in batches somewhat slower than our internal control loop rate,
-        // and we can skip cycles to control backlog and latency.
+            let mut batch_period = MIN_BATCH_PERIOD;
+            while self.client_info.flags.is_alive() {
 
-        let mut batch_period = MIN_BATCH_PERIOD;
-        while client_info.flags.is_alive() {
+                let now = self.client_info.relative_time(Instant::now());
+                let flow_control = self.client_info.flow_control.lock().unwrap().clone();
+                let need_ping = (now - flow_control.last_ping) >= PING_INTERVAL;
+                let can_send = (now - flow_control.last_pong) <= MAX_SEND_LATENCY;
+                let timed_out = (now - flow_control.last_pong) >= PING_TIMEOUT;
 
-            let now = client_info.relative_time(Instant::now());
-            let flow_control = client_info.flow_control.lock().unwrap().clone();
-            let need_ping = (now - flow_control.last_ping) >= PING_INTERVAL;
-            let can_send = (now - flow_control.last_pong) <= MAX_SEND_LATENCY;
-            let timed_out = (now - flow_control.last_pong) >= PING_TIMEOUT;
-
-            if timed_out {
-                break;
-            }
-
-            if need_ping {
-                client_info.flow_control.lock().unwrap().last_ping = now;
-                sender.ping(now);
-            }
-
-            if can_send {
-                let msgvec : Vec<LocalTimestampedMessage> = rx_client_out.try_iter().map(&convert_msg).collect();
-                if !msgvec.is_empty() {
-                    sender.send(&MessageToClient::Stream(msgvec));
+                if timed_out {
+                    break;
                 }
-            }
 
-            // Base this connection's batch size on its filtered latency
-            let filter_rate = 0.03;
-            let filter_target = flow_control.last_pong_latency * 1.8;
-            batch_period += filter_rate * (filter_target - batch_period);
-            batch_period = batch_period.max(MIN_BATCH_PERIOD).min(MAX_BATCH_PERIOD);
-            thread::sleep(Duration::from_millis(batch_period as u64));
+                if need_ping {
+                    self.client_info.flow_control.lock().unwrap().last_ping = now;
+                    self.writer.ping(now);
+                }
+
+                if can_send {
+                    self.send_all_direct();
+                    self.send_stream_batch();
+                }
+
+                // Base this connection's batch size on its filtered latency
+                let filter_rate = 0.03;
+                let filter_target = flow_control.last_pong_latency * 1.8;
+                batch_period += filter_rate * (filter_target - batch_period);
+                batch_period = batch_period.max(MIN_BATCH_PERIOD).min(MAX_BATCH_PERIOD);
+                thread::sleep(Duration::from_millis(batch_period as u64));
+            }
+            self.writer.close();
+        });
+        port
+    }
+
+    fn send_all_direct(self: &mut MessageSendThread) {
+        for msg in self.direct_reader.try_iter() {
+            self.writer.send(&msg);
         }
-        sender.close();
-    });
+    }
+
+    fn send_stream_batch(self: &mut MessageSendThread) {
+        let stream : Vec<LocalTimestampedMessage> = {
+            let iter = self.stream_reader.try_iter();
+            let iter = iter.map(|msg| {
+                LocalTimestampedMessage::from(msg, &self.client_info)
+            });
+            iter.collect()
+        };
+        if !stream.is_empty() {
+            self.writer.send(&MessageToClient::Stream(stream));
+        }
+    }
 }
 
-fn handle_ws_message_loop(client_info: ClientInfo, mut receiver: websocket::sync::receiver::Reader<TcpStream>, bus: Bus) {
-    for message in receiver.incoming_messages() {
-        let message = match message {
-            Ok(m) => m,
-            Err(_) => break,
-        };
+struct MessageHandler {
+    client_info: ClientInfo,
+    bus: Bus,
+    send_port: MessageSendPort,
+}
+
+impl MessageHandler {
+    fn new(client_info: ClientInfo, bus: Bus, send_port: MessageSendPort) -> MessageHandler {
+        MessageHandler { client_info, bus, send_port }
+    }
+
+    fn handle(self: &MessageHandler, message: websocket::OwnedMessage) {
         match message {
-
-            websocket::OwnedMessage::Pong(m) => handle_ws_pong(&client_info, m),
-            websocket::OwnedMessage::Text(m) => handle_ws_text(&client_info, &bus, m),
-
+            websocket::OwnedMessage::Pong(m) => self.handle_pong(m),
+            websocket::OwnedMessage::Text(m) => self.handle_json(m),
             _ => (),
         };
-        if !client_info.flags.is_alive() {
-            break;
-        }
     }
-    client_info.flags.kill();
-}
 
-fn handle_ws_pong(client_info: &ClientInfo, message: Vec<u8>) {
-    if let Ok(message) = String::from_utf8(message) {
-        if let Ok(timestamp) = message.parse::<f64>() {
-            let now = client_info.relative_time(Instant::now());
-            if let Ok(mut flow_control) = client_info.flow_control.lock() {
-                if timestamp <= flow_control.last_ping + 0.01 {
-                    flow_control.last_pong = timestamp;
-                    flow_control.last_pong_latency = now - timestamp;
-                    return;
+    fn handle_pong(self: &MessageHandler, message: Vec<u8>) {
+        if let Ok(message) = String::from_utf8(message) {
+            if let Ok(timestamp) = message.parse::<f64>() {
+                let now = self.client_info.relative_time(Instant::now());
+                if let Ok(mut flow_control) = self.client_info.flow_control.lock() {
+                    if timestamp <= flow_control.last_ping + 0.01 {
+                        flow_control.last_pong = timestamp;
+                        flow_control.last_pong_latency = now - timestamp;
+                        return;
+                    }
                 }
             }
         }
+        // Reject unparseable timestamps, reject timestamps from the future.
+        self.client_info.flags.kill();
     }
-    // Reject unparseable timestamps, reject timestamps from the future.
-    client_info.flags.kill();
-}
 
-fn handle_ws_text(_client_info: &ClientInfo, _bus: &Bus, message: String) {
-    println!("ws msg text {:?}", message);
+    fn handle_json(self: &MessageHandler, message: String) {
+        println!("ws msg text yep {:?}", message);
+    }
 }
