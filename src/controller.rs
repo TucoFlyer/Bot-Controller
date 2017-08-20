@@ -3,9 +3,6 @@
 
 use bus::{Bus, Message, Command, FlyerSensors, WinchStatus, WinchCommand, ManualControlAxis};
 use std::thread;
-use std::time::Duration;
-use std::sync::mpsc;
-use multiqueue;
 use config::BotConfig;
 use botcomm::BotSender;
 
@@ -13,6 +10,7 @@ use botcomm::BotSender;
 struct Controller {
     bus: Bus,
     bot_sender: BotSender,
+    config: BotConfig,
     state: ControllerState,
 }
 
@@ -22,6 +20,7 @@ impl Controller {
         Controller {
             bus,
             bot_sender,
+            config,
             state: ControllerState {
                 debug_control_axis: 0.0,                
             }
@@ -29,12 +28,13 @@ impl Controller {
     }
 
     fn poll(self: &mut Controller) {
-        if let Ok(timestampedMessage) = self.bus.receiver.recv() {
-            match timestampedMessage.message {
+        if let Ok(ts_msg) = self.bus.receiver.recv() {
+            match ts_msg.message {
 
                 Message::WinchStatus(id, status) => {
-                    // Each winch status update results in a command packet to close the loop
-                    self.bot_sender.winch_command(id, self.state.winch_control_loop(id, status));
+                    // Each winch status update results in a command packet to close the loop.
+                    // Ignore UDP send failures, as we'll have better ways to detect winch comm errors.
+                    drop(self.bot_sender.winch_command(id, self.state.winch_control_loop(id, status)));
                 },
 
                 Message::FlyerSensors(sensors) => {
@@ -63,11 +63,11 @@ struct ControllerState {
 
 impl ControllerState {
 
-    fn flyer_sensor_update(self: &mut ControllerState , sensors: FlyerSensors) {
+    fn flyer_sensor_update(self: &mut ControllerState , _sensors: FlyerSensors) {
         // collision avoidance and navigation feedback here, probably no direct packet sends as a result?
     }
 
-    fn winch_control_loop(self: &mut ControllerState, id: usize, status: WinchStatus) -> WinchCommand {
+    fn winch_control_loop(self: &mut ControllerState, _id: usize, _status: WinchStatus) -> WinchCommand {
 
         WinchCommand {
             velocity_target: (self.debug_control_axis * 16000.0),

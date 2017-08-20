@@ -2,7 +2,7 @@
 //! Runs on the main thread.
 
 use std::{thread, time};
-use bus::{Bus, Message};
+use bus::Bus;
 
 
 pub fn run(_bus: Bus) {

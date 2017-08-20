@@ -1,64 +1,17 @@
-//! Bot control via websockets
-
 use bus::{Message, TimestampedMessage, Bus};
 use config::WebConfig;
-use iron;
-use mount::Mount;
 use multiqueue;
-use qrcode::QrCode;
-use rand::os::OsRng;
-use rand::Rng;
 use serde_json;
-use staticfile::Static;
-use std::fs::File;
-use std::io::prelude::*;
-use std::io;
-use std::net::{TcpStream, IpAddr, Ipv4Addr, SocketAddr};
+use std::net::TcpStream;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 use websocket;
+use interface::web::make_random_string;
 
-pub fn start(bus: Bus, config: WebConfig) {
-    let secret_key = make_random_string();
-    let url = http_uri(&config, &secret_key);
-    let connect_string = make_connect_string(&url);
-
-    start_http(&config);
-    start_ws(bus, &config, secret_key);
-
-    store_connect_string(&connect_string, &config.connection_file_path).expect("can't write to connection info file");
-    show_connect_string(&connect_string);
-}
-
-fn all_if_addr() -> IpAddr {
-    // Bind to all interfaces; we need at least localhost and the LAN
-    IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0))
-}
-
-fn start_http(config: &WebConfig) {
-    let addr = SocketAddr::new(all_if_addr(), config.http_addr.port());
-    let mut m = Mount::new();
-
-    m.mount("/", Static::new(&config.web_root_path));
-
-    m.mount("/ws", {
-        let body = json!({ "uri": ws_uri(config) });
-        move |_req: &mut iron::Request| {
-            let body = serde_json::to_string(&body).unwrap();
-            Ok(iron::Response::with((iron::status::Ok, body)))
-        }
-    });
-
-    thread::spawn(move || {
-        // Static HTTP server thread
-        iron::Iron::new(m).http(addr).expect("failed to start built-in HTTP server");
-    });
-}
-
-fn start_ws(bus: Bus, config: &WebConfig, secret_key: String) {
-    let addr = SocketAddr::new(all_if_addr(), config.ws_addr.port());
+pub fn start(bus: Bus, config: &WebConfig, secret_key: String) {
+    let addr = config.ws_bind_addr();
     thread::spawn(move || {
         // Websocket acceptor thread
         let server = websocket::sync::Server::bind(addr).expect("failed to bind to WebSocket server port");
@@ -71,40 +24,6 @@ fn start_ws(bus: Bus, config: &WebConfig, secret_key: String) {
             });
         }
     });
-}
-
-fn http_uri(config: &WebConfig, secret_key: &str) -> String {
-    format!("http://{}/#?k={}", config.http_addr, secret_key)
-}
-
-fn ws_uri(config: &WebConfig) -> String {
-    format!("ws://{}", config.ws_addr)
-}
-
-fn make_random_string() -> String {
-    let mut rng = OsRng::new().expect("can't access the OS random number generator");
-    rng.gen_ascii_chars().take(30).collect()
-}
-
-fn make_qr_code(url: &str) -> String {
-    let code = QrCode::new(url).unwrap();
-    code.render::<char>()
-        .quiet_zone(false)
-        .module_dimensions(2, 1)
-        .build()
-}
-
-fn make_connect_string(url: &str) -> String {
-    format!("{}\n\n{}\n", url, make_qr_code(url))
-}
-
-fn store_connect_string(s: &str, path: &str) -> io::Result<()> {
-    let mut f = File::create(path)?;
-    writeln!(f, "{}", s.replace("\n", "\r\n"))
-}
-
-fn show_connect_string(s: &str) {
-    println!("\n\n\n{}\n\n", s);
 }
 
 struct ClientFlags {
@@ -130,6 +49,7 @@ struct ClientFlowControl {
 struct ClientInfo {
     time_ref: Instant,
     challenge: AuthChallenge,
+    secret_key: String,
     flags: Arc<ClientFlags>,
     flow_control: Arc<Mutex<ClientFlowControl>>,
 }
@@ -176,11 +96,12 @@ impl LocalTimestampedMessage {
 }
 
 fn handle_ws_client(client: websocket::sync::Client<TcpStream>, bus: Bus, secret_key: String) {
-    let (mut receiver, mut sender) = client.split().unwrap();
+    let (receiver, mut sender) = client.split().unwrap();
 
     let client_info = ClientInfo {
         time_ref: Instant::now(),
         challenge: AuthChallenge { challenge: make_random_string() },
+        secret_key,
         flags: Arc::new(ClientFlags {
             alive: AtomicBool::new(true),
             authenticated: AtomicBool::new(false),
@@ -205,8 +126,6 @@ fn handle_ws_client(client: websocket::sync::Client<TcpStream>, bus: Bus, secret
 
 fn start_ws_bus_receiver(client_info: ClientInfo, bus_receiver: multiqueue::BroadcastReceiver<TimestampedMessage>, rx_client_in: mpsc::SyncSender<TimestampedMessage>) {
     thread::spawn(move || {
-        let mut lost_packets : usize = 0;
-
         loop {
             let msg = match bus_receiver.recv() {
                 Ok(msg) => msg,
@@ -226,14 +145,6 @@ fn start_ws_bus_receiver(client_info: ClientInfo, bus_receiver: multiqueue::Broa
     });
 }
 
-fn send_lost_packet_marker(client_info: &ClientInfo, sender: &mut websocket::sync::sender::Writer<TcpStream>) {
-    let json = serde_json::to_string(&client_info.challenge).unwrap();
-    let message = websocket::OwnedMessage::Text(json);
-    if sender.send_message(&message).is_err() {
-        client_info.kill();
-    }
-}
-
 fn send_ws_challenge(client_info: &ClientInfo, sender: &mut websocket::sync::sender::Writer<TcpStream>) {
     let json = serde_json::to_string(&client_info.challenge).unwrap();
     let message = websocket::OwnedMessage::Text(json);
@@ -244,7 +155,7 @@ fn send_ws_challenge(client_info: &ClientInfo, sender: &mut websocket::sync::sen
 
 fn start_ws_message_sender(client_info: ClientInfo, rx_client_out: mpsc::Receiver<TimestampedMessage>, mut sender: websocket::sync::sender::Writer<TcpStream>) {
     thread::spawn(move || {
-        let convertMsg = |msg| { LocalTimestampedMessage::from(msg, &client_info) };
+        let convert_msg = |msg| { LocalTimestampedMessage::from(msg, &client_info) };
         let mut send = |ws_msg| {
             if sender.send_message(&ws_msg).is_err() {
                 client_info.kill();
@@ -273,7 +184,7 @@ fn start_ws_message_sender(client_info: ClientInfo, rx_client_out: mpsc::Receive
             }
 
             if can_send {
-                let mut msgvec : Vec<LocalTimestampedMessage> = rx_client_out.try_iter().map(&convertMsg).collect();
+                let msgvec : Vec<LocalTimestampedMessage> = rx_client_out.try_iter().map(&convert_msg).collect();
                 if !msgvec.is_empty() {
                     let json = serde_json::to_string(&msgvec).unwrap();
                     send(websocket::OwnedMessage::Text(json));    
@@ -297,11 +208,11 @@ fn handle_ws_message_loop(client_info: ClientInfo, mut receiver: websocket::sync
     for message in receiver.incoming_messages() {
         let message = match message {
             Ok(m) => m,
-            Err(m) => break,
+            Err(_) => break,
         };
         match message {
 
-            websocket::OwnedMessage::Pong(m) => handle_ws_pong(&client_info, &bus, m),
+            websocket::OwnedMessage::Pong(m) => handle_ws_pong(&client_info, m),
             websocket::OwnedMessage::Text(m) => handle_ws_text(&client_info, &bus, m),
 
             _ => (),
@@ -313,7 +224,7 @@ fn handle_ws_message_loop(client_info: ClientInfo, mut receiver: websocket::sync
     client_info.kill();
 }
 
-fn handle_ws_pong(client_info: &ClientInfo, bus: &Bus, message: Vec<u8>) {
+fn handle_ws_pong(client_info: &ClientInfo, message: Vec<u8>) {
     if let Ok(message) = String::from_utf8(message) {
         if let Ok(timestamp) = message.parse::<f64>() {
             let now = client_info.relative_time(Instant::now());
@@ -330,6 +241,6 @@ fn handle_ws_pong(client_info: &ClientInfo, bus: &Bus, message: Vec<u8>) {
     client_info.kill();
 }
 
-fn handle_ws_text(client_info: &ClientInfo, bus: &Bus, message: String) {
+fn handle_ws_text(_client_info: &ClientInfo, _bus: &Bus, message: String) {
     println!("ws msg text {:?}", message);
 }
