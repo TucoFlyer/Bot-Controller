@@ -3,6 +3,7 @@ use config::WebConfig;
 use multiqueue;
 use serde_json;
 use std::net::TcpStream;
+use std::error::Error;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
@@ -16,6 +17,19 @@ const MAX_BATCH_PERIOD : f64 = 300.0;
 const MAX_SEND_LATENCY : f64 = 400.0;
 const PING_INTERVAL : f64 = 100.0;
 const PING_TIMEOUT : f64 = 10000.0;
+
+#[derive(Serialize, Clone, Debug)]
+enum MessageToClient {
+    Stream(Vec<LocalTimestampedMessage>),
+    Auth(AuthChallenge),
+    Authenticated,
+    Error(ClientError),    
+}
+
+#[derive(Deserialize, Clone, Debug)]
+enum MessageToServer {
+    Auth(AuthResponse),
+}
 
 pub fn start(bus: Bus, config: &WebConfig, secret_key: String) {
     let addr = config.ws_bind_addr();
@@ -80,7 +94,7 @@ fn ws_message_loop(client_info: ClientInfo, mut receiver: websocket::sync::recei
     let client_flags = client_info.flags.clone();
     let handler = MessageHandler::new(client_info, bus, send_port);
     for message in receiver.incoming_messages() {
-        let message = match message {
+        match message {
             Ok(m) => handler.handle(m),
             Err(_) => break,
         };
@@ -148,16 +162,17 @@ struct ClientFlowControl {
 }
 
 #[derive(Serialize, Clone, Debug)]
-enum MessageToClient {
-    Stream(Vec<LocalTimestampedMessage>),
-    Auth(AuthChallenge),
-    AuthStatus(bool),
-    Error(String),    
+struct ClientError {
+    code: ErrorCode,
+    message: Option<String>,
 }
 
-#[derive(Deserialize, Clone, Debug)]
-enum MessageToServer {
-    Auth(AuthResponse),
+type ClientResult<T> = Result<T, ClientError>;
+
+#[derive(Serialize, Clone, Debug)]
+enum ErrorCode {
+    ParseFailed,
+    AuthIncorrect,
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -318,7 +333,10 @@ impl MessageHandler {
     fn handle(self: &MessageHandler, message: websocket::OwnedMessage) {
         match message {
             websocket::OwnedMessage::Pong(m) => self.handle_pong(m),
-            websocket::OwnedMessage::Text(m) => self.handle_json(m),
+            websocket::OwnedMessage::Text(m) =>
+                if let Err(e) = self.handle_json(m) {
+                    drop(self.send_port.direct.send(MessageToClient::Error(e)));
+                },
             _ => (),
         };
     }
@@ -340,7 +358,26 @@ impl MessageHandler {
         self.client_info.flags.kill();
     }
 
-    fn handle_json(self: &MessageHandler, message: String) {
-        println!("ws msg text yep {:?}", message);
+    fn handle_json(self: &MessageHandler, message: String) -> ClientResult<()> {
+        match serde_json::from_str(&message) {
+            Ok(message) => self.handle_message(message),
+            Err(err) => Err(ClientError {
+                code: ErrorCode::ParseFailed,
+                message: Some(format!("{}", err)),
+            })
+        }
+    }
+
+    fn handle_message(self: &MessageHandler, message: MessageToServer) -> ClientResult<()> {
+        match message {
+            MessageToServer::Auth(r) => self.try_authenticate(r),
+        }
+    }
+
+    fn try_authenticate(self: &MessageHandler, response: AuthResponse) -> ClientResult<()> {
+        Err(ClientError {
+            code: ErrorCode::AuthIncorrect,
+            message: None,
+        })
     }
 }

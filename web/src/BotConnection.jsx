@@ -95,6 +95,10 @@ export class BotConnection extends Component {
                 });
             }
 
+        } else if (json.Error) {
+            // The server can generate errors which we'll pass on as exceptions
+            throw json.Error;
+
         } else if (json.Auth) {
             // Authentication challenge
             this.handleChallenge(json.Auth);
