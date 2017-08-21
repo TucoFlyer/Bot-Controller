@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { BotConnection } from '../BotConnection';
+import JSONPretty from 'react-json-pretty';
 import './NetworkConsole.css';
 
 export default class NetworkConsole extends Component {
@@ -40,14 +41,18 @@ export default class NetworkConsole extends Component {
         this.context.botConnection.events.removeListener('log', this.handleLog);
     }
 
-    handleLog = (msg) => {
+    addToLog = (element) => {
         this.msgId += 1;
         const log = [
             <div key={`msg-${this.msgId}`}>
-                { JSON.stringify(msg) }
+                { element }
             </div>
         ].concat(this.state.log.slice(this.maxLogLines));
         this.setState({ log });
+    }
+
+    handleLog = (msg, className) => {
+        this.addToLog(<JSONPretty json={msg} />);
     }
 
     handleChangeEntry = (event) => {
@@ -55,8 +60,11 @@ export default class NetworkConsole extends Component {
     }
 
     handleSubmit = (event) => {
-        this.context.botConnection.socket.send(this.state.entry);
-        this.setState({ entry: "" });
+        const msg = this.state.entry;
+        setTimeout(() => { document.execCommand('selectall', null, false); });
         event.preventDefault();
+
+        this.context.botConnection.socket.send(msg);
+        this.addToLog(<pre class="sent"> {msg} </pre>);
     }
 }

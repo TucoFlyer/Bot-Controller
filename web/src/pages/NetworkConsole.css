@@ -1,3 +1,13 @@
 .NetworkConsole input {
 	width: 100%;
 }
+
+.NetworkConsole pre {
+	margin: 0;
+	border-bottom: 1px solid #555;
+}
+
+.NetworkConsole .sent {
+	padding: 0 2em;
+}
+
