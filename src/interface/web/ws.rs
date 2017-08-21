@@ -20,7 +20,7 @@ const PING_TIMEOUT : f64 = 10000.0;
 enum MessageToClient {
     Stream(Vec<LocalTimestampedMessage>),
     Auth(AuthChallenge),
-    Authenticated,
+    AuthStatus(bool),
     Error(ClientError),    
 }
 
@@ -173,12 +173,11 @@ struct ClientError {
     message: Option<String>,
 }
 
-type ClientResult<T> = Result<T, ClientError>;
+type ClientResult = Result<Option<MessageToClient>, ClientError>;
 
 #[derive(Serialize, Clone, Debug)]
 enum ErrorCode {
     ParseFailed,
-    AuthIncorrect,
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -339,10 +338,11 @@ impl MessageHandler {
     fn handle(self: &MessageHandler, message: websocket::OwnedMessage) {
         match message {
             websocket::OwnedMessage::Pong(m) => self.handle_pong(m),
-            websocket::OwnedMessage::Text(m) =>
-                if let Err(e) = self.handle_json(m) {
-                    drop(self.send_port.direct.send(MessageToClient::Error(e)));
-                },
+            websocket::OwnedMessage::Text(m) => match self.handle_json(m) {
+                Err(e) => drop(self.send_port.direct.send(MessageToClient::Error(e))),
+                Ok(Some(m)) => drop(self.send_port.direct.send(m)),
+                Ok(None) => (),
+            },
             _ => (),
         };
     }
@@ -364,7 +364,7 @@ impl MessageHandler {
         self.client_info.flags.kill();
     }
 
-    fn handle_json(self: &MessageHandler, message: String) -> ClientResult<()> {
+    fn handle_json(self: &MessageHandler, message: String) -> ClientResult {
         match serde_json::from_str(&message) {
             Ok(message) => self.handle_message(message),
             Err(err) => Err(ClientError {
@@ -374,24 +374,19 @@ impl MessageHandler {
         }
     }
 
-    fn handle_message(self: &MessageHandler, message: MessageToServer) -> ClientResult<()> {
+    fn handle_message(self: &MessageHandler, message: MessageToServer) -> ClientResult {
         match message {
             MessageToServer::Auth(r) => self.try_authenticate(r),
         }
     }
 
-    fn try_authenticate(self: &MessageHandler, response: AuthResponse) -> ClientResult<()> {
+    fn try_authenticate(self: &MessageHandler, response: AuthResponse) -> ClientResult {
         let challenge = &self.client_info.challenge.challenge;
         let key = &self.client_info.secret_key;
-        if auth::authenticate(challenge, key, &response.digest) {
+        let status = auth::authenticate(challenge, key, &response.digest);
+        if status {
             self.client_info.flags.authenticate();
-            drop(self.send_port.direct.send(MessageToClient::Authenticated));
-            Ok(())
-        } else {
-            Err(ClientError {
-                code: ErrorCode::AuthIncorrect,
-                message: None,
-            })
         }
+        Ok(Some(MessageToClient::AuthStatus(status)))
     }
 }
