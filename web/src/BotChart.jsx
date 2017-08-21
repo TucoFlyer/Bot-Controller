@@ -70,10 +70,10 @@ export class Series extends Component {
 
         if (this.props.fullDataRate) {
             // Store data for each message in a batch potentially (more detail)
-            this.context.botConnection.events.on('messages', this.onMessages);
+            this.context.botConnection.events.on('messages', this.handleMessages);
         } else {
             // Only evaluate the model once per frame (smoother)
-            this.context.botConnection.events.on('frame', this.onFrame);
+            this.context.botConnection.events.on('frame', this.handleFrame);
         }
     }
 
@@ -81,15 +81,15 @@ export class Series extends Component {
         if (this.context.chart.reactSmoothie) {
             this.context.chart.reactSmoothie.smoothie.removeTimeSeries(this.series);
         }
-        this.context.botConnection.events.removeListener('messages', this.onMessages);
-        this.context.botConnection.events.removeListener('frame', this.onFrame);
+        this.context.botConnection.events.removeListener('messages', this.handleMessages);
+        this.context.botConnection.events.removeListener('frame', this.handleFrame);
     }
 
-    onFrame = (model) => {
+    handleFrame = (model) => {
         this.updateFromModel(model);
     }
 
-    onMessages = (messages) => {
+    handleMessages = (messages) => {
         let model = new BotModel();
         for (let msg of messages) {
             model.update(msg);

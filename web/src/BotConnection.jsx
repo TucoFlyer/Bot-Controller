@@ -58,7 +58,7 @@ export class BotConnection extends Component {
         });
     }
 
-    onSocketMessage = (evt) => {
+    handleSocketMessage = (evt) => {
         const json = JSON.parse(evt.data);
         const model = new BotModel();
         let time_offset = null;
@@ -96,29 +96,33 @@ export class BotConnection extends Component {
 
         } else if (json.Error !== undefined) {
             // The server can generate errors which we'll pass on as exceptions
+            this.events.emit('log', json);
             throw json.Error;
 
         } else if (json.Auth !== undefined) {
             // Authentication challenge
+            this.events.emit('log', json);
             this.authenticate(json.Auth);
 
         } else if (json.AuthStatus !== undefined) {
             // True or false, set logged-in state
+            this.events.emit('log', json);
             this.setState({ authenticated: json.AuthStatus === true });
 
         } else {
+            this.events.emit('log', json);
             console.log("Unrecognized message ", json);
         }
     }
 
-    onSocketOpen = () => {
+    handleSocketOpen = () => {
         this.setState({
             authenticated: false,
             connected: true,
         });
     }
 
-    onSocketClose = () => {
+    handleSocketClose = () => {
         this.setState({
             authenticated: false,
             connected: false,
@@ -146,17 +150,17 @@ export class BotConnection extends Component {
         // Look up the websocket URI then keep connected
         this.getWebsocketInfo().then((ws) => {
             this.socket = new ReconnectingWebSocket(ws.uri, undefined, {connectionTimeout: 1000});
-            this.socket.addEventListener('message', this.onSocketMessage);
-            this.socket.addEventListener('open', this.onSocketOpen);
-            this.socket.addEventListener('close', this.onSocketClose);
+            this.socket.addEventListener('message', this.handleSocketMessage);
+            this.socket.addEventListener('open', this.handleSocketOpen);
+            this.socket.addEventListener('close', this.handleSocketClose);
         });
     }
 
     componentWillUnmount() {
         if (this.socket) {
-            this.socket.removeEventListener('message', this.onSocketMessage);
-            this.socket.removeEventListener('open', this.onSocketOpen);
-            this.socket.removeEventListener('close', this.onSocketClose);
+            this.socket.removeEventListener('message', this.handleSocketMessage);
+            this.socket.removeEventListener('open', this.handleSocketOpen);
+            this.socket.removeEventListener('close', this.handleSocketClose);
             this.socket.close();
         }
         if (this.frame_request) {
