@@ -1,4 +1,4 @@
-use bus::{Message, TimestampedMessage, Bus};
+use bus::{Message, Command, TimestampedMessage, Bus};
 use config::WebConfig;
 use serde_json;
 use std::net::TcpStream;
@@ -27,7 +27,22 @@ enum MessageToClient {
 #[derive(Deserialize, Clone, Debug)]
 enum MessageToServer {
     Auth(AuthResponse),
+    Command(Command)
 }
+
+#[derive(Serialize, Clone, Debug)]
+struct ClientError {
+    code: ErrorCode,
+    message: Option<String>,
+}
+
+#[derive(Serialize, Clone, Debug)]
+enum ErrorCode {
+    ParseFailed,
+    AuthRequired,
+    MessageDeliveryFailed,
+}
+
 
 pub fn start(bus: Bus, config: &WebConfig, secret_key: String) {
     let addr = config.ws_bind_addr();
@@ -167,18 +182,7 @@ struct ClientFlowControl {
     last_pong_latency: f64,
 }
 
-#[derive(Serialize, Clone, Debug)]
-struct ClientError {
-    code: ErrorCode,
-    message: Option<String>,
-}
-
 type ClientResult = Result<Option<MessageToClient>, ClientError>;
-
-#[derive(Serialize, Clone, Debug)]
-enum ErrorCode {
-    ParseFailed,
-}
 
 #[derive(Serialize, Clone, Debug)]
 struct AuthChallenge {
@@ -377,6 +381,7 @@ impl MessageHandler {
     fn handle_message(self: &MessageHandler, message: MessageToServer) -> ClientResult {
         match message {
             MessageToServer::Auth(r) => self.try_authenticate(r),
+            MessageToServer::Command(c) => self.try_command(c),
         }
     }
 
@@ -388,5 +393,22 @@ impl MessageHandler {
             self.client_info.flags.authenticate();
         }
         Ok(Some(MessageToClient::AuthStatus(status)))
+    }
+
+    fn try_command(self: &MessageHandler, command: Command) -> ClientResult {
+        if self.client_info.flags.is_authenticated() {
+            match self.bus.sender.try_send(Message::Command(command).timestamp()) {
+                Ok(_) => Ok(None),
+                Err(e) => Err(ClientError {
+                    code: ErrorCode::MessageDeliveryFailed,
+                    message: Some(format!("{}", e)),
+                })
+            }
+        } else {
+            Err(ClientError {
+                code: ErrorCode::AuthRequired,
+                message: None
+            })
+        }
     }
 }
