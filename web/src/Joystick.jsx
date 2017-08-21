@@ -14,16 +14,18 @@ export default class Joystick extends Component {
     }
 
     render() {
-        return <div className="Joystick" ref={ (div) => this.div = div } />;
+        return (
+            <div className="Joystick" ref={ (div) => this.div = div } >
+                <div>Joystick Area</div>
+                <div>touch here</div>
+            </div>
+        );
     }
 
-    componentWillRe
-
     componentDidMount() {
-        const defaults = {
-            zone: this.div
-        };
-        const options = Object.assign(defaults, this.props.options || {});
+        const options = Object.assign({
+            zone: this.div,
+        }, this.props.options || {});
         this.manager = nipplejs.create(options);
         this.manager.on('start', this.handleStart);
         this.manager.on('end', this.handleEnd);

@@ -3,4 +3,14 @@
 	width: 100%;
 	background: #004;
 	height: 300px;
+	text-align: center;
+	padding: 2em 0.5em;
+}
+
+.Joystick div {
+	color: rgba(255,255,255,0.5);
+}
+
+.Joystick div:first-child {
+	font-size: 2.5em;
 }
