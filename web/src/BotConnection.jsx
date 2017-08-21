@@ -35,6 +35,7 @@ export class BotConnection extends Component {
         this.events = new EventEmitter();
         this.socket = null;
         this.frame_request = null;
+        this.model = new BotModel();
         this.state = {
             key: null,
             authenticated: false,
@@ -60,7 +61,6 @@ export class BotConnection extends Component {
 
     handleSocketMessage = (evt) => {
         const json = JSON.parse(evt.data);
-        const model = new BotModel();
         let time_offset = null;
         let last_timestamp = null;
 
@@ -80,7 +80,7 @@ export class BotConnection extends Component {
             // Annotate all messages with local timestamp, and update the model
             for (let msg of msglist) {
                 msg.local_timestamp = time_offset + msg.timestamp;
-                model.update(msg);
+                this.model.update(msg);
             }
 
             // Event for access to a raw message burst
@@ -90,7 +90,7 @@ export class BotConnection extends Component {
             if (!this.frame_request) {
                 this.frame_request = window.requestAnimationFrame(() => {
                     this.frame_request = null;
-                    this.events.emit('frame', model);
+                    this.events.emit('frame', this.model);
                 });
             }
 
