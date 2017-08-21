@@ -60,7 +60,8 @@ pub fn start( bus: Bus ) {
                     Event::ButtonReleased(Button::RightTrigger, _) => { state.right_enable = false; state.reset_if_disabled() },
 
                     Event::ButtonPressed(Button::East, _) => Some(Command::SetMode(ControllerMode::Halted)),
-                    Event::ButtonPressed(Button::South, _) => Some(Command::SetMode(ControllerMode::Manual)),
+                    Event::ButtonPressed(Button::South, _) => Some(Command::SetMode(ControllerMode::ManualFlyer)),
+                    Event::ButtonPressed(Button::West, _) => Some(Command::SetMode(ControllerMode::ManualWinch(0))),
 
                     Event::AxisChanged(Axis::RightStickX, v, _) => state.if_enabled(Command::ManualControlValue(ManualControlAxis::CameraYaw, v)),
                     Event::AxisChanged(Axis::RightStickY, v, _) => state.if_enabled(Command::ManualControlValue(ManualControlAxis::CameraPitch, v)),

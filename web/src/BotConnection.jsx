@@ -133,9 +133,12 @@ export class BotConnection extends Component {
         const key = this.state.key;
         if (key) {
             const digest = Base64.stringify(hmacSHA512(msg.challenge, key))
-            const json = { Auth: { digest }};
-            this.socket.send(JSON.stringify(json));
+            this.send({ Auth: { digest }});
         }
+    }
+
+    send(json) {
+        this.socket.send(JSON.stringify(json));
     }
 
     componentDidMount() {

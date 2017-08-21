@@ -6,19 +6,22 @@ import { Route, Switch } from 'react-router';
 import WinchSensors from './WinchSensors';
 import WinchTiming from './WinchTiming';
 import WinchPID from './WinchPID';
+import WinchControl from './WinchControl';
 
 const Winch = (props) => {
     const id = parseInt(props.match.params.winchId, 10);
     return <div>
         <Nav pills>
+            <NavItem><NavLink to={`/winch/${id}/control`} activeClassName="active" tag={RRNavLink}> Control </NavLink></NavItem>
             <NavItem><NavLink to={`/winch/${id}/sensors`} activeClassName="active" tag={RRNavLink}> Sensors </NavLink></NavItem>
-            <NavItem><NavLink to={`/winch/${id}/pid`} activeClassName="active" tag={RRNavLink}> PID loop </NavLink></NavItem>
-            <NavItem><NavLink to={`/winch/${id}/timing`} activeClassName="active" tag={RRNavLink}> Timing check </NavLink></NavItem>
+            <NavItem><NavLink to={`/winch/${id}/pid`} activeClassName="active" tag={RRNavLink}> PID </NavLink></NavItem>
+            <NavItem><NavLink to={`/winch/${id}/timing`} activeClassName="active" tag={RRNavLink}> Timing </NavLink></NavItem>
         </Nav>
         <Switch>
             <Route path="/winch/:winchId/timing" component={WinchTiming} />
             <Route path="/winch/:winchId/pid" component={WinchPID} />
             <Route path="/winch/:winchId/sensors" component={WinchSensors} />
+            <Route path="/winch/:winchId/control" component={WinchControl} />
         </Switch>
     </div>;
 }

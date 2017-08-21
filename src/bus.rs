@@ -49,8 +49,9 @@ impl Message {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum ControllerMode {
     Halted,
-    Manual,
     Normal,
+    ManualFlyer,
+    ManualWinch(usize),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
