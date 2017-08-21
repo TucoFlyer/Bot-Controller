@@ -9,8 +9,8 @@ use std::time::Duration;
 struct State {
     left_enable: bool,
     right_enable: bool,
-    left_z: f32,
-    right_z: f32,
+    left_z: f64,
+    right_z: f64,
 }
 
 impl State {
@@ -63,12 +63,12 @@ pub fn start( bus: Bus ) {
                     Event::ButtonPressed(Button::South, _) => Some(Command::SetMode(ControllerMode::ManualFlyer)),
                     Event::ButtonPressed(Button::West, _) => Some(Command::SetMode(ControllerMode::ManualWinch(0))),
 
-                    Event::AxisChanged(Axis::RightStickX, v, _) => state.if_enabled(Command::ManualControlValue(ManualControlAxis::CameraYaw, v)),
-                    Event::AxisChanged(Axis::RightStickY, v, _) => state.if_enabled(Command::ManualControlValue(ManualControlAxis::CameraPitch, v)),
-                    Event::AxisChanged(Axis::LeftStickX, v, _) => state.if_enabled(Command::ManualControlValue(ManualControlAxis::RelativeX, v)),
-                    Event::AxisChanged(Axis::LeftStickY, v, _) => state.if_enabled(Command::ManualControlValue(ManualControlAxis::RelativeY, v)),
-                    Event::AxisChanged(Axis::LeftTrigger2, v, _) => { state.left_z = v; state.if_enabled(state.z_command()) },
-                    Event::AxisChanged(Axis::RightTrigger2, v, _) => { state.right_z = v; state.if_enabled(state.z_command()) },
+                    Event::AxisChanged(Axis::RightStickX, v, _) => state.if_enabled(Command::ManualControlValue(ManualControlAxis::CameraYaw, v as f64)),
+                    Event::AxisChanged(Axis::RightStickY, v, _) => state.if_enabled(Command::ManualControlValue(ManualControlAxis::CameraPitch, v as f64)),
+                    Event::AxisChanged(Axis::LeftStickX, v, _) => state.if_enabled(Command::ManualControlValue(ManualControlAxis::RelativeX, v as f64)),
+                    Event::AxisChanged(Axis::LeftStickY, v, _) => state.if_enabled(Command::ManualControlValue(ManualControlAxis::RelativeY, v as f64)),
+                    Event::AxisChanged(Axis::LeftTrigger2, v, _) => { state.left_z = v as f64; state.if_enabled(state.z_command()) },
+                    Event::AxisChanged(Axis::RightTrigger2, v, _) => { state.right_z = v as f64; state.if_enabled(state.z_command()) },
                     _ => None,
                 };
 

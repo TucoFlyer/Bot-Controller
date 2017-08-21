@@ -2,6 +2,7 @@
 
 use multiqueue;
 use std::time::Instant;
+use config::Config;
 
 
 #[derive(Clone)]
@@ -21,7 +22,7 @@ impl Bus {
 pub enum Command {
     SetMode(ControllerMode),
     ManualControlReset,
-    ManualControlValue(ManualControlAxis, f32)
+    ManualControlValue(ManualControlAxis, f64),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -35,6 +36,8 @@ pub enum Message {
     Command(Command),
     FlyerSensors(FlyerSensors),
     WinchStatus(usize, WinchStatus),
+    ModeChanged(ControllerMode),
+    ConfigChanged(Config)
 }
 
 impl Message {
@@ -46,7 +49,7 @@ impl Message {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum ControllerMode {
     Halted,
     Normal,
@@ -54,7 +57,7 @@ pub enum ControllerMode {
     ManualWinch(usize),
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ManualControlAxis {
     CameraYaw,
     CameraPitch,

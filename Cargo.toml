@@ -27,7 +27,6 @@ palette = "0.2"
 byteorder = "1.0.0"
 crc16 = "0.3.3"
 nom = "3.0.0"
-cgmath = "0.14.1"
 
 rand = "0.3"
 hmac = "0.4.2"

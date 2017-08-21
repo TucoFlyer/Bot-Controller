@@ -14,7 +14,6 @@ extern crate multiqueue;
 extern crate gilrs;
 extern crate palette;
 extern crate crc16;
-extern crate cgmath;
 extern crate byteorder;
 extern crate nom;
 
@@ -30,10 +29,11 @@ mod leds;
 mod bus;
 pub use bus::*;
 
+mod config;
+pub use config::*;
+
 pub mod interface;
 pub mod controller;
 pub mod botcomm;
 pub mod watchdog;
 
-mod config;
-pub use config::{BotConfig, WinchConfig, WebConfig};
