@@ -4,6 +4,7 @@ import { NavLink as RRNavLink } from 'react-router-dom';
 import { Route, Switch } from 'react-router';
 
 import './App.css';
+import AuthStatus from './AuthStatus';
 import Home from './pages/Home';
 import Flyer from './pages/Flyer';
 import Winches from './pages/Winches';
@@ -13,6 +14,8 @@ export default () => (
         <div className="AppLogo">
             <img src="/tuco-flyer.png" alt="Tuco Flyer logo" />
         </div>
+
+        <AuthStatus/>
 
         <Nav pills>
             <NavItem><NavLink exact to="/" activeClassName="active" tag={RRNavLink}> Home </NavLink></NavItem>
@@ -25,6 +28,5 @@ export default () => (
             <Route path="/flyer" component={Flyer} />
             <Route path="/" component={Home} />
     	</Switch>
-
     </div>
 );

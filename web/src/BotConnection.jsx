@@ -34,8 +34,12 @@ export class BotConnection extends Component {
         super();
         this.events = new EventEmitter();
         this.socket = null;
-        this.state = { key: null };
         this.frame_request = null;
+        this.state = {
+            key: null,
+            authenticated: false,
+            connected: false
+        };
     }
 
     getChildContext() {
@@ -54,12 +58,7 @@ export class BotConnection extends Component {
         });
     }
 
-    static updateModel(model, msg) {
-        // Based on message type, file the message's data into a unified JSON model
-
-    }
-
-    handleSocketMessage(evt) {
+    onSocketMessage = (evt) => {
         const json = JSON.parse(evt.data);
         const model = new BotModel();
         let time_offset = null;
@@ -95,17 +94,35 @@ export class BotConnection extends Component {
                 });
             }
 
-        } else if (json.Error) {
+        } else if (json.Error !== undefined) {
             // The server can generate errors which we'll pass on as exceptions
             throw json.Error;
 
-        } else if (json.Auth) {
+        } else if (json.Auth !== undefined) {
             // Authentication challenge
             this.authenticate(json.Auth);
+
+        } else if (json.AuthStatus !== undefined) {
+            // True or false, set logged-in state
+            this.setState({ authenticated: json.AuthStatus === true });
 
         } else {
             console.log("Unrecognized message ", json);
         }
+    }
+
+    onSocketOpen = () => {
+        this.setState({
+            authenticated: false,
+            connected: true,
+        });
+    }
+
+    onSocketClose = () => {
+        this.setState({
+            authenticated: false,
+            connected: false,
+        });
     }
 
     authenticate(msg) {
@@ -129,12 +146,17 @@ export class BotConnection extends Component {
         // Look up the websocket URI then keep connected
         this.getWebsocketInfo().then((ws) => {
             this.socket = new ReconnectingWebSocket(ws.uri, undefined, {connectionTimeout: 1000});
-            this.socket.addEventListener('message', this.handleSocketMessage.bind(this));
+            this.socket.addEventListener('message', this.onSocketMessage);
+            this.socket.addEventListener('open', this.onSocketOpen);
+            this.socket.addEventListener('close', this.onSocketClose);
         });
     }
 
     componentWillUnmount() {
         if (this.socket) {
+            this.socket.removeEventListener('message', this.onSocketMessage);
+            this.socket.removeEventListener('open', this.onSocketOpen);
+            this.socket.removeEventListener('close', this.onSocketClose);
             this.socket.close();
         }
         if (this.frame_request) {

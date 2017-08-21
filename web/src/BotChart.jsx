@@ -70,11 +70,9 @@ export class Series extends Component {
 
         if (this.props.fullDataRate) {
             // Store data for each message in a batch potentially (more detail)
-            this.onMessages = this.onMessages.bind(this);
             this.context.botConnection.events.on('messages', this.onMessages);
         } else {
             // Only evaluate the model once per frame (smoother)
-            this.onFrame = this.onFrame.bind(this);
             this.context.botConnection.events.on('frame', this.onFrame);
         }
     }
@@ -87,11 +85,11 @@ export class Series extends Component {
         this.context.botConnection.events.removeListener('frame', this.onFrame);
     }
 
-    onFrame(model) {
+    onFrame = (model) => {
         this.updateFromModel(model);
     }
 
-    onMessages(messages) {
+    onMessages = (messages) => {
         let model = new BotModel();
         for (let msg of messages) {
             model.update(msg);
