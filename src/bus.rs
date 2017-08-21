@@ -151,7 +151,9 @@ pub struct WinchSensors {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct WinchMotorControl {
     pub pwm: f32,                   // Current motor PWM state, updated by the PID loop, clamped to [-1, 1]
-    pub pwm_quant: i32,             // PWM state after quantizing into clock ticks
+    pub pwm_quant: i16,             // PWM state after quantizing into clock ticks
+    pub enabled: u8,                // Is the H-bridge enabled? Can be turned off by halt watchdog
+    pub _reserved: u8,             // (spare byte for padding)
     pub ramp_velocity: f32,         // Current acting velocity_target due to accel_rate limit
     pub vel_err: f32,               // Instantaneous velocity error
     pub vel_err_diff: f32,          // Rate of change in velocity error
