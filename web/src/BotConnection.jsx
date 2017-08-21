@@ -101,14 +101,14 @@ export class BotConnection extends Component {
 
         } else if (json.Auth) {
             // Authentication challenge
-            this.handleChallenge(json.Auth);
+            this.authenticate(json.Auth);
 
         } else {
             console.log("Unrecognized message ", json);
         }
     }
 
-    handleChallenge(msg) {
+    authenticate(msg) {
         const key = this.state.key;
         if (key) {
             const digest = Base64.stringify(hmacSHA512(msg.challenge, key))

@@ -30,6 +30,10 @@ nom = "3.0.0"
 cgmath = "0.14.1"
 
 rand = "0.3"
+hmac = "0.4.2"
+sha2 = "0.6.0"
+base64 = "0.6.0"
+
 qrcode = { git = "https://github.com/kennytm/qrcode-rust", default-features = false }
 websocket = "0.20.1"
 iron = "0.5.1"

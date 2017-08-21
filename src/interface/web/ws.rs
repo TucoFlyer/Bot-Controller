@@ -1,15 +1,13 @@
 use bus::{Message, TimestampedMessage, Bus};
 use config::WebConfig;
-use multiqueue;
 use serde_json;
 use std::net::TcpStream;
-use std::error::Error;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 use websocket;
-use interface::web::make_random_string;
+use interface::web::auth;
 
 // All times in milliseconds
 const MIN_BATCH_PERIOD : f64 = 2.0;
@@ -50,7 +48,7 @@ pub fn start(bus: Bus, config: &WebConfig, secret_key: String) {
                 let send_port = MessageSendThread::new(client_info.clone(), sender).start();
 
                 // Start authentication by offering the client a challenge
-                send_port.direct.send(MessageToClient::Auth(client_info.challenge.clone()));
+                drop(send_port.direct.send(MessageToClient::Auth(client_info.challenge.clone())));
 
                 // Start the message pump that reads from 'bus' and writes to 'send_port'
                 start_ws_bus_receiver(&client_info, &bus, &send_port);
@@ -118,7 +116,7 @@ impl ClientInfo {
     fn new(secret_key: String) -> ClientInfo {
         ClientInfo {
             time_ref: Instant::now(),
-            challenge: AuthChallenge { challenge: make_random_string() },
+            challenge: AuthChallenge { challenge: auth::make_random_string() },
             secret_key,
             flags: Arc::new(ClientFlags {
                 alive: AtomicBool::new(true),
@@ -151,6 +149,14 @@ impl ClientFlags {
 
     fn is_alive(&self) -> bool {
         self.alive.load(Ordering::SeqCst)
+    }
+
+    fn authenticate(&self) {
+        self.authenticated.store(true, Ordering::SeqCst);
+    }
+
+    fn is_authenticated(&self) -> bool {
+        self.authenticated.load(Ordering::SeqCst)
     }
 }
 
@@ -375,9 +381,17 @@ impl MessageHandler {
     }
 
     fn try_authenticate(self: &MessageHandler, response: AuthResponse) -> ClientResult<()> {
-        Err(ClientError {
-            code: ErrorCode::AuthIncorrect,
-            message: None,
-        })
+        let challenge = &self.client_info.challenge.challenge;
+        let key = &self.client_info.secret_key;
+        if auth::authenticate(challenge, key, &response.digest) {
+            self.client_info.flags.authenticate();
+            drop(self.send_port.direct.send(MessageToClient::Authenticated));
+            Ok(())
+        } else {
+            Err(ClientError {
+                code: ErrorCode::AuthIncorrect,
+                message: None,
+            })
+        }
     }
 }

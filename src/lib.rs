@@ -1,4 +1,7 @@
 extern crate rand;
+extern crate hmac;
+extern crate sha2;
+extern crate base64;
 
 #[macro_use]
 extern crate serde_derive;
