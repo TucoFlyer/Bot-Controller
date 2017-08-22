@@ -1,0 +1,8 @@
+.ConfigSlider {
+	width: 100%;
+	padding: 4px;
+}
+
+.ConfigSlider input {
+	width: 75%;
+}

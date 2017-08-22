@@ -1,5 +1,7 @@
 import React from 'react';
 import { Chart, Series } from '../BotChart';
+import { ConfigSlider } from '../Config';
+import { IfAuthenticated } from '../BotConnection';
 
 export default (props) => {
     const id = parseInt(props.match.params.winchId, 10);
@@ -49,5 +51,17 @@ export default (props) => {
                 trigger={tick_trigger} timestamp={winch_timestamp} />
         </Chart>
 
+        <IfAuthenticated><div>
+
+            <h6>Proportional gain, all winches</h6>
+            <ConfigSlider item="params.pwm_gain_p" min="0" max="1e-5" step="1e-9" />
+
+            <h6>Integral gain, all winches</h6>
+            <ConfigSlider item="params.pwm_gain_i" min="0" max="1e-5" step="1e-9" />
+
+            <h6>Derivative gain, all winches</h6>
+            <ConfigSlider item="params.pwm_gain_d" min="0" max="1e-6" step="1e-9" />
+
+        </div></IfAuthenticated>
     </div>
 }

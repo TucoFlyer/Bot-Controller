@@ -155,7 +155,7 @@ export class BotConnection extends Component {
         // The key will be kept persistently in local storage, so we don't need to maintain it in the URL.
         const args = (window.location.hash+"?").split("?", 2)[1];
         const key = queryString.parse(args).k;
-        if (key !== this.state.key) {
+        if (key && key !== this.state.key) {
             this.setState({ key });
             this.authenticate();
         }

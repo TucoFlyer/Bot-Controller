@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import JSONPretty from 'react-json-pretty';
 import PropTypes from 'prop-types';
 import { BotConnection } from './BotConnection';
+import './Config.css';
 
 // Higher order component that adds the configuration as a prop on the wrapped component
 export const withConfig = (ComposedComponent) => class extends Component {
@@ -39,32 +40,69 @@ export const withConfig = (ComposedComponent) => class extends Component {
     }
 };
 
-function getByPath(config, path) {
+// Path is something like "foo.bar.blah" or ["foo", 5, "blah"]
+export const getByPath = function(config, path) {
     for (let part of path.split ? path.split(".") : path) {
         config = config[part];
     }
     return config;
 }
 
-function setByPath(config, path, item) {
+// Inverse of getByPath, creates intermediate nodes as needed
+export const setByPath = function(config, path, item) {
     let parts = Array.from(path.split ? path.split(".") : path);
-    const last = parts.pop();
-    for (let part of parts) {
-        config = config[part];
+    let obj = config;
+    for (let i = 0; i < parts.length - 1; i++) {
+        if (parts[i] in obj) {
+            obj = obj[parts[i]];
+        } else if (typeof parts[i+1] === 'number') {
+            obj = obj[parts[i]] = [];
+        } else {
+            obj = obj[parts[i]] = {};
+        }
     }
-    config[last] = item;
+    obj[parts.pop()] = item;
+    return config;
 }
 
 // JSON text box displaying a config item
 export const ConfigText = withConfig(class extends Component {
     render() {
-        const value = getByPath(this.props.config, this.props.item);
+        let { config, item, ...props } = this.props;
+        const value = getByPath(config, item);
         if (value instanceof Object) {
-            return <JSONPretty {...this.props} json={value} />;
+            return <JSONPretty {...props} json={value} />;
         } else {
-            return <div {...this.props}>{ value }</div>;
+            return <span {...props}> {value} </span>;
         }
     }
 });
 
+// Slider to edit a numeric config item
+export const ConfigSlider = withConfig(class extends Component {
+    render() {
+        let { config, item, ...props } = this.props;
+        const value = getByPath(config, item);
+        return (
+            <div className="ConfigSlider">
+                <input
+                    {...props}
+                    type="range"
+                    value={value}
+                    onChange={this.handleChange.bind(this)}
+                />
+                <ConfigText item={item} />
+            </div>
+        );
+    }
 
+    static contextTypes = {
+        botConnection: PropTypes.instanceOf(BotConnection),
+    }
+
+    handleChange(event) {
+        this.context.botConnection.socket.send(JSON.stringify({
+            UpdateConfig: setByPath({}, this.props.item, parseFloat(event.target.value))
+        }));
+    }
+});

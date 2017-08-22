@@ -1,5 +1,5 @@
 use bus::{Message, Command, TimestampedMessage, Bus};
-use config::{Config, WebConfig};
+use config::{WebConfig};
 use serde_json::{to_string, from_str, Value};
 use std::net::TcpStream;
 use std::sync::atomic::{AtomicBool, Ordering};

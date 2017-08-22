@@ -86,10 +86,10 @@ pub struct BotParams {
     pub manual_control_velocity_m_per_sec: f64,
     pub force_min_kg: f64,
     pub force_max_kg: f64,
-    pub force_filter_param: f32,
-    pub pwm_gain_p: f32,
-    pub pwm_gain_i: f32,
-    pub pwm_gain_d: f32,
+    pub force_filter_param: f64,
+    pub pwm_gain_p: f64,
+    pub pwm_gain_i: f64,
+    pub pwm_gain_d: f64,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
@@ -180,11 +180,9 @@ fn merge_values(base: &mut Value, updates: Value) {
             if let Value::Object(ref mut base_obj) = *base {
                 for (key, item) in update_obj.into_iter() {
                     if let Some(mut value) = base_obj.get_mut(&key) {
-                        println!("merge key {}", key);
                         merge_values(value, item);
                         continue;
                     }
-                    println!("copy key {}", key);
                     base_obj.insert(key, item);
                 }
             } else {

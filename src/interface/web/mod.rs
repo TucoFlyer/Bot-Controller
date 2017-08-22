@@ -1,10 +1,8 @@
 use bus::Bus;
-use config::WebConfig;
 use qrcode::QrCode;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io;
-use std::sync::{Arc, Mutex};
 
 mod ws;
 mod http;
