@@ -38,18 +38,37 @@ impl Controller {
         Controller { bus, comm, cf, state }
     }
 
+    fn config_changed(self: &mut Controller) {
+        *self.bus.config.lock().unwrap() = self.cf.config.clone();
+        drop(self.bus.sender.try_send(Message::ConfigIsCurrent(self.cf.config.clone()).timestamp()))
+    }
+
     fn poll(self: &mut Controller) {
         if let Ok(ts_msg) = self.bus.receiver.recv() {
             match ts_msg.message {
 
                 Message::UpdateConfig(updates) => {
-                    if let Ok(config) = self.cf.config.merge(updates) {
-                        *self.bus.config.lock().unwrap() = config.clone();
-                        self.cf.config = config.clone();
-                        match self.cf.save() {
-                            Ok(_) => drop(self.bus.sender.try_send(Message::ConfigIsCurrent(config).timestamp())),
-                            Err(e) => println!("Error saving new configuration: {}", e),
-                        };
+                    // Merge a freeform update into the configuration, and save it.
+                    // Errors here go right to the console, since errors caused by a
+                    // client should have been detected earlier and sent to that client.
+                    match self.cf.config.merge(updates) {
+                        Err(e) => println!("Error in UpdateConfig from message bus: {}", e),
+                        Ok(config) => {
+                            self.cf.config = config;
+                            match self.cf.save() {
+                                Ok(_) => self.config_changed(),
+                                Err(e) => println!("Error saving new configuration: {}", e),
+                            }
+                        }
+                    }
+                }
+
+                Message::Command(Command::SetMode(mode)) => {
+                    // The controller mode is part of the config, so this could be changed via UpdateConfig
+                    // as well, but this option is strongly typed and avoids triggering a save of the config file.
+                    if self.cf.config.mode != mode {
+                        self.cf.config.mode = mode;
+                        self.config_changed();
                     }
                 }
 
@@ -61,11 +80,11 @@ impl Controller {
                     self.state.flyer_sensor_update(sensors);
                 },
 
-                Message::Command(Command::ManualControlValue( axis, value )) => {
+                Message::Command(Command::ManualControlValue(axis, value)) => {
                     self.state.manual_controls.insert(axis, value);
                 },
 
-                Message::Command(Command::ManualControlReset ) => {
+                Message::Command(Command::ManualControlReset) => {
                     self.state.manual_controls.clear();
                 },
 

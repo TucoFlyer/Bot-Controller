@@ -85,6 +85,9 @@ export class BotConnection extends Component {
             for (let msg of msglist) {
                 msg.local_timestamp = time_offset + msg.timestamp;
                 this.model.update(msg);
+                if (msg.message.ConfigIsCurrent) {
+                    this.events.emit('config', msg);
+                }
             }
 
             // Event for access to a raw message burst

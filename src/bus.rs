@@ -24,6 +24,7 @@ impl Bus {
 /// Commands can be sent unmodified by an authenticated websockets client
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Command {
+    SetMode(ControllerMode),
     ManualControlReset,
     ManualControlValue(ManualControlAxis, f64),
 }
