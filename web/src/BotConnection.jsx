@@ -21,6 +21,9 @@ export class BotModel {
         if (msg.message.FlyerSensors) {
             this.flyer = msg;
         }
+        if (msg.message.ConfigIsCurrent) {
+            this.config = msg;
+        }
     }
 }
 
