@@ -11,6 +11,7 @@ extern crate serde;
 extern crate serde_json;
 extern crate bincode;
 extern crate toml;
+extern crate atomicwrites;
 
 // Bus parts
 extern crate multiqueue;

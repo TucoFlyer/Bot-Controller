@@ -1,6 +1,6 @@
 use bus::{Message, Command, TimestampedMessage, Bus};
 use config::{Config, WebConfig};
-use serde_json;
+use serde_json::{to_string, from_str, Value};
 use std::net::TcpStream;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{mpsc, Arc, Mutex};
@@ -27,7 +27,8 @@ enum MessageToClient {
 #[derive(Deserialize, Clone, Debug)]
 enum MessageToServer {
     Auth(AuthResponse),
-    Command(Command)
+    Command(Command),
+    UpdateConfig(Value),
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -41,8 +42,8 @@ enum ErrorCode {
     ParseFailed,
     AuthRequired,
     MessageDeliveryFailed,
+    UpdateConfigFailed,
 }
-
 
 pub fn start(bus: Bus, web_config: &WebConfig, secret_key: String) {
     let addr = web_config.ws_bind_addr();
@@ -225,7 +226,7 @@ struct MessageWriter {
 
 impl MessageWriter {
     fn send(self: &mut MessageWriter, message: &MessageToClient) {
-        let json = serde_json::to_string(message).unwrap();
+        let json = to_string(message).unwrap();
         self.send_ws_message(&websocket::OwnedMessage::Text(json));
     }
 
@@ -372,7 +373,7 @@ impl MessageHandler {
     }
 
     fn handle_json(self: &MessageHandler, message: String) -> ClientResult {
-        match serde_json::from_str(&message) {
+        match from_str(&message) {
             Ok(message) => self.handle_message(message),
             Err(err) => Err(ClientError {
                 code: ErrorCode::ParseFailed,
@@ -384,7 +385,8 @@ impl MessageHandler {
     fn handle_message(self: &MessageHandler, message: MessageToServer) -> ClientResult {
         match message {
             MessageToServer::Auth(r) => self.try_authenticate(r),
-            MessageToServer::Command(c) => self.try_command(c),
+            MessageToServer::Command(r) => self.try_command(r),
+            MessageToServer::UpdateConfig(r) => self.try_update_config(r),
         }
     }
 
@@ -398,20 +400,38 @@ impl MessageHandler {
         Ok(Some(MessageToClient::AuthStatus(status)))
     }
 
+    fn deliver_message(self: &MessageHandler, message: Message) -> ClientResult {
+        match self.bus.sender.try_send(message.timestamp()) {
+            Ok(_) => Ok(None),
+            Err(e) => Err(ClientError {
+                code: ErrorCode::MessageDeliveryFailed,
+                message: Some(format!("{}", e)),
+            })
+        }
+    }
+
     fn try_command(self: &MessageHandler, command: Command) -> ClientResult {
-        if self.client_info.flags.is_authenticated() {
-            match self.bus.sender.try_send(Message::Command(command).timestamp()) {
-                Ok(_) => Ok(None),
+        if !self.client_info.flags.is_authenticated() {
+            Err(ClientError { code: ErrorCode::AuthRequired, message: None })
+        } else {
+            self.deliver_message(Message::Command(command))
+        }
+    }
+
+    fn try_update_config(self: &MessageHandler, updates: Value) -> ClientResult {
+        if !self.client_info.flags.is_authenticated() {
+            Err(ClientError { code: ErrorCode::AuthRequired, message: None })
+        } else {
+            // Errors later on the command handler thread can't be reported here.
+            // Do a trial run, making sure we can apply the change to a recent
+            // config first.
+            match self.bus.config.lock().unwrap().merge(updates.clone()) {
+                Ok(_) => self.deliver_message(Message::UpdateConfig(updates)),
                 Err(e) => Err(ClientError {
-                    code: ErrorCode::MessageDeliveryFailed,
+                    code: ErrorCode::UpdateConfigFailed,
                     message: Some(format!("{}", e)),
                 })
             }
-        } else {
-            Err(ClientError {
-                code: ErrorCode::AuthRequired,
-                message: None
-            })
         }
     }
 }

@@ -21,9 +21,9 @@ impl Bus {
     }
 }
 
+/// Commands can be sent unmodified by an authenticated websockets client
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Command {
-    UpdateConfig(Value),
     ManualControlReset,
     ManualControlValue(ManualControlAxis, f64),
 }
@@ -39,6 +39,7 @@ pub enum Message {
     Command(Command),
     FlyerSensors(FlyerSensors),
     WinchStatus(usize, WinchStatus),
+    UpdateConfig(Value),
     ConfigIsCurrent(Config),
 }
 

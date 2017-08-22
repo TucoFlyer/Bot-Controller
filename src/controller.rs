@@ -3,15 +3,15 @@
 
 use bus::{Bus, Message, Command, FlyerSensors, WinchStatus, WinchCommand, ManualControlAxis};
 use std::thread;
-use config::Config;
+use config::{Config, ConfigFile};
 use botcomm::BotComm;
 use std::collections::HashMap;
 
-pub fn start(bus: &Bus, comm: &BotComm) {
+pub fn start(bus: &Bus, comm: &BotComm, cf: ConfigFile) {
     let bus = bus.clone();
     let comm = comm.try_clone().unwrap();
     thread::spawn(move || {
-        let mut controller = Controller::new(bus, comm);
+        let mut controller = Controller::new(bus, comm, cf);
         loop {
             controller.poll();
         }
@@ -21,30 +21,40 @@ pub fn start(bus: &Bus, comm: &BotComm) {
 struct Controller {
     bus: Bus,
     comm: BotComm,
-    config: Config,
+    cf: ConfigFile,
     state: ControllerState,
 }
 
 struct ControllerState {
-   manual_controls: HashMap<ManualControlAxis, f64>,
+    manual_controls: HashMap<ManualControlAxis, f64>,
 }
 
 impl Controller {
 
-    fn new(bus: Bus, comm: BotComm) -> Controller {
-        let config = bus.config.lock().unwrap().clone();
+    fn new(bus: Bus, comm: BotComm, cf: ConfigFile) -> Controller {
         let state = ControllerState {
             manual_controls: HashMap::new(),
         }; 
-        Controller { bus, comm, config, state }
+        Controller { bus, comm, cf, state }
     }
 
     fn poll(self: &mut Controller) {
         if let Ok(ts_msg) = self.bus.receiver.recv() {
             match ts_msg.message {
 
+                Message::UpdateConfig(updates) => {
+                    if let Ok(config) = self.cf.config.merge(updates) {
+                        *self.bus.config.lock().unwrap() = config.clone();
+                        self.cf.config = config.clone();
+                        match self.cf.save() {
+                            Ok(_) => drop(self.bus.sender.try_send(Message::ConfigIsCurrent(config).timestamp())),
+                            Err(e) => println!("Error saving new configuration: {}", e),
+                        };
+                    }
+                }
+
                 Message::WinchStatus(id, status) => {
-                    drop(self.comm.winch_command(id, self.state.winch_control_loop(&self.config, id, status)));
+                    drop(self.comm.winch_command(id, self.state.winch_control_loop(&self.cf.config, id, status)));
                 },
 
                 Message::FlyerSensors(sensors) => {
