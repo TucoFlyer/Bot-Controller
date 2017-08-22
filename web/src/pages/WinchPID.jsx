@@ -57,10 +57,10 @@ export default (props) => {
             <ConfigSlider item="params.pwm_gain_p" min="0" max="1e-5" step="1e-9" />
 
             <h6>Integral gain, all winches</h6>
-            <ConfigSlider item="params.pwm_gain_i" min="0" max="1e-5" step="1e-9" />
+            <ConfigSlider item="params.pwm_gain_i" min="0" max="4e-5" step="1e-9" />
 
             <h6>Derivative gain, all winches</h6>
-            <ConfigSlider item="params.pwm_gain_d" min="0" max="1e-6" step="1e-9" />
+            <ConfigSlider item="params.pwm_gain_d" min="0" max="5e-7" step="1e-9" />
 
         </div></IfAuthenticated>
     </div>

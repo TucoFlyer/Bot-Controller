@@ -57,18 +57,18 @@ impl Point3 {
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct WinchCalibration {
-    pub kg_force_at_zero: f64,
+    pub force_zero_count: f64,
     pub kg_force_per_count: f64,
     pub m_dist_per_count: f64,
 }
 
 impl WinchCalibration {
     pub fn force_to_kg(self: &WinchCalibration, counts: f64) -> f64 {
-        self.kg_force_at_zero + self.kg_force_per_count * counts
+        self.kg_force_per_count * (counts - self.force_zero_count)
     }
 
     pub fn force_from_kg(self: &WinchCalibration, kg: f64) -> f64 {
-        (kg - self.kg_force_at_zero) / self.kg_force_per_count
+        (kg / self.kg_force_per_count) + self.force_zero_count
     }
 
     pub fn dist_to_m(self: &WinchCalibration, counts: f64) -> f64 {

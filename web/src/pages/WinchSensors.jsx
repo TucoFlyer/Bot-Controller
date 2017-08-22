@@ -1,5 +1,7 @@
 import React from 'react';
 import { Chart, Series } from '../BotChart';
+import { ConfigSlider } from '../Config';
+import { IfAuthenticated } from '../BotConnection';
 
 export default (props) => {
     const id = parseInt(props.match.params.winchId, 10);
@@ -57,5 +59,23 @@ export default (props) => {
                 trigger={tick_trigger} timestamp={winch_timestamp} />
         </Chart>
 
+        <IfAuthenticated><div>
+
+            <h6>Accel rate, all winches</h6>
+            <ConfigSlider item="params.accel_rate_m_per_sec2" min="0" max="3e4" step="1e-1" />
+
+            <h6>Manual control velocity, all winches</h6>
+            <ConfigSlider item="params.manual_control_velocity_m_per_sec" min="0" max="1e5" step="1e-1" />
+
+            <h6>Min force, all winches</h6>
+            <ConfigSlider item="params.force_min_kg" min="-1e7" max="1e7" step="1e-1" />
+
+            <h6>Max force, all winches</h6>
+            <ConfigSlider item="params.force_max_kg" min="-1e7" max="1e7" step="1e-1" />
+
+            <h6>Force filter param, all winches</h6>
+            <ConfigSlider item="params.force_filter_param" min="0.8" max="1" step="1e-4" />
+
+        </div></IfAuthenticated>
     </div>
 }
