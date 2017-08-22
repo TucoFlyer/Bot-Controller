@@ -5,6 +5,7 @@ use std::fs::File;
 use std::path::Path;
 use std::io::Read;
 use std::fmt::Display;
+use serde_json::{Value, Error, from_value, to_value};
 use toml;
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
@@ -16,19 +17,6 @@ pub struct Config {
 	pub web: WebConfig,
     pub params: BotParams,
     pub winches: Vec<WinchConfig>,
-}
-
-impl Config {
-	pub fn read_from_file<P: AsRef<Path>>(path: P) -> Result<Config, String> {
-		let mut file = err_string(File::open(path))?;
-		let mut buffer = String::new();
-		err_string(file.read_to_string(&mut buffer))?;
-		err_string(toml::from_str(&buffer))
-	}
-}
-
-fn err_string<T, U: Display>(result: Result<T, U>) -> Result<T, String> {
-	result.map_err(|err| format!("{}", err))
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -127,3 +115,46 @@ impl WebConfig {
 	}
 }
 
+impl Config {
+	pub fn read_from_file<P: AsRef<Path>>(path: P) -> Result<Config, String> {
+		let mut file = err_string(File::open(path))?;
+		let mut buffer = String::new();
+		err_string(file.read_to_string(&mut buffer))?;
+		err_string(toml::from_str(&buffer))
+	}
+
+	pub fn merge(self: &Config, updates: Value) -> Result<Config, Error> {
+		let mut value = to_value(self)?;
+		Config::merge_values(&mut value, updates);
+		from_value(value)
+	}
+
+	fn merge_values(base: &mut Value, updates: Value) {
+		match updates {
+			Value::Array(update_arr) => {
+				if let Value::Array(ref mut base_arr) = *base {
+					for (i, item) in update_arr.iter().enumerate() {
+
+					}
+				} else {
+					*base = Value::Array(update_arr);
+				}
+			},
+			Value::Object(update_obj) => {
+				if let Value::Object(ref mut base_obj) = *base {
+					for (key, item) in update_obj {
+					}
+				} else {
+					*base = Value::Object(update_obj);
+				}
+			},
+			update => {
+				*base = update;
+			}
+		}
+	}
+}
+
+fn err_string<T, U: Display>(result: Result<T, U>) -> Result<T, String> {
+	result.map_err(|err| format!("{}", err))
+}

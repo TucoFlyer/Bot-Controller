@@ -1,10 +1,10 @@
 //! Command and status busses shared between components and threads
 
 use multiqueue;
+use serde_json::Value;
 use std::time::Instant;
 use std::sync::{Arc, Mutex};
 use config::{Config, ControllerMode};
-
 
 #[derive(Clone)]
 pub struct Bus {
@@ -23,7 +23,7 @@ impl Bus {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Command {
-    SetMode(ControllerMode),
+    UpdateConfig(Value),
     ManualControlReset,
     ManualControlValue(ManualControlAxis, f64),
 }
