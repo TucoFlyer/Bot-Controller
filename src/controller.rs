@@ -3,7 +3,7 @@
 
 use bus::{Bus, Message, Command, FlyerSensors, WinchStatus, WinchCommand, ManualControlAxis};
 use std::thread;
-use config::{Config, ConfigFile};
+use config::{Config, ConfigFile, ControllerMode};
 use botcomm::BotComm;
 use std::collections::HashMap;
 
@@ -112,7 +112,19 @@ impl ControllerState {
     }
 
     fn winch_velocity_target_m(self: &mut ControllerState, config: &Config, id: usize, status: WinchStatus) -> f64 {
-        let manual_y = *self.manual_controls.entry(ManualControlAxis::RelativeY).or_insert(0.0);
-        config.params.manual_control_velocity_m_per_sec * manual_y
+        match config.mode {
+
+            ControllerMode::Halted => 0.0,
+
+            ControllerMode::ManualWinch(manual_id) =>
+                if manual_id == id {
+                    let manual_y = self.manual_controls.entry(ManualControlAxis::RelativeY).or_insert(0.0).min(1.0).max(-1.0);
+                    config.params.manual_control_velocity_m_per_sec * manual_y
+                } else {
+                    0.0
+                },
+
+            _ => 0.0,
+        }
     }
 }

@@ -65,16 +65,22 @@ export const setByPath = function(config, path, item) {
     return config;
 }
 
-// JSON text box displaying a config item
+// Text span displaying a config item
 export const ConfigText = withConfig(class extends Component {
     render() {
         let { config, item, ...props } = this.props;
         const value = getByPath(config, item);
-        if (value instanceof Object) {
-            return <JSONPretty {...props} json={value} />;
-        } else {
-            return <span {...props}> {value} </span>;
-        }
+        const str = typeof(value) === 'string' ? value : JSON.stringify(value);
+        return <span {...props}> { str } </span>;
+    }
+});
+
+// JSON text box displaying a config item
+export const ConfigTextBlock = withConfig(class extends Component {
+    render() {
+        let { config, item, ...props } = this.props;
+        const value = getByPath(config, item);
+        return <JSONPretty {...props} json={value} />;
     }
 });
 
