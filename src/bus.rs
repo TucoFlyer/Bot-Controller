@@ -39,8 +39,7 @@ pub enum Message {
     Command(Command),
     FlyerSensors(FlyerSensors),
     WinchStatus(usize, WinchStatus),
-    ModeChanged(ControllerMode),
-    ConfigChanged(Config)
+    ConfigIsCurrent(Config),
 }
 
 impl Message {

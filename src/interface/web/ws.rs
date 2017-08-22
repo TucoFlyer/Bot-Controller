@@ -1,5 +1,5 @@
 use bus::{Message, Command, TimestampedMessage, Bus};
-use config::WebConfig;
+use config::{Config, WebConfig};
 use serde_json;
 use std::net::TcpStream;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -21,7 +21,7 @@ enum MessageToClient {
     Stream(Vec<LocalTimestampedMessage>),
     Auth(AuthChallenge),
     AuthStatus(bool),
-    Error(ClientError),    
+    Error(ClientError),
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -44,8 +44,8 @@ enum ErrorCode {
 }
 
 
-pub fn start(bus: Bus, config: &WebConfig, secret_key: String) {
-    let addr = config.ws_bind_addr();
+pub fn start(bus: Bus, web_config: &WebConfig, secret_key: String) {
+    let addr = web_config.ws_bind_addr();
     thread::spawn(move || {
         // Websocket acceptor thread
 
@@ -63,12 +63,15 @@ pub fn start(bus: Bus, config: &WebConfig, secret_key: String) {
                 let send_port = MessageSendThread::new(client_info.clone(), sender).start();
 
                 // Start authentication by offering the client a challenge
-                drop(send_port.direct.send(MessageToClient::Auth(client_info.challenge.clone())));
+                send_port.direct.send(MessageToClient::Auth(client_info.challenge.clone())).unwrap();
+
+                // Send the initial config state as grabbed from the bus' shared area.
+                send_port.stream.send(Message::ConfigIsCurrent(bus.config.lock().unwrap().clone()).timestamp()).unwrap();
 
                 // Start the message pump that reads from 'bus' and writes to 'send_port'
                 start_ws_bus_receiver(&client_info, &bus, &send_port);
 
-                // Now handle incoming messages 
+                // Now handle incoming messages
                 ws_message_loop(client_info, receiver, bus, send_port);
             });
         }

@@ -10,10 +10,10 @@ struct WsLink {
 	uri: String
 }
 
-pub fn start(config: &WebConfig) {
-    let addr = config.http_bind_addr();
-    let ws_link = WsLink { uri: config.ws_uri() };
-    let web_root = Static::new(&config.web_root_path);
+pub fn start(web_config: &WebConfig) {
+    let addr = web_config.http_bind_addr();
+    let ws_link = WsLink { uri: web_config.ws_uri() };
+    let web_root = Static::new(&web_config.web_root_path);
 
     thread::spawn(move || {
         let mut m = Mount::new();
