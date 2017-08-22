@@ -39,6 +39,7 @@ export class BotConnection extends Component {
         this.socket = null;
         this.frame_request = null;
         this.model = new BotModel();
+        this.auth_challenge = null;
         this.state = {
             key: null,
             authenticated: false,
@@ -105,6 +106,7 @@ export class BotConnection extends Component {
         } else if (json.Auth !== undefined) {
             // Authentication challenge
             this.events.emit('log', json);
+            this.auth_challenge = json.Auth.challenge;
             this.authenticate(json.Auth);
 
         } else if (json.AuthStatus !== undefined) {
@@ -132,10 +134,11 @@ export class BotConnection extends Component {
         });
     }
 
-    authenticate(msg) {
+    authenticate() {
+        const challenge = this.auth_challenge;
         const key = this.state.key;
-        if (key) {
-            const digest = Base64.stringify(hmacSHA512(msg.challenge, key))
+        if (key && challenge && this.socket) {
+            const digest = Base64.stringify(hmacSHA512(this.auth_challenge, key))
             this.send({ Auth: { digest }});
         }
     }
@@ -149,8 +152,9 @@ export class BotConnection extends Component {
         // The key will be kept persistently in local storage, so we don't need to maintain it in the URL.
         const args = (window.location.hash+"?").split("?", 2)[1];
         const key = queryString.parse(args).k;
-        if (key) {
+        if (key != this.state.key) {
             this.setState({ key });
+            this.authenticate();
         }
 
         // Look up the websocket URI then keep connected
