@@ -187,3 +187,53 @@ export class BotConnection extends Component {
 }
 
 reactMixin(BotConnection.prototype, LocalStorageMixin);
+
+// Higher order component that adds the configuration as a prop on the wrapped component
+export const withConfig = (ComposedComponent) => class extends Component {
+
+    constructor() {
+        super();
+        this.state = { config: null };
+    }
+
+    static contextTypes = {
+        botConnection: PropTypes.instanceOf(BotConnection),
+    }
+
+    handleConfig = (event) => {
+        this.setState({ config: event.message.ConfigIsCurrent });
+    }
+
+    componentDidMount() {
+        this.context.botConnection.events.on('config', this.handleConfig);
+        if (this.context.botConnection.model.config) {
+            this.handleConfig(this.context.botConnection.model.config);
+        }
+    }
+
+    componentWillUnmount() {
+        this.context.botConnection.events.removeListener('config', this.handleConfig);
+    }
+
+    render() {
+        if (this.state.config !== null) {
+            return <ComposedComponent {...this.props} config={this.state.config} />;
+        } else {
+            return null;
+        }
+    }
+};
+
+export class IfAuthenticated extends Component {
+    static contextTypes = {
+        botConnection: PropTypes.instanceOf(BotConnection),
+    }
+
+    render() {
+        if (this.context.botConnection.state.authenticated) {
+            return this.props.children;
+        } else {
+            return null;
+        }
+    }
+}
