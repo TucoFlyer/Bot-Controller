@@ -1,0 +1,59 @@
+---
+mode: Halted
+controller_addr: "10.32.0.1:9024"
+flyer_addr: "10.32.0.8:9024"
+web: 
+  http_addr: "10.0.0.5:8080"
+  ws_addr: "10.0.0.5:8081"
+  web_root_path: web/build
+  connection_file_path: connection.txt
+params: 
+  accel_rate_m_per_sec2: 11254.4
+  manual_control_velocity_m_per_sec: 21228.5
+  force_min_kg: -50000
+  force_max_kg: 700000
+  force_filter_param: 0.8583
+  pwm_gain_p: 0.000002748
+  pwm_gain_i: 0.000012445
+  pwm_gain_d: 0.00000014
+winches: 
+  - 
+    addr: "10.32.0.10:9024"
+    loc: 
+      x: 10
+      y: 10
+      z: 0
+    calibration: 
+      force_zero_count: 0
+      kg_force_per_count: 1
+      m_dist_per_count: 1
+  - 
+    addr: "10.32.0.11:9024"
+    loc: 
+      x: 10
+      y: -10
+      z: 0
+    calibration: 
+      force_zero_count: 0
+      kg_force_per_count: 1
+      m_dist_per_count: 1
+  - 
+    addr: "10.32.0.12:9024"
+    loc: 
+      x: -10
+      y: -10
+      z: 0
+    calibration: 
+      force_zero_count: 0
+      kg_force_per_count: 1
+      m_dist_per_count: 1
+  - 
+    addr: "10.32.0.13:9024"
+    loc: 
+      x: -10
+      y: 10
+      z: 0
+    calibration: 
+      force_zero_count: 0
+      kg_force_per_count: 1
+      m_dist_per_count: 1

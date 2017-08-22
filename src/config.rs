@@ -8,15 +8,18 @@ use std::io;
 use std::fmt::Display;
 use serde_json;
 use serde_json::{Value, from_value, to_value};
-use toml;
+use serde_yaml;
 use atomicwrites;
+use std::thread;
+use std::time::{Duration, Instant};
+use std::sync::mpsc::{Sender, Receiver, channel};
+use websocket;
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Config {
     pub mode: ControllerMode,
     pub controller_addr: SocketAddr,
     pub flyer_addr: SocketAddr,
-    // TOML tables below, values above
     pub web: WebConfig,
     pub params: BotParams,
     pub winches: Vec<WinchConfig>,
@@ -25,6 +28,7 @@ pub struct Config {
 pub struct ConfigFile {
     pub path: PathBuf,
     pub config: Config,
+    async_save_channel: Sender<Config>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -137,23 +141,41 @@ impl ConfigFile {
         let mut file = err_string(File::open(&path))?;
         let mut buffer = String::new();
         err_string(file.read_to_string(&mut buffer))?;
-        let config = err_string(toml::from_str(&buffer))?;
-        Ok(ConfigFile { path, config })
+        let config = err_string(serde_yaml::from_str(&buffer))?;
+        let (async_save_channel, save_thread_receiver) = channel();
+        ConfigFile::start_save_thread(path.clone(), save_thread_receiver);
+        Ok(ConfigFile { path, config, async_save_channel })
     }
 
-    pub fn save(self: &ConfigFile) -> Result<(), io::Error> {
-        let string = toml::to_string(&self.config).unwrap();
-        let af = atomicwrites::AtomicFile::new(&self.path, atomicwrites::AllowOverwrite);
-        let result = af.write( |f| {
-            f.write_all(string.as_bytes())
+    pub fn save_async(self: &ConfigFile) {
+        self.async_save_channel.send(self.config.clone());
+    }
+
+    pub fn start_save_thread(path: PathBuf, receiver: Receiver<Config>) {
+        const CONSOLIDATION_MILLIS : u64 = 1000;
+        thread::spawn(move || {
+            loop {
+                // Block until any config save at all shows up
+                let config = match receiver.recv() {
+                    Ok(config) => config,
+                    Err(_) => return,
+                };
+
+                // Wait a bit to see if something newer shows up
+                thread::sleep(Duration::from_millis(CONSOLIDATION_MILLIS));
+                let config = match receiver.try_iter().last() {
+                    Some(config) => config,
+                    None => config,
+                };
+
+                println!("Saving configuration");
+                let string = serde_yaml::to_string(&config).unwrap();
+                let af = atomicwrites::AtomicFile::new(&path, atomicwrites::AllowOverwrite);
+                af.write( |f| {
+                    f.write_all(string.as_bytes())
+                }).expect("Failed to write new configuration file");
+            }
         });
-        match result { 
-            Ok(()) => Ok(()),
-            // During open/move
-            Err(atomicwrites::Error::Internal(io_err)) => Err(io_err), 
-            // During write callback
-            Err(atomicwrites::Error::User(io_err)) => Err(io_err),
-        }
     }
 }
 

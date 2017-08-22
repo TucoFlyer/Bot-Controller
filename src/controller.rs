@@ -40,7 +40,8 @@ impl Controller {
 
     fn config_changed(self: &mut Controller) {
         *self.bus.config.lock().unwrap() = self.cf.config.clone();
-        drop(self.bus.sender.try_send(Message::ConfigIsCurrent(self.cf.config.clone()).timestamp()))
+        drop(self.bus.sender.try_send(Message::ConfigIsCurrent(self.cf.config.clone()).timestamp()));
+        self.cf.save_async();
     }
 
     fn poll(self: &mut Controller) {
@@ -55,17 +56,13 @@ impl Controller {
                         Err(e) => println!("Error in UpdateConfig from message bus: {}", e),
                         Ok(config) => {
                             self.cf.config = config;
-                            match self.cf.save() {
-                                Ok(_) => self.config_changed(),
-                                Err(e) => println!("Error saving new configuration: {}", e),
-                            }
+                            self.config_changed();
                         }
                     }
                 }
 
                 Message::Command(Command::SetMode(mode)) => {
-                    // The controller mode is part of the config, so this could be changed via UpdateConfig
-                    // as well, but this option is strongly typed and avoids triggering a save of the config file.
+                    // The controller mode is part of the config, so this could be changed via UpdateConfig as well, but this option is strongly typed
                     if self.cf.config.mode != mode {
                         self.cf.config.mode = mode;
                         self.config_changed();

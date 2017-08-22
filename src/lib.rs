@@ -10,8 +10,8 @@ extern crate serde_derive;
 extern crate serde;
 #[macro_use]
 extern crate serde_json;
+extern crate serde_yaml;
 extern crate bincode;
-extern crate toml;
 extern crate atomicwrites;
 
 // Bus parts
@@ -50,4 +50,3 @@ pub use botcomm::BotComm;
 pub mod interface;
 pub mod controller;
 pub mod watchdog;
-
