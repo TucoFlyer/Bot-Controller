@@ -7,7 +7,7 @@ export default (props) => {
     const winch_timestamp = (model) => model.winches[id].local_timestamp;
 
     return <div>
-
+        <h6>Timing check, tick# vs. timestamp</h6>
         <Chart millisPerPixel="2">
             <Series
                 fullDataRate

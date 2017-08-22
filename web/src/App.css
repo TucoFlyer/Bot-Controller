@@ -13,8 +13,12 @@
     margin: 10px 4px;
 }
 
-
 .App .right {
 	float: right;
 	margin: 4px;
+}
+
+.App .btn-block {
+	width: 75%;
+	margin: 4px auto;
 }

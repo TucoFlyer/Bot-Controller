@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { Nav, NavItem, NavLink } from 'reactstrap';
 import { NavLink as RRNavLink } from 'react-router-dom';
-import { Route, Switch } from 'react-router';
+import { Route, Switch, Redirect } from 'react-router';
 import { IfAuthenticated } from '../BotConnection';
 import { ConfigText, withConfig } from '../Config';
 import { Badge } from 'reactstrap';
@@ -10,6 +10,7 @@ import WinchSensors from './WinchSensors';
 import WinchTiming from './WinchTiming';
 import WinchPID from './WinchPID';
 import WinchControl from './WinchControl';
+import WinchCalibrator from './WinchCalibrator';
 
 const Winch = (props) => {
     const id = parseInt(props.match.params.winchId, 10);
@@ -21,13 +22,14 @@ const Winch = (props) => {
             <IfAuthenticated><NavItem><NavLink to={`/winch/${id}/control`} activeClassName="active" tag={RRNavLink}> Control </NavLink></NavItem></IfAuthenticated>
             <NavItem><NavLink to={`/winch/${id}/sensors`} activeClassName="active" tag={RRNavLink}> Sensors </NavLink></NavItem>
             <NavItem><NavLink to={`/winch/${id}/pid`} activeClassName="active" tag={RRNavLink}> PID </NavLink></NavItem>
-            <NavItem><NavLink to={`/winch/${id}/timing`} activeClassName="active" tag={RRNavLink}> Timing </NavLink></NavItem>
         </Nav>
         <Switch>
+            <Route path="/winch/:winchId/cal" component={WinchCalibrator} />
             <Route path="/winch/:winchId/control" component={WinchControl} />
-            <Route path="/winch/:winchId/timing" component={WinchTiming} />
             <Route path="/winch/:winchId/pid" component={WinchPID} />
             <Route path="/winch/:winchId/sensors" component={WinchSensors} />
+            <Route path="/winch/:winchId/timing" component={WinchTiming} />
+            <Redirect path="*" to={`/winch/${id}/sensors`} />
         </Switch>
     </div>;
 };
