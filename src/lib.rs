@@ -1,22 +1,32 @@
+// Auth related crypto
 extern crate rand;
 extern crate hmac;
 extern crate sha2;
 extern crate base64;
 
+// All the serialization
 #[macro_use]
 extern crate serde_derive;
 extern crate serde;
 extern crate serde_json;
 extern crate bincode;
+extern crate toml;
 
+// Bus parts
 extern crate multiqueue;
 
+// Gamepad input
 extern crate gilrs;
+
+// For LED colors
 extern crate palette;
+
+// For fygimbal
 extern crate crc16;
 extern crate byteorder;
 extern crate nom;
 
+// For the web interface
 extern crate iron;
 extern crate staticfile;
 extern crate mount;

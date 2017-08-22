@@ -1,15 +1,34 @@
 //! Bot configuration
 
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::fs::File;
+use std::path::Path;
+use std::io::Read;
+use std::fmt::Display;
+use toml;
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Config {
-	pub web: WebConfig,
+    pub mode: ControllerMode,
     pub controller_addr: SocketAddr,
     pub flyer_addr: SocketAddr,
-    pub winches: Vec<WinchConfig>,
-    pub mode: ControllerMode,
+    // TOML tables below, values above
+	pub web: WebConfig,
     pub params: BotParams,
+    pub winches: Vec<WinchConfig>,
+}
+
+impl Config {
+	pub fn read_from_file<P: AsRef<Path>>(path: P) -> Result<Config, String> {
+		let mut file = err_string(File::open(path))?;
+		let mut buffer = String::new();
+		err_string(file.read_to_string(&mut buffer))?;
+		err_string(toml::from_str(&buffer))
+	}
+}
+
+fn err_string<T, U: Display>(result: Result<T, U>) -> Result<T, String> {
+	result.map_err(|err| format!("{}", err))
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
