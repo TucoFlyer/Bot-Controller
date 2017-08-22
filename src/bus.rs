@@ -2,19 +2,22 @@
 
 use multiqueue;
 use std::time::Instant;
-use config::Config;
+use std::sync::{Arc, Mutex};
+use config::{Config, ControllerMode};
 
 
 #[derive(Clone)]
 pub struct Bus {
     pub sender: multiqueue::BroadcastSender<TimestampedMessage>,
     pub receiver: multiqueue::BroadcastReceiver<TimestampedMessage>,
+    pub config: Arc<Mutex<Config>>,
 }
 
 impl Bus {
-    pub fn new() -> Bus {
+    pub fn new(config: Config) -> Bus {
         let (sender, receiver) = multiqueue::broadcast_queue(512);
-        Bus { sender, receiver }
+        let config = Arc::new(Mutex::new(config));
+        Bus { sender, receiver, config }
     }
 }
 
@@ -47,14 +50,6 @@ impl Message {
             message: self
         }
     }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-pub enum ControllerMode {
-    Halted,
-    Normal,
-    ManualFlyer,
-    ManualWinch(usize),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]

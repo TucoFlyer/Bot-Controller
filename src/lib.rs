@@ -32,8 +32,10 @@ pub use bus::*;
 mod config;
 pub use config::*;
 
+mod botcomm;
+pub use botcomm::BotComm;
+
 pub mod interface;
 pub mod controller;
-pub mod botcomm;
 pub mod watchdog;
 

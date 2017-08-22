@@ -4,16 +4,20 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Config {
-	pub bot: BotConfig,
 	pub web: WebConfig,
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct BotConfig {
     pub controller_addr: SocketAddr,
     pub flyer_addr: SocketAddr,
     pub winches: Vec<WinchConfig>,
+    pub mode: ControllerMode,
     pub params: BotParams,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub enum ControllerMode {
+    Halted,
+    Normal,
+    ManualFlyer,
+    ManualWinch(usize),
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]

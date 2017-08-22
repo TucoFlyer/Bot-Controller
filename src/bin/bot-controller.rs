@@ -1,10 +1,8 @@
 extern crate tucoflyer;
-use tucoflyer::{BotConfig, WinchConfig, WebConfig, BotParams, WinchCalibration, Bus, Point3, interface, controller, watchdog, botcomm};
+use tucoflyer::{BotComm, WinchConfig, Config, WebConfig, ControllerMode, BotParams, WinchCalibration, Bus, Point3, interface, controller, watchdog};
 
 fn main() {
-    let bus = Bus::new();
-
-    let bot_config = BotConfig {
+    let config = Config {
         controller_addr: "10.32.0.1:9024".parse().unwrap(),
         flyer_addr: "10.32.0.8:9024".parse().unwrap(),
         winches: vec![
@@ -54,19 +52,21 @@ fn main() {
             pwm_gain_p: 4e-7,
             pwm_gain_i: 0.0,
             pwm_gain_d: 0.0,
-        }
+        },
+        web: WebConfig {
+            http_addr: "10.0.0.5:8080".parse().unwrap(),
+            ws_addr: "10.0.0.5:8081".parse().unwrap(),
+            connection_file_path: "connection.txt".to_owned(),
+            web_root_path: "web/build".to_owned(),
+        },
+        mode: ControllerMode::Normal,
     };
 
-    let web_config = WebConfig {
-        http_addr: "10.0.0.5:8080".parse().unwrap(),
-        ws_addr: "10.0.0.5:8081".parse().unwrap(),
-        connection_file_path: "connection.txt".to_owned(),
-        web_root_path: "web/build".to_owned(),
-    };
+    let bus = Bus::new(config);
+    let comm = BotComm::start(&bus).expect("Failed to start bot networking");
 
-    interface::web::start(bus.clone(), web_config);
-    interface::gamepad::start(bus.clone());
-    let comm = botcomm::start(bus.clone(), bot_config.clone()).expect("Failed to start bot networking");
-    controller::start(bus.clone(), comm.sender().unwrap(), bot_config);
-    watchdog::run(bus);
+    interface::web::start(&bus);
+    interface::gamepad::start(&bus);
+    controller::start(&bus, &comm);
+    watchdog::run(&bus);
 }

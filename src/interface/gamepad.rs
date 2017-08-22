@@ -1,6 +1,7 @@
 //! Bot control via a local gamepad
 
-use bus::{Bus, Command, Message, ControllerMode, ManualControlAxis};
+use bus::{Bus, Command, Message, ManualControlAxis};
+use config::ControllerMode;
 use gilrs::{Event, Button, Axis, Gilrs};
 use std::thread;
 use std::time::Duration;
@@ -41,7 +42,8 @@ impl State {
 }
 
 
-pub fn start( bus: Bus ) {
+pub fn start( bus: &Bus ) {
+    let bus = bus.clone();
     thread::spawn(move || {
         let mut gil = Gilrs::new();
         let mut state = State::new();
