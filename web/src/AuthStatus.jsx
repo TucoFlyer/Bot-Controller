@@ -2,16 +2,17 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { BotConnection } from './BotConnection';
 import { Badge } from 'reactstrap';
-import './AuthStatus.css';
 
 export default class AuthStatus extends Component {
     render() {
         const state = this.context.botConnection.state;
-        const badge =
-            state.authenticated ? <Badge color="success">Authenticated</Badge> :
-            !state.connected ? <Badge color="danger">Disconnected</Badge> :
-            <Badge color="info">Guest</Badge>;
-        return <div className="AuthStatus">{badge}</div>;
+        if (state.authenticated) {
+            return <Badge {...this.props} color="success">Authenticated</Badge>;
+        }
+        if (!state.connected) {
+            return <Badge {...this.props} color="danger">Disconnected</Badge>;
+        }
+        return <Badge {...this.props} color="secondary">Guest</Badge>;
     }
 
     static contextTypes = {

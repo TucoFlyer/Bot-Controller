@@ -15,7 +15,7 @@ export default () => (
             <img src="/tuco-flyer.png" alt="Tuco Flyer logo" />
         </div>
 
-        <AuthStatus/>
+        <AuthStatus className="right" />
 
         <Nav pills>
             <NavItem><NavLink to="/" exact activeClassName="active" tag={RRNavLink}> Flyer </NavLink></NavItem>

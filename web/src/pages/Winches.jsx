@@ -2,7 +2,9 @@ import React, { Component } from 'react';
 import { Nav, NavItem, NavLink } from 'reactstrap';
 import { NavLink as RRNavLink } from 'react-router-dom';
 import { Route, Switch } from 'react-router';
-import { IfAuthenticated, withConfig } from '../BotConnection';
+import { IfAuthenticated } from '../BotConnection';
+import { ConfigText, withConfig } from '../Config';
+import { Badge } from 'reactstrap';
 
 import WinchSensors from './WinchSensors';
 import WinchTiming from './WinchTiming';
@@ -12,6 +14,9 @@ import WinchControl from './WinchControl';
 const Winch = (props) => {
     const id = parseInt(props.match.params.winchId, 10);
     return <div>
+        <Badge className="right" color="secondary">
+            <ConfigText item={["winches", id, "addr"]} />
+        </Badge>
         <Nav pills>
             <IfAuthenticated><NavItem><NavLink to={`/winch/${id}/control`} activeClassName="active" tag={RRNavLink}> Control </NavLink></NavItem></IfAuthenticated>
             <NavItem><NavLink to={`/winch/${id}/sensors`} activeClassName="active" tag={RRNavLink}> Sensors </NavLink></NavItem>
