@@ -14,6 +14,10 @@ import WinchCalibrator from './WinchCalibrator';
 
 const Winch = (props) => {
     const id = parseInt(props.match.params.winchId, 10);
+    if (!(id >= 0)) {
+        return null;  // NaN or negative
+    }
+
     return <div>
         <Badge className="right" color="secondary">
             <ConfigText item={["winches", id, "addr"]} />

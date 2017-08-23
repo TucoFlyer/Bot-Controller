@@ -321,8 +321,13 @@ impl MessageSendThread {
     fn send_stream_batch(self: &mut MessageSendThread) {
         let stream : Vec<LocalTimestampedMessage> = {
             let iter = self.stream_reader.try_iter();
-            let iter = iter.map(|msg| {
-                LocalTimestampedMessage::from(msg, &self.client_info)
+            let iter = iter.filter_map(|msg| {
+                if (msg.timestamp < self.client_info.time_ref) {
+                    // Message is from before the connection was opened, can't deliver it
+                    None
+                } else {
+                    Some(LocalTimestampedMessage::from(msg, &self.client_info))
+                }
             });
             iter.collect()
         };

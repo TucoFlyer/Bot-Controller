@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
-import { BotConnection, IfAuthenticated } from '../BotConnection';
+import { BotConnection } from '../BotConnection';
 import Joystick from '../Joystick';
 
 export default class WinchControl extends Component {
@@ -10,30 +10,17 @@ export default class WinchControl extends Component {
 
     render() {
         const id = parseInt(this.props.match.params.winchId, 10);
-        return (
-            <IfAuthenticated>
-                <div>
-                    <h6>Velocity control, direct to Bot {id}</h6>
-                    <Joystick
-                        onStart={ (event, data) => {
-                            this.setManualMode(id);
-                        }}
-                        onXY={ (x, y) => {
-                            this.control(y);
-                        }}
-                    />
-                </div>
-           </IfAuthenticated>
-        );
-    }
-
-    setManualMode(winchId) {
-        const bot = this.context.botConnection;
-        bot.send({ Command: { SetMode: { ManualWinch: winchId }}});
-    }
-
-    control(value) {
-        const bot = this.context.botConnection;
-        bot.send({ Command: { ManualControlValue: [ "RelativeY", value ] }});
+        return <div>
+            <h6>Velocity control, direct to Bot {id}</h6>
+            <Joystick
+                onStart={ () => {
+                    this.context.botConnection.send({ Command: { SetMode: { ManualWinch: id }}});
+                }}
+                onXY={ (x, y) => {
+                    this.context.botConnection.send({ Command: { ManualControlValue: [ "RelativeX", x ] }});
+                    this.context.botConnection.send({ Command: { ManualControlValue: [ "RelativeY", y ] }});
+                }}
+            />
+        </div>;
     }
 }

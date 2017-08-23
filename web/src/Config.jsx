@@ -1,11 +1,12 @@
 import React, { Component } from 'react';
 import JSONPretty from 'react-json-pretty';
 import PropTypes from 'prop-types';
+import { Button } from 'reactstrap';
 import { BotConnection } from './BotConnection';
 import './Config.css';
 
 // Higher order component that adds the configuration as a prop on the wrapped component
-export const withConfig = (ComposedComponent) => class extends Component {
+export const withConfig = (ComposedComponent, options) => class extends Component {
 
     constructor() {
         super();
@@ -18,6 +19,9 @@ export const withConfig = (ComposedComponent) => class extends Component {
 
     handleConfig = (event) => {
         this.setState({ config: event.message.ConfigIsCurrent });
+        if (options && options.once) {
+            this.context.botConnection.events.removeListener('config', this.handleConfig);            
+        }
     }
 
     componentDidMount() {
@@ -43,6 +47,9 @@ export const withConfig = (ComposedComponent) => class extends Component {
 // Path is something like "foo.bar.blah" or ["foo", 5, "blah"]
 export const getByPath = function(config, path) {
     for (let part of path.split ? path.split(".") : path) {
+        if (config === undefined) {
+            break;
+        }
         config = config[part];
     }
     return config;
@@ -111,4 +118,27 @@ export const ConfigSlider = withConfig(class extends Component {
             UpdateConfig: setByPath({}, this.props.item, parseFloat(event.target.value))
         }));
     }
+});
+
+// Button that stores the first config it gets, click to revert
+export const ConfigRevertButton = withConfig(class extends Component {
+    render() {
+        let { config, item, ...props } = this.props;
+        const value = getByPath(config, item);
+        return <Button {...props} onClick={this.handleClick}>
+            Revert to { value }
+        </Button>;
+    }
+
+    static contextTypes = {
+        botConnection: PropTypes.instanceOf(BotConnection),
+    }
+
+    handleClick = (event) => {
+        const item = this.props.item;
+        const config = setByPath({}, item, getByPath(this.props.config, item));
+        this.context.botConnection.socket.send(JSON.stringify({ UpdateConfig: config }));        
+    }
+},{
+    once: true,
 });

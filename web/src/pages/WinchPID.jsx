@@ -2,7 +2,6 @@ import React, { Component } from 'react';
 import { Chart, Series } from '../BotChart';
 import { ConfigSlider } from '../Config';
 import { Button } from 'reactstrap';
-import { Link } from 'react-router-dom';
 import { IfAuthenticated } from '../BotConnection';
 
 export default class extends Component {
@@ -15,7 +14,6 @@ export default class extends Component {
 
     render () {
         const id = parseInt(this.props.match.params.winchId, 10);
-        const force_trigger = (model) => model.winches[id].message.WinchStatus[1].sensors.force.counter;
         const tick_trigger = (model) => model.winches[id].message.WinchStatus[1].tick_counter;
         const winch_timestamp = (model) => model.winches[id].local_timestamp;
 
