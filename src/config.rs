@@ -80,7 +80,13 @@ impl WinchCalibration {
     }
 
     pub fn dist_from_m(self: &WinchCalibration, m: f64) -> f64 {
-        m * self.m_dist_per_count
+        m / self.m_dist_per_count
+    }
+
+    pub fn pwm_gain_from_m(self: &WinchCalibration, gain: f64) -> f64 {
+        // PWM gains are motor power difference per distance/acceleration/speed.
+        // Since we have meters in the denominator, it's the inverse of dist_from_m.
+        gain * self.m_dist_per_count
     }
 }
 
@@ -148,7 +154,7 @@ impl ConfigFile {
     }
 
     pub fn save_async(self: &ConfigFile) {
-        self.async_save_channel.send(self.config.clone());
+        drop(self.async_save_channel.send(self.config.clone()));
     }
 
     pub fn start_save_thread(path: PathBuf, receiver: Receiver<Config>) {

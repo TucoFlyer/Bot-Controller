@@ -72,6 +72,16 @@ export const setByPath = function(config, path, item) {
     return config;
 }
 
+export const forceToKg = function(model, winchId, counts) {
+    const cal = model.config.message.ConfigIsCurrent.winches[winchId].calibration;
+    return (counts - cal.force_zero_count) * cal.kg_force_per_count;
+}
+
+export const distToMeters = function(model, winchId, counts) {
+    const cal = model.config.message.ConfigIsCurrent.winches[winchId].calibration;
+    return counts * cal.m_dist_per_count;
+}
+
 // Text span displaying a config item
 export const ConfigText = withConfig(class extends Component {
     render() {

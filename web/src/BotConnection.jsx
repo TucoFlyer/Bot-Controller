@@ -36,6 +36,7 @@ export class BotConnection extends Component {
     constructor() {
         super();
         this.events = new EventEmitter();
+        this.events.setMaxListeners(100);
         this.socket = null;
         this.frame_request = null;
         this.model = new BotModel();

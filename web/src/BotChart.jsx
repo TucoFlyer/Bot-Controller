@@ -91,6 +91,7 @@ export class Series extends Component {
 
     handleMessages = (messages) => {
         let model = new BotModel();
+        model.config = this.context.botConnection.model.config;
         for (let msg of messages) {
             model.update(msg);
             this.updateFromModel(model);

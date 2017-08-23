@@ -322,7 +322,7 @@ impl MessageSendThread {
         let stream : Vec<LocalTimestampedMessage> = {
             let iter = self.stream_reader.try_iter();
             let iter = iter.filter_map(|msg| {
-                if (msg.timestamp < self.client_info.time_ref) {
+                if msg.timestamp < self.client_info.time_ref {
                     // Message is from before the connection was opened, can't deliver it
                     None
                 } else {
