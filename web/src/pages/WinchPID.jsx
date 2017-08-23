@@ -67,7 +67,7 @@ export default class extends Component {
                     trigger={tick_trigger} timestamp={winch_timestamp} />
             </Chart>
 
-            <h6>PWM command</h6>
+            <h6>PWM command [-1,1]</h6>
             <Chart>
                 <Series
                     value={ () => 0 } strokeStyle='#aaa'

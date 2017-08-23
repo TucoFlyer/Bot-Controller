@@ -10,9 +10,9 @@ web:
   connection_file_path: connection.txt
 params: 
   accel_rate_m_per_sec2: 0.78
-  manual_control_velocity_m_per_sec: 0.31
-  force_min_kg: 0.57
-  force_max_kg: 3.18
+  manual_control_velocity_m_per_sec: 0.2
+  force_min_kg: 0.76
+  force_max_kg: 1.24
   force_filter_param: 0.835
   pwm_gain_p: 0.031
   pwm_gain_i: 0.061

@@ -44,7 +44,7 @@ export default class extends Component {
 
         return <div>
 
-            <h6>Force feedback, limits</h6>
+            <h6>Force feedback, limits (kgf)</h6>
             <Chart>
                 <Series
                     noBounds strokeStyle='#b8383d'
@@ -66,7 +66,7 @@ export default class extends Component {
                     trigger={force_trigger} timestamp={winch_timestamp} />
             </Chart>
 
-            <h6>Velocity feedback, target, ramp</h6>
+            <h6>Velocity feedback, target, ramp (m/s)</h6>
             <Chart>
                 <Series
                     value={ () => 0 } strokeStyle='#aaa'
@@ -85,7 +85,7 @@ export default class extends Component {
                     trigger={tick_trigger} timestamp={winch_timestamp} />
             </Chart>
 
-            <h6>Position feedback</h6>
+            <h6>Position feedback (m)</h6>
             <Chart>
                 <Series
                     value={ (model) => distToMeters(model, id, model.winches[id].message.WinchStatus[1].sensors.position) }
