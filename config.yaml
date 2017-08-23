@@ -13,7 +13,7 @@ params:
   manual_control_velocity_m_per_sec: 16843.1
   force_min_kg: -50000
   force_max_kg: 700000
-  force_filter_param: 0.8503
+  force_filter_param: 0.8368
   pwm_gain_p: 0.000002748
   pwm_gain_i: 0.000012445
   pwm_gain_d: 0.00000014
@@ -25,9 +25,9 @@ winches:
       y: 10
       z: 0
     calibration: 
-      force_zero_count: 0
-      kg_force_per_count: 1
-      m_dist_per_count: 1
+      force_zero_count: -110380.833
+      kg_force_per_count: 0.0000028172726939439874
+      m_dist_per_count: 0.00003311367926090268
   - 
     addr: "10.32.0.11:9024"
     loc: 
