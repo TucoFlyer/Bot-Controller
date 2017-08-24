@@ -10,13 +10,13 @@ web:
   connection_file_path: connection.txt
 params: 
   accel_rate_m_per_sec2: 0.78
-  manual_control_velocity_m_per_sec: 0.2
+  manual_control_velocity_m_per_sec: 0.11
   force_min_kg: 0.76
   force_max_kg: 1.24
-  force_filter_param: 0.835
-  pwm_gain_p: 0.031
-  pwm_gain_i: 0.061
-  pwm_gain_d: 0.007
+  force_filter_param: 0.8171
+  pwm_gain_p: 0.039
+  pwm_gain_i: 0.059
+  pwm_gain_d: 0.00101
 winches: 
   - 
     addr: "10.32.0.10:9024"
@@ -25,9 +25,9 @@ winches:
       y: 10
       z: 0
     calibration: 
-      force_zero_count: -110380.833
-      kg_force_per_count: 0.0000028172726939439874
-      m_dist_per_count: 0.00003311367926090268
+      force_zero_count: -110492.545
+      kg_force_per_count: 0.000002666225139307698
+      m_dist_per_count: 0.000033002937261416265
   - 
     addr: "10.32.0.11:9024"
     loc: 
