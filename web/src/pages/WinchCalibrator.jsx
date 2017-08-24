@@ -59,7 +59,7 @@ class CalibratorBase extends Component {
                 this.context.botConnection.socket.send(JSON.stringify({ UpdateConfig: cal.config }));
                 this.setState({ saved: true });
             }}
-        > { children } </Button>;        
+        > { children } </Button>;
     }
 }
 
@@ -71,7 +71,7 @@ class DistanceCalibrator extends CalibratorBase {
     }
 
     makeCalibration() {
-        const measures = this.state.measures;        
+        const measures = this.state.measures;
         const delta_1 = Math.abs(measures[1] - measures[0]);
         const delta_2 = Math.abs(measures[2] - measures[1]);
         const delta_3 = Math.abs(measures[3] - measures[2]);
@@ -119,7 +119,7 @@ class ForceCalibrator extends CalibratorBase {
         const measures = this.state.measures;
         const added_weight = parseFloat(this.state.added_weight);
         if (!(added_weight > 0)) {
-            return { error: "Invalid added weight value" };            
+            return { error: "Invalid added weight value" };
         }
 
         const avg_zero = ( measures[6] + measures[0] ) / 2;
@@ -177,7 +177,7 @@ class ForceCalibrator extends CalibratorBase {
                 <div><ConfigRevertButton
                     color={this.state.saved ? "primary" : "secondary"}
                     item="params.force_filter_param" /></div></li>
-       
+
         </ol>;
     }
 }

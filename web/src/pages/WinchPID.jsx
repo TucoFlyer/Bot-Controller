@@ -18,9 +18,9 @@ export default class extends Component {
         const winch_timestamp = (model) => model.winches[id].local_timestamp;
 
         const params = !this.state.editable ? (
- 
+
             <Button block color="warning" onClick={ () => this.setState({ editable: true }) }> Edit gains </Button>
- 
+
         ) : (<div>
 
             <h6>Proportional gain, all winches</h6>
@@ -30,7 +30,7 @@ export default class extends Component {
             <ConfigSlider item="params.pwm_gain_i" min="0" max="0.2" step="1e-3" />
 
             <h6>Derivative gain, all winches</h6>
-            <ConfigSlider item="params.pwm_gain_d" min="0" max="0.2" step="1e-3" />
+            <ConfigSlider item="params.pwm_gain_d" min="0" max="0.01" step="1e-5" />
 
         </div>);
 
