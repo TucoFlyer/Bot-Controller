@@ -1,0 +1,26 @@
+[package]
+
+name = "ledshader"
+version = "0.1.0"
+authors = ["Micah Elizabeth Scott <micah@misc.name>"]
+license = "MIT/Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/scanlime/ledshader-rs"
+homepage = "https://github.com/scanlime/ledshader-rs"
+keywords = ["led", "animation", "openpixel", "ledshader", "fadecandy"]
+
+[dependencies]
+
+bitflags = "0.9.1"
+palette = "0.2.1"
+cgmath = "0.14.1"
+fux_kdtree = "0.2.0"
+serde_json = "1.0.2"
+
+[dev-dependencies]
+
+opc = { git = "https://github.com/scanlime/opc-rs" }
+futures = "0.1.14"
+tokio-core = "0.1.4"
+tokio-io = "0.1.2"
+tokio-periodic = "0.1"
