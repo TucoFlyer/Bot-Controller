@@ -151,8 +151,8 @@ class ForceCalibrator extends CalibratorBase {
 
     render() {
         return <ol>
-            <li>Temporarily adjust the filtering to be quite slow (near 1.0) damping any visible vibration.
-                <ConfigSlider item="params.force_filter_param" min="0.9" max="0.9999" step="1e-4" /></li>
+            <li>Temporarily adjust the filtering to be quite slow (near 0.0) damping any visible vibration.
+                <ConfigSlider item="params.force_filter_param" min="0.000001" max="0.2" step="1e-4" /></li>
             <li>The filter should take several seconds to settle after each change. Make sure to wait for it.</li>
             <li>Pull the cord down toward the winch, letting it go slack.</li>
             <li>{this.measurementButton(0, "Record")} a zero reading {this.measurementValue(0)}</li>

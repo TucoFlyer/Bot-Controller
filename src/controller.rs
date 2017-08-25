@@ -105,6 +105,7 @@ impl ControllerState {
             force_min: cal.force_from_kg(config.params.force_min_kg) as f32,
             force_max: cal.force_from_kg(config.params.force_max_kg) as f32,
             force_filter_param: config.params.force_filter_param as f32,
+            diff_filter_param: config.params.diff_filter_param as f32,
             pwm_gain_p: cal.pwm_gain_from_m(config.params.pwm_gain_p) as f32,
             pwm_gain_i: cal.pwm_gain_from_m(config.params.pwm_gain_i) as f32,
             pwm_gain_d: cal.pwm_gain_from_m(config.params.pwm_gain_d) as f32,

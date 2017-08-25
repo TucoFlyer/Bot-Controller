@@ -38,7 +38,7 @@ export default class extends Component {
             <ConfigSlider item="params.force_max_kg" min="0" max="5" step="1e-2" />
 
             <h6>Force filter param, all winches (unitless)</h6>
-            <ConfigSlider item="params.force_filter_param" min="0.8" max="1" step="1e-4" />
+            <ConfigSlider item="params.force_filter_param" min="0.0" max="0.2" step="1e-4" />
 
         </div>);
 

@@ -136,6 +136,7 @@ pub struct WinchCommand {
     pub force_min: f32,             // Uncalibrated load cell units, no negative motion below
     pub force_max: f32,             // Uncalibrated load cell unitsNo positive motion above this filtered force value
     pub accel_rate: f32,            // Encoder units per second per second for velocity ramp
+    pub diff_filter_param: f32,     // IIR filter param for velocity rate of change, 0=fast 1=slow
     pub pwm_gain_p: f32,            // PWM gain proportional to velocity error
     pub pwm_gain_i: f32,            // PWM gain proportional to integral of velocity error
     pub pwm_gain_d: f32,            // PWM gain proportional to integral of velocity error
@@ -153,7 +154,7 @@ pub struct WinchMotorControl {
     pub pwm: f32,                   // Current motor PWM state, updated by the PID loop, clamped to [-1, 1]
     pub pwm_quant: i16,             // PWM state after quantizing into clock ticks
     pub enabled: u8,                // Is the H-bridge enabled? Can be turned off by halt watchdog
-    pub _reserved: u8,             // (spare byte for padding)
+    pub _reserved: u8,              // (spare byte for padding)
     pub ramp_velocity: f32,         // Current acting velocity_target due to accel_rate limit
     pub vel_err: f32,               // Instantaneous velocity error
     pub vel_err_diff: f32,          // Rate of change in velocity error

@@ -97,6 +97,7 @@ pub struct BotParams {
     pub force_min_kg: f64,
     pub force_max_kg: f64,
     pub force_filter_param: f64,
+    pub diff_filter_param: f64,
     pub pwm_gain_p: f64,
     pub pwm_gain_i: f64,
     pub pwm_gain_d: f64,
