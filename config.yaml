@@ -9,14 +9,14 @@ web:
   web_root_path: web/build
   connection_file_path: connection.txt
 params: 
-  accel_rate_m_per_sec2: 2
-  manual_control_velocity_m_per_sec: 0.54
+  accel_rate_m_per_sec2: 0.18
+  manual_control_velocity_m_per_sec: 0.4
   force_min_kg: 0.29
   force_max_kg: 3.89
   force_filter_param: 0.0402
-  diff_filter_param: 0
-  pwm_gain_p: 0.026
-  pwm_gain_i: 0
+  diff_filter_param: 0.085691
+  pwm_gain_p: 0.02
+  pwm_gain_i: 0.038
   pwm_gain_d: 0
 winches: 
   - 
