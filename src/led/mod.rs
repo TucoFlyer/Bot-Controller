@@ -1,4 +1,24 @@
-    //! LED lighting for the 'bot
+//! LED lighting for the 'bot
+
+use std::thread;
+use botcomm::BotComm;
+
+
+pub fn start(comm: &BotComm) {
+    let comm = comm.try_clone().unwrap();
+    thread::spawn(move || {
+        // let anim = make_animators(comm);
+        
+        // let winch = Animator::new(comm.winch_leds(n), winch_led_model(n));
+        // let 
+
+
+    });
+}
+
+
+
+
 
     // use tokio_core::reactor;
     // use tokio_periodic::PeriodicTimer;

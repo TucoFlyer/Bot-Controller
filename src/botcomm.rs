@@ -37,7 +37,7 @@ impl BotComm {
         Ok(BotComm { socket, addrs })
     }
 
-    pub fn send<T: Serialize>(self: &BotComm, addr: &SocketAddr, header: u8, body: &T) -> io::Result<()> {
+    fn send<T: Serialize>(self: &BotComm, addr: &SocketAddr, header: u8, body: &T) -> io::Result<()> {
         let limit = bincode::Bounded(2048);
         let packet = (header, body);
         let buf = bincode::serialize(&packet, limit).unwrap();
@@ -47,6 +47,36 @@ impl BotComm {
 
     pub fn winch_command(self: &BotComm, id: usize, cmd: WinchCommand) -> io::Result<()> {
         self.send(&self.addrs.winches[id], BOT_MSG_WINCH_COMMAND, &cmd)
+    }
+
+    pub fn winch_leds<'a>(self: &'a BotComm, id: usize) -> LedWriter<'a> {
+        LedWriter {
+            comm: &self,
+            addr: &self.addrs.winches[id]
+        }
+    }
+
+    pub fn flyer_leds<'a>(self: &'a BotComm, id: usize) -> LedWriter<'a> {
+        LedWriter {
+            comm: &self,
+            addr: &self.addrs.flyer
+        }
+    }
+}
+
+pub struct LedWriter<'a> {
+    comm: &'a BotComm,
+    addr: &'a SocketAddr,
+}
+
+impl<'a> io::Write for LedWriter<'a> {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.comm.send(self.addr, BOT_MSG_LEDS, &buf)?;
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
     }
 }
 

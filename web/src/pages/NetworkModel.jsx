@@ -2,7 +2,6 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { BotConnection } from '../BotConnection';
 import JSONPretty from 'react-json-pretty';
-import './NetworkModel.css'
 
 export default class NetworkModel extends Component {
     constructor() {

@@ -22,3 +22,8 @@
 	width: 75%;
 	margin: 4px auto;
 }
+
+.App .json-pretty {
+    width: 100%;
+    padding: 0.6em 2px;
+}

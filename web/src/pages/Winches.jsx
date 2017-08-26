@@ -56,6 +56,7 @@ export default withConfig( class extends Component {
                     { winchNav }
                 </Nav>
                 <Route path="/winch/:winchId" component={Winch} />
+                <Redirect path="*" to="/winch/0" />
             </div>
         );
     }

@@ -14,6 +14,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 use std::sync::mpsc::{Sender, Receiver, channel};
 use websocket;
+use vecmath::Vec3;
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Config {
@@ -42,21 +43,8 @@ pub enum ControllerMode {
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct WinchConfig {
     pub addr: SocketAddr,
-    pub loc: Point3,
+    pub loc: Vec3,
     pub calibration: WinchCalibration,
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct Point3 {
-    pub x: f64,
-    pub y: f64,
-    pub z: f64,
-}
-
-impl Point3 {
-    pub fn new(x: f64, y: f64, z: f64) -> Point3 {
-        Point3 { x, y, z }
-    }
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]

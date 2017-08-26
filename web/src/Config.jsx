@@ -97,7 +97,8 @@ export const ConfigTextBlock = withConfig(class extends Component {
     render() {
         let { config, item, ...props } = this.props;
         const value = getByPath(config, item);
-        return <JSONPretty {...props} json={value} />;
+        const str = JSON.stringify(value);
+        return <JSONPretty {...props} json={str} />;
     }
 });
 

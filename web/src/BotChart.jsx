@@ -4,6 +4,11 @@ import windowSize from 'react-window-size';
 import PropTypes from 'prop-types';
 import { BotConnection, BotModel } from './BotConnection';
 
+// Make sure the best part of the graph isnt' obscured by keeping it away from the edge
+// of the canvas and the edge of the window (where the scroll bars like to obscure)
+const TIME_MARGIN_MILLIS = 50;
+const SPACE_MARGIN_PIXELS = 20;
+
 export const Chart = windowSize( class extends Component {
     // Lots of opinionated defaults for Smoothie here.
     // Some of it is to make the charts fit in with our visual theme.
@@ -12,7 +17,7 @@ export const Chart = windowSize( class extends Component {
         return <div>
             <SmoothieComponent
                 ref={ (s) => this.reactSmoothie = s }
-                width={this.props.width || this.props.windowWidth}
+                width={this.props.width || (this.props.windowWidth - SPACE_MARGIN_PIXELS)}
                 height={this.props.height || 100}
                 millisPerPixel={this.props.millisPerPixel || 15}
                 interpolation={this.props.interpolation || 'linear'}
@@ -116,7 +121,7 @@ export class Series extends Component {
 
             // Directly push new data instead of using series.append,
             // we don't need or want smoothie's duplicate/reverse timestamp detection
-            this.series.data.push([timestamp, value]);
+            this.series.data.push([timestamp - TIME_MARGIN_MILLIS, value]);
 
             if (this.props.noBounds) {
                 // Smoothie automatically sets these according to the single

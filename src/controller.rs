@@ -1,6 +1,5 @@
 //! Controller thread, responding to commands and status updates, generating motor control packets
 
-
 use bus::{Bus, Message, Command, FlyerSensors, WinchStatus, WinchCommand, ManualControlAxis};
 use std::thread;
 use config::{Config, ConfigFile, ControllerMode};

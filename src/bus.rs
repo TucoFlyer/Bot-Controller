@@ -5,6 +5,7 @@ use serde_json::Value;
 use std::time::Instant;
 use std::sync::{Arc, Mutex};
 use config::{Config, ControllerMode};
+use vecmath::{I16Vec3, I16Vec4};
 
 #[derive(Clone)]
 pub struct Bus {
@@ -86,29 +87,14 @@ pub struct AnalogTelemetry {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct Vec16 {
-    pub x: i16,
-    pub y: i16,
-    pub z: i16,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct Quat16 {
-    pub w: i16,
-    pub x: i16,
-    pub y: i16,
-    pub z: i16,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct IMUTelemetry {
-    pub accelerometer: Vec16,
-    pub magnetometer: Vec16,
-    pub gyroscope: Vec16,
-    pub euler_angles: Vec16,
-    pub quaternion: Quat16,
-    pub linear_accel: Vec16,
-    pub gravity: Vec16,
+    pub accelerometer: I16Vec3,
+    pub magnetometer: I16Vec3,
+    pub gyroscope: I16Vec3,
+    pub euler_angles: I16Vec3,
+    pub quaternion: I16Vec4,
+    pub linear_accel: I16Vec3,
+    pub gravity: I16Vec3,
     pub temperature: i8,
     pub calib_stat: i8,
     pub counter: u32,
