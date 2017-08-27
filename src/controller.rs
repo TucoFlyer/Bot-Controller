@@ -162,7 +162,7 @@ impl WinchController {
     }
 
     fn update(self: &mut WinchController, config: &Config, id: usize, status: &WinchStatus) {
-        if !self.is_contiguous(status.tick_counter) {
+        if status.motor.pwm.enabled == 0 || !self.is_contiguous(status.tick_counter) {
             self.reset(status);
         }
         self.last_tick_counter = Some(status.tick_counter);
