@@ -162,37 +162,58 @@ impl WinchController {
     }
 
     fn update(self: &mut WinchController, config: &Config, id: usize, status: &WinchStatus) {
-        if status.motor.pwm.enabled == 0 || !self.is_contiguous(status.tick_counter) {
+        if status.motor.pwm.enabled == 0
+            || !self.is_contiguous(status.tick_counter)
+            || config.mode == ControllerMode::Halted {
             self.reset(status);
         }
         self.last_tick_counter = Some(status.tick_counter);
     }
 
-    fn make_command(self: &mut WinchController, config: &Config, cal: &WinchCalibration, status: &WinchStatus) -> WinchCommand {
-        WinchCommand {
-            force: ForceCommand {
-                filter_param: config.params.force_filter_param as f32,
-                neg_motion_min: cal.force_from_kg(config.params.force_neg_motion_min_kg) as f32,
-                pos_motion_max: cal.force_from_kg(config.params.force_pos_motion_max_kg) as f32,
-                lockout_below: cal.force_from_kg(config.params.force_lockout_below_kg) as f32,
-                lockout_above: cal.force_from_kg(config.params.force_lockout_above_kg) as f32,
-            },
-            pid: PIDGains {
-                gain_p: cal.pwm_gain_from_m(config.params.pwm_gain_p) as f32,
-                gain_i: cal.pwm_gain_from_m(config.params.pwm_gain_i) as f32,
-                gain_d: cal.pwm_gain_from_m(config.params.pwm_gain_d) as f32,
-                d_filter_param: config.params.vel_err_filter_param as f32,
-                i_decay_param: config.params.integral_err_decay_param as f32,
-            },
-            position: match config.mode {
+    fn make_force_command(self: &WinchController, config: &Config, cal: &WinchCalibration) -> ForceCommand {
+        ForceCommand {
+            filter_param: config.params.force_filter_param as f32,
+            neg_motion_min: cal.force_from_kg(config.params.force_neg_motion_min_kg) as f32,
+            pos_motion_max: cal.force_from_kg(config.params.force_pos_motion_max_kg) as f32,
+            lockout_below: cal.force_from_kg(config.params.force_lockout_below_kg) as f32,
+            lockout_above: cal.force_from_kg(config.params.force_lockout_above_kg) as f32,
+        }
+    }
 
-                ControllerMode::Halted => {
-                    self.reset(status);
-                    status.sensors.position
-                },
+    fn make_pid_gains(self: &WinchController, config: &Config, cal: &WinchCalibration) -> PIDGains {
+        PIDGains {
+            gain_p: cal.pwm_gain_from_m(config.params.pwm_gain_p) as f32,
+            gain_i: cal.pwm_gain_from_m(config.params.pwm_gain_i) as f32,
+            gain_d: cal.pwm_gain_from_m(config.params.pwm_gain_d) as f32,
+            d_filter_param: config.params.vel_err_filter_param as f32,
+            i_decay_param: config.params.integral_err_decay_param as f32,
+        }   
+    }
 
-                _ => self.quantized_position_target,
-            }
+    fn make_halted_pid_gains(self: &WinchController) -> PIDGains {
+        PIDGains {
+            gain_p: 0.0,
+            gain_i: 0.0,
+            gain_d: 0.0,
+            d_filter_param: 1.0,
+            i_decay_param: 1.0,
+        }
+    }
+
+    fn make_command(self: &WinchController, config: &Config, cal: &WinchCalibration, status: &WinchStatus) -> WinchCommand {
+        match config.mode {
+
+            ControllerMode::Halted => WinchCommand {
+                force: self.make_force_command(config, cal),
+                pid: self.make_halted_pid_gains(),
+                position: status.sensors.position,
+            },
+
+            _ => WinchCommand {
+                force: self.make_force_command(config, cal),
+                pid: self.make_pid_gains(config, cal),
+                position: self.quantized_position_target,
+            },
         }
     }
 }

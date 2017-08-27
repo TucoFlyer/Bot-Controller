@@ -1,6 +1,5 @@
 ---
-mode: 
-  ManualWinch: 0
+mode: Halted
 controller_addr: "10.32.0.1:9024"
 flyer_addr: "10.32.0.8:9024"
 web: 
@@ -16,10 +15,10 @@ params:
   force_lockout_above_kg: 4
   force_filter_param: 0.0402
   vel_err_filter_param: 0.006283
-  integral_err_decay_param: 0.004342
-  pwm_gain_p: 5.405
-  pwm_gain_i: 1.698
-  pwm_gain_d: 4.82246
+  integral_err_decay_param: 0.00023
+  pwm_gain_p: 12.725
+  pwm_gain_i: 0
+  pwm_gain_d: 0
 winches: 
   - 
     addr: "10.32.0.10:9024"

@@ -27,3 +27,7 @@
     width: 100%;
     padding: 0.6em 2px;
 }
+
+.App .Gauge {
+    text-align: right;
+}

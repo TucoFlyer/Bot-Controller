@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import { Chart, Series } from '../BotChart';
+import Gauge from '../BotGauge';
 import { ConfigSlider, distToMeters } from '../Config';
 import { Button } from 'reactstrap';
 import { IfAuthenticated } from '../BotConnection';
@@ -27,7 +28,7 @@ export default class extends Component {
             <ConfigSlider item="params.pwm_gain_p" min="0" max="20.0" step="1e-3" />
 
             <h6>Integral gain, all winches</h6>
-            <ConfigSlider item="params.pwm_gain_i" min="0" max="20.0" step="1e-3" />
+            <ConfigSlider item="params.pwm_gain_i" min="0" max="100.0" step="1e-3" />
 
             <h6>Derivative gain, all winches</h6>
             <ConfigSlider item="params.pwm_gain_d" min="0" max="20.0" step="1e-5" />
@@ -90,6 +91,18 @@ export default class extends Component {
                     value={ (model) => model.winches[id].message.WinchStatus[1].motor.pwm.total }
                     trigger={tick_trigger} timestamp={winch_timestamp} />
             </Chart>
+            <Gauge
+                value={ (model) => model.winches[id].message.WinchStatus[1].motor.pwm.total}
+                minValue={-1.0} maxValue={1.0}
+                majorTicks={[-1, -0.5, 0, 0.5, 1]}
+                highlights={[
+                    { from: -1, to: -0.9, color: "rgba(190,0,0,0.3)" },
+                    { from: -0.9, to: -0.1, color: "rgba(255,255,0,0.3)" },
+                    { from: -0.1, to: 0.1, color: "rgba(127,127,127,0.3)" },
+                    { from: 0.1, to: 0.9, color: "rgba(255,255,0,0.3)" },
+                    { from: 0.9, to: 1.0, color: "rgba(190,0,0,0.3)" },
+                ]}
+            />
 
             <h6>PID contributions</h6>
             <Chart>
