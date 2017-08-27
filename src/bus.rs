@@ -130,6 +130,7 @@ pub struct PIDGains {
     pub gain_i: f32,            // PWM strength proportional to integral of position error
     pub gain_d: f32,            // PWM gain proportional to velocity error
     pub d_filter_param: f32,    // IIR filter parameter in range [0,1] for velocity error, 0=slow 1=fast
+    pub i_decay_param: f32,     // Exponential decay for the integral parameter, 0=slow 1=fast
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
