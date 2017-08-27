@@ -1,9 +1,9 @@
 //! Controller thread, responding to commands and status updates, generating motor control packets
 
-use bus::{Bus, Message, Command, FlyerSensors, WinchStatus, WinchCommand, ManualControlAxis};
+use bus::*;
 use std::thread;
-use config::{Config, ConfigFile, ControllerMode};
-use botcomm::BotComm;
+use config::{Config, ConfigFile, ControllerMode, WinchCalibration};
+use botcomm::{BotComm, TICK_HZ};
 use std::collections::HashMap;
 
 pub fn start(bus: &Bus, comm: &BotComm, cf: ConfigFile) {
@@ -24,16 +24,9 @@ struct Controller {
     state: ControllerState,
 }
 
-struct ControllerState {
-    manual_controls: HashMap<ManualControlAxis, f64>,
-}
-
 impl Controller {
-
     fn new(bus: Bus, comm: BotComm, cf: ConfigFile) -> Controller {
-        let state = ControllerState {
-            manual_controls: HashMap::new(),
-        }; 
+        let state = ControllerState::new(&cf.config);
         Controller { bus, comm, cf, state }
     }
 
@@ -90,31 +83,33 @@ impl Controller {
     }
 }
 
+struct ControllerState {
+    manual_controls: HashMap<ManualControlAxis, f64>,
+    winches: Vec<WinchController>,
+}
+
 impl ControllerState {
+    fn new(config: &Config) -> ControllerState {
+        ControllerState {
+            manual_controls: HashMap::new(),
+            winches: config.winches.iter().map( |_| WinchController::new() ).collect(),
+        }
+    }
 
     fn flyer_sensor_update(self: &mut ControllerState, sensors: FlyerSensors) {
 
     }
 
-    fn winch_control_loop(self: &mut ControllerState,  config: &Config, id: usize, status: WinchStatus) -> WinchCommand {
+    fn winch_control_loop(self: &mut ControllerState, config: &Config, id: usize, status: WinchStatus) -> WinchCommand {
         let cal = &config.winches[id].calibration;
-        WinchCommand {
-            velocity_target: cal.dist_from_m(self.winch_velocity_target_m(config, id, status)) as f32,
-            accel_rate: cal.dist_from_m(config.params.accel_rate_m_per_sec2) as f32,
-            force_min: cal.force_from_kg(config.params.force_min_kg) as f32,
-            force_max: cal.force_from_kg(config.params.force_max_kg) as f32,
-            force_filter_param: config.params.force_filter_param as f32,
-            diff_filter_param: config.params.diff_filter_param as f32,
-            pwm_gain_p: cal.pwm_gain_from_m(config.params.pwm_gain_p) as f32,
-            pwm_gain_i: cal.pwm_gain_from_m(config.params.pwm_gain_i) as f32,
-            pwm_gain_d: cal.pwm_gain_from_m(config.params.pwm_gain_d) as f32,
-        }
+        self.winches[id].update(config, id, &status);
+        let vtarget = self.winch_velocity_target_m(config, id);
+        self.winches[id].velocity_target_tick(cal, vtarget);
+        self.winches[id].make_command(config, cal, &status)
     }
 
-    fn winch_velocity_target_m(self: &mut ControllerState, config: &Config, id: usize, status: WinchStatus) -> f64 {
+    fn winch_velocity_target_m(self: &mut ControllerState, config: &Config, id: usize) -> f64 {
         match config.mode {
-
-            ControllerMode::Halted => 0.0,
 
             ControllerMode::ManualWinch(manual_id) =>
                 if manual_id == id {
@@ -125,6 +120,78 @@ impl ControllerState {
                 },
 
             _ => 0.0,
+        }
+    }
+}
+
+struct WinchController {
+    last_tick_counter: Option<u32>,
+    quantized_position_target: i32,
+    fract_position_target: f64,
+}
+
+impl WinchController {
+    fn new() -> WinchController {
+        WinchController {
+            last_tick_counter: None,
+            quantized_position_target: 0,
+            fract_position_target: 0.0
+        }
+    }
+
+    fn velocity_target_tick(self: &mut WinchController, cal: &WinchCalibration, m_per_s: f64) {
+        let counts_per_tick = cal.dist_from_m(m_per_s) / (TICK_HZ as f64);
+        let pos = self.fract_position_target + counts_per_tick;
+        let fract = pos.fract();
+        self.fract_position_target = fract;
+        let int_diff = (pos - fract).round() as i32;
+        self.quantized_position_target = self.quantized_position_target.wrapping_add(int_diff);
+    }
+
+    fn is_contiguous(self: &mut WinchController, tick_counter: u32) -> bool {
+        match self.last_tick_counter {
+            None => false,
+            Some(last_tick_counter) => tick_counter.wrapping_sub(last_tick_counter) <= 2,
+        }
+    }
+
+    fn reset(self: &mut WinchController, status: &WinchStatus) {
+        // Initialize assumed winch state from this packet
+        self.quantized_position_target = status.sensors.position;
+        self.fract_position_target = 0.0;
+    }
+
+    fn update(self: &mut WinchController, config: &Config, id: usize, status: &WinchStatus) {
+        if !self.is_contiguous(status.tick_counter) {
+            self.reset(status);
+        }
+        self.last_tick_counter = Some(status.tick_counter);
+    }
+
+    fn make_command(self: &mut WinchController, config: &Config, cal: &WinchCalibration, status: &WinchStatus) -> WinchCommand {
+        WinchCommand {
+            force: ForceCommand {
+                filter_param: config.params.force_filter_param as f32,
+                neg_motion_min: cal.force_from_kg(config.params.force_neg_motion_min_kg) as f32,
+                pos_motion_max: cal.force_from_kg(config.params.force_pos_motion_max_kg) as f32,
+                lockout_below: cal.force_from_kg(config.params.force_lockout_below_kg) as f32,
+                lockout_above: cal.force_from_kg(config.params.force_lockout_above_kg) as f32,
+            },
+            pid: PIDGains {
+                gain_p: cal.pwm_gain_from_m(config.params.pwm_gain_p) as f32,
+                gain_i: cal.pwm_gain_from_m(config.params.pwm_gain_i) as f32,
+                gain_d: cal.pwm_gain_from_m(config.params.pwm_gain_d) as f32,
+                d_filter_param: config.params.vel_err_filter_param as f32,
+            },
+            position: match config.mode {
+
+                ControllerMode::Halted => {
+                    self.reset(status);
+                    status.sensors.position
+                },
+
+                _ => self.quantized_position_target,
+            }
         }
     }
 }

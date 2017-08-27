@@ -25,17 +25,20 @@ export default class extends Component {
  
         ) : (<div>
 
-            <h6>Accel rate, all winches (m/s&sup2;)</h6>
-            <ConfigSlider item="params.accel_rate_m_per_sec2" min="0" max="2.0" step="1e-2" />
-
             <h6>Manual control velocity, all winches (m/s)</h6>
             <ConfigSlider item="params.manual_control_velocity_m_per_sec" min="0" max="2.0" step="1e-2" />
 
-            <h6>Min force, all winches (kgf)</h6>
-            <ConfigSlider item="params.force_min_kg" min="0" max="5" step="1e-2" />
+            <h6>Lockout below force, all winches (kgf)</h6>
+            <ConfigSlider item="params.force_lockout_below_kg" min="0" max="5" step="1e-2" />
 
-            <h6>Max force, all winches (kgf)</h6>
-            <ConfigSlider item="params.force_max_kg" min="0" max="5" step="1e-2" />
+            <h6>Negative motion minimum force, all winches (kgf)</h6>
+            <ConfigSlider item="params.force_neg_motion_min_kg" min="0" max="5" step="1e-2" />
+
+            <h6>Positive motion maximum force, all winches (kgf)</h6>
+            <ConfigSlider item="params.force_pos_motion_max_kg" min="0" max="5" step="1e-2" />
+
+            <h6>Lockout above force, all winches (kgf)</h6>
+            <ConfigSlider item="params.force_lockout_above_kg" min="0" max="5" step="1e-2" />
 
             <h6>Force filter param, all winches (unitless)</h6>
             <ConfigSlider item="params.force_filter_param" min="0.0" max="0.2" step="1e-4" />
@@ -48,11 +51,19 @@ export default class extends Component {
             <Chart>
                 <Series
                     noBounds strokeStyle='#b8383d'
-                    value={ (model) => forceToKg(model, id, model.winches[id].message.WinchStatus[1].command.force_min) }
+                    value={ (model) => forceToKg(model, id, model.winches[id].message.WinchStatus[1].command.force.neg_motion_min) }
                     trigger={force_trigger} timestamp={winch_timestamp} />
                 <Series
                     noBounds strokeStyle='#b8383d'
-                    value={ (model) => forceToKg(model, id, model.winches[id].message.WinchStatus[1].command.force_max) }
+                    value={ (model) => forceToKg(model, id, model.winches[id].message.WinchStatus[1].command.force.pos_motion_max) }
+                    trigger={force_trigger} timestamp={winch_timestamp} />
+                <Series
+                    noBounds strokeStyle='#e22'
+                    value={ (model) => forceToKg(model, id, model.winches[id].message.WinchStatus[1].command.force.lockout_below) }
+                    trigger={force_trigger} timestamp={winch_timestamp} />
+                <Series
+                    noBounds strokeStyle='#e22'
+                    value={ (model) => forceToKg(model, id, model.winches[id].message.WinchStatus[1].command.force.lockout_above) }
                     trigger={force_trigger} timestamp={winch_timestamp} />
                 <Series
                     fullDataRate
@@ -66,7 +77,7 @@ export default class extends Component {
                     trigger={force_trigger} timestamp={winch_timestamp} />
             </Chart>
 
-            <h6>Velocity feedback, target, ramp (m/s)</h6>
+            <h6>Velocity feedback (m/s)</h6>
             <Chart>
                 <Series
                     value={ () => 0 } strokeStyle='#aaa'
@@ -74,14 +85,6 @@ export default class extends Component {
                 <Series
                     fullDataRate
                     value={ (model) => distToMeters(model, id, model.winches[id].message.WinchStatus[1].sensors.velocity) }
-                    trigger={tick_trigger} timestamp={winch_timestamp} />
-                <Series
-                    strokeStyle="#bbb"
-                    value={ (model) => distToMeters(model, id, model.winches[id].message.WinchStatus[1].motor.ramp_velocity) }
-                    trigger={tick_trigger} timestamp={winch_timestamp} />
-                <Series
-                    strokeStyle="#b28a70"
-                    value={ (model) => distToMeters(model, id, model.winches[id].message.WinchStatus[1].command.velocity_target) }
                     trigger={tick_trigger} timestamp={winch_timestamp} />
             </Chart>
 

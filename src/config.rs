@@ -80,12 +80,13 @@ impl WinchCalibration {
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct BotParams {
-    pub accel_rate_m_per_sec2: f64,
     pub manual_control_velocity_m_per_sec: f64,
-    pub force_min_kg: f64,
-    pub force_max_kg: f64,
+    pub force_neg_motion_min_kg: f64,
+    pub force_pos_motion_max_kg: f64,
+    pub force_lockout_below_kg: f64,
+    pub force_lockout_above_kg: f64,
     pub force_filter_param: f64,
-    pub diff_filter_param: f64,
+    pub vel_err_filter_param: f64,
     pub pwm_gain_p: f64,
     pub pwm_gain_i: f64,
     pub pwm_gain_d: f64,

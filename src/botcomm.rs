@@ -9,14 +9,14 @@ use std::net::{SocketAddr, UdpSocket};
 use std::io;
 use serde::Serialize;
 
-const BOT_TICK_HZ : u32 = 250;
+pub const TICK_HZ : u32 = 250;
 
-const BOT_MSG_LOOPBACK          : u8 = 0x20;    // copy data
-const BOT_MSG_GIMBAL            : u8 = 0x01;    // fygimbal protocol data
-const BOT_MSG_FLYER_SENSORS     : u8 = 0x02;    // struct flyer_sensors
-const BOT_MSG_WINCH_STATUS      : u8 = 0x03;    // struct winch_status
-const BOT_MSG_WINCH_COMMAND     : u8 = 0x04;    // struct winch_command
-const BOT_MSG_LEDS              : u8 = 0x05;    // apa102 data, 32 bits/pixel
+const MSG_LOOPBACK          : u8 = 0x20;    // copy data
+const MSG_GIMBAL            : u8 = 0x01;    // fygimbal protocol data
+const MSG_FLYER_SENSORS     : u8 = 0x02;    // struct flyer_sensors
+const MSG_WINCH_STATUS      : u8 = 0x03;    // struct winch_status
+const MSG_WINCH_COMMAND     : u8 = 0x04;    // struct winch_command
+const MSG_LEDS              : u8 = 0x05;    // apa102 data, 32 bits/pixel
 
 pub struct BotComm {
     socket: UdpSocket,
@@ -46,7 +46,7 @@ impl BotComm {
     }
 
     pub fn winch_command(self: &BotComm, id: usize, cmd: WinchCommand) -> io::Result<()> {
-        self.send(&self.addrs.winches[id], BOT_MSG_WINCH_COMMAND, &cmd)
+        self.send(&self.addrs.winches[id], MSG_WINCH_COMMAND, &cmd)
     }
 
     pub fn winch_leds<'a>(self: &'a BotComm, id: usize) -> LedWriter<'a> {
@@ -71,7 +71,7 @@ pub struct LedWriter<'a> {
 
 impl<'a> io::Write for LedWriter<'a> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.comm.send(self.addr, BOT_MSG_LEDS, &buf)?;
+        self.comm.send(self.addr, MSG_LEDS, &buf)?;
         Ok(buf.len())
     }
 
@@ -112,7 +112,7 @@ fn start_receiver(bus: Bus, addrs: BotAddrs, socket: UdpSocket) {
 fn handle_bot_message(bus: &Bus, addrs: &BotAddrs, addr: SocketAddr, code: u8, msg: &[u8]) {
     match code {
 
-        BOT_MSG_WINCH_STATUS => {
+        MSG_WINCH_STATUS => {
             for (id, winch_addr) in addrs.winches.iter().enumerate() {
                 if *winch_addr == addr {
                     match bincode::deserialize(msg) {
@@ -123,7 +123,7 @@ fn handle_bot_message(bus: &Bus, addrs: &BotAddrs, addr: SocketAddr, code: u8, m
             }
         }
 
-        BOT_MSG_FLYER_SENSORS => {
+        MSG_FLYER_SENSORS => {
             if addrs.flyer == addr {
                 match bincode::deserialize(msg) {
                     Err(_) => (),
