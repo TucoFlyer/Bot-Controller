@@ -267,6 +267,7 @@ impl WinchController {
     }
 
     fn make_halted_pid_gains(self: &WinchController) -> PIDGains {
+        // Disable the PID entirely when halted
         PIDGains {
             gain_p: 0.0,
             gain_i: 0.0,
@@ -276,22 +277,29 @@ impl WinchController {
             d_filter_param: 1.0,
         }
     }
+  
+    fn make_deadband(self: &WinchController, config: &Config, cal: &WinchCalibration) -> WinchDeadband {
+        WinchDeadband {
+            position: cal.dist_from_m(config.params.deadband_position_err_m).round() as i32,
+            velocity: cal.dist_from_m(config.params.deadband_velocity_limit_m_per_sec) as f32,
+        }
+    }
 
     fn make_command(self: &WinchController, config: &Config, cal: &WinchCalibration, status: &WinchStatus) -> WinchCommand {
         match config.mode {
 
             ControllerMode::Halted => WinchCommand {
+                position: status.sensors.position,
                 force: self.make_force_command(config, cal),
                 pid: self.make_halted_pid_gains(),
-                position: status.sensors.position,
-                pos_err_deadband: 0x10000000,
+                deadband: self.make_deadband(config, cal),
             },
 
             _ => WinchCommand {
+                position: self.quantized_position_target,
                 force: self.make_force_command(config, cal),
                 pid: self.make_pid_gains(config, cal),
-                position: self.quantized_position_target,
-                pos_err_deadband: cal.dist_from_m(config.params.pos_err_deadband).round() as i32,
+                deadband: self.make_deadband(config, cal),
             },
         }
     }

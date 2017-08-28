@@ -135,11 +135,17 @@ pub struct PIDGains {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct WinchDeadband {
+    pub position: i32,          // How close is close enough when stopped?
+    pub velocity: f32,          // By "stopped", we mean under this instantaneous velocity
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct WinchCommand {
+    pub position: i32,
     pub force: ForceCommand,
     pub pid: PIDGains,
-    pub position: i32,
-    pub pos_err_deadband: i32,
+    pub deadband: WinchDeadband,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]

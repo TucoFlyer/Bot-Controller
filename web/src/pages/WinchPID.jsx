@@ -46,8 +46,12 @@ export default class extends Component {
             </Chart>
 
             <IfAuthenticated>{ this.state.editable && <div>
-                <h6>Position error deadband, all winches (m)</h6>
-                <ConfigSlider item="params.pos_err_deadband" min="0.0" max="0.04" step="1e-4" />
+                <h6>Deadband position error, all winches (m)</h6>
+                <ConfigSlider item="params.deadband_position_err_m" min="0.0" max="0.04" step="1e-4" />
+            </div> }</IfAuthenticated>
+            <IfAuthenticated>{ this.state.editable && <div>
+                <h6>Deadband velocity, all winches (m)</h6>
+                <ConfigSlider item="params.deadband_velocity_limit_m_per_sec" min="0.0" max="0.04" step="1e-4" />
             </div> }</IfAuthenticated>
             <IfAuthenticated>{ this.state.editable && <div>
                 <h6>Position error filter rate, all winches</h6>
@@ -117,31 +121,31 @@ export default class extends Component {
 
             <IfAuthenticated>{ this.state.editable && <div>
                 <h6>Proportional gain, all winches</h6>
-                <ConfigSlider item="params.pwm_gain_p" min="0" max="20.0" step="1e-3" />
+                <ConfigSlider item="params.pwm_gain_p" min="0" max="10.0" step="1e-3" />
             </div> }</IfAuthenticated>
 
             <IfAuthenticated>{ this.state.editable && <div>
                 <h6>Integral gain, all winches</h6>
-                <ConfigSlider item="params.pwm_gain_i" min="0" max="100.0" step="1e-3" />
+                <ConfigSlider item="params.pwm_gain_i" min="0" max="10.0" step="1e-3" />
             </div> }</IfAuthenticated>
 
             <IfAuthenticated>{ this.state.editable && <div>
                 <h6>Derivative gain, all winches</h6>
-                <ConfigSlider item="params.pwm_gain_d" min="0" max="20.0" step="1e-5" />
+                <ConfigSlider item="params.pwm_gain_d" min="0" max="10.0" step="1e-5" />
             </div> }</IfAuthenticated>
 
             <h6>PID contributions</h6>
             <Chart>
                 <Series
-                    strokeStyle='#f44'
+                    strokeStyle='#a22'
                     value={ (model) => model.winches[id].message.WinchStatus[1].motor.pwm.p }
                     trigger={tick_trigger} timestamp={winch_timestamp} />
                 <Series
-                    strokeStyle='#4f4'
+                    strokeStyle='#2a2'
                     value={ (model) => model.winches[id].message.WinchStatus[1].motor.pwm.i }
                     trigger={tick_trigger} timestamp={winch_timestamp} />
                 <Series
-                    strokeStyle='#44f'
+                    strokeStyle='#22a'
                     value={ (model) => model.winches[id].message.WinchStatus[1].motor.pwm.d }
                     trigger={tick_trigger} timestamp={winch_timestamp} />
             </Chart>
