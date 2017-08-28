@@ -9,8 +9,6 @@ use std::net::{SocketAddr, UdpSocket};
 use std::io;
 use serde::Serialize;
 
-pub const TICK_HZ : u32 = 250;
-
 const MSG_LOOPBACK          : u8 = 0x20;    // copy data
 const MSG_GIMBAL            : u8 = 0x01;    // fygimbal protocol data
 const MSG_FLYER_SENSORS     : u8 = 0x02;    // struct flyer_sensors
@@ -56,7 +54,7 @@ impl BotComm {
         }
     }
 
-    pub fn flyer_leds<'a>(self: &'a BotComm, id: usize) -> LedWriter<'a> {
+    pub fn flyer_leds<'a>(self: &'a BotComm) -> LedWriter<'a> {
         LedWriter {
             comm: &self,
             addr: &self.addrs.flyer
@@ -132,6 +130,11 @@ fn handle_bot_message(bus: &Bus, addrs: &BotAddrs, addr: SocketAddr, code: u8, m
             }
         }
 
+        MSG_GIMBAL => {
+            println!("Unhandled gimbal data: {:?}", msg);
+        },
+
+        MSG_LOOPBACK => (),  
         _ => (),
     }
 }

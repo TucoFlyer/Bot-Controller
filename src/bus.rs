@@ -7,6 +7,8 @@ use std::sync::{Arc, Mutex};
 use config::{Config, ControllerMode};
 use vecmath::{Vector3, Vector4};
 
+pub const TICK_HZ : u32 = 250;
+
 #[derive(Clone)]
 pub struct Bus {
     pub sender: multiqueue::BroadcastSender<TimestampedMessage>,
