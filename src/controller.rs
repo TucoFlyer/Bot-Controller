@@ -284,12 +284,14 @@ impl WinchController {
                 force: self.make_force_command(config, cal),
                 pid: self.make_halted_pid_gains(),
                 position: status.sensors.position,
+                pos_err_deadband: 0x10000000,
             },
 
             _ => WinchCommand {
                 force: self.make_force_command(config, cal),
                 pid: self.make_pid_gains(config, cal),
                 position: self.quantized_position_target,
+                pos_err_deadband: cal.dist_from_m(config.params.pos_err_deadband).round() as i32,
             },
         }
     }

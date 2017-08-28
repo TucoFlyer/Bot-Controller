@@ -139,6 +139,7 @@ pub struct WinchCommand {
     pub force: ForceCommand,
     pub pid: PIDGains,
     pub position: i32,
+    pub pos_err_deadband: i32,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]

@@ -17,40 +17,16 @@ export default class extends Component {
         const id = parseInt(this.props.match.params.winchId, 10);
         const tick_trigger = (model) => model.winches[id].message.WinchStatus[1].tick_counter;
         const winch_timestamp = (model) => model.winches[id].local_timestamp;
-
-        const params = !this.state.editable ? (
-
-            <Button block color="warning" onClick={ () => this.setState({ editable: true }) }> Edit gains </Button>
-
-        ) : (<div>
-
-            <h6>Manual control velocity, all winches (m/s)</h6>
-            <ConfigSlider item="params.manual_control_velocity_m_per_sec" min="0" max="2.0" step="1e-2" />
-
-            <h6>Acceleration limit, all winches (m/s&sup2;)</h6>
-            <ConfigSlider item="params.accel_limit_m_per_sec2" min="0" max="1.0" step="1e-2" />
- 
-            <h6>Proportional gain, all winches</h6>
-            <ConfigSlider item="params.pwm_gain_p" min="0" max="20.0" step="1e-3" />
-
-            <h6>Integral gain, all winches</h6>
-            <ConfigSlider item="params.pwm_gain_i" min="0" max="100.0" step="1e-3" />
-
-            <h6>Derivative gain, all winches</h6>
-            <ConfigSlider item="params.pwm_gain_d" min="0" max="20.0" step="1e-5" />
-
-            <h6>Position error filter rate, all winches</h6>
-            <ConfigSlider item="params.pos_err_filter_param" min="0.0" max="0.4" step="1e-6" />
-
-            <h6>Integral error decay rate, all winches</h6>
-            <ConfigSlider item="params.integral_err_decay_param" min="0.0" max="0.01" step="1e-6" />
-
-            <h6>Velocity error filter rate, all winches</h6>
-            <ConfigSlider item="params.vel_err_filter_param" min="0.0" max="0.05" step="1e-6" />
-
-        </div>);
-
         return <div>
+
+            <IfAuthenticated>{ this.state.editable && <div>
+                <h6>Manual control velocity, all winches (m/s)</h6>
+                <ConfigSlider item="params.manual_control_velocity_m_per_sec" min="0" max="2.0" step="1e-2" />
+            </div> }</IfAuthenticated>
+            <IfAuthenticated>{ this.state.editable && <div>
+                <h6>Acceleration limit, all winches (m/s&sup2;)</h6>
+                <ConfigSlider item="params.accel_limit_m_per_sec2" min="0" max="1.0" step="1e-2" />
+            </div> }</IfAuthenticated>
 
             <h6>Position error, and filter (m)</h6>
             <Chart>
@@ -69,6 +45,16 @@ export default class extends Component {
                     trigger={tick_trigger} timestamp={winch_timestamp} />
             </Chart>
 
+            <IfAuthenticated>{ this.state.editable && <div>
+                <h6>Position error deadband, all winches (m)</h6>
+                <ConfigSlider item="params.pos_err_deadband" min="0.0" max="0.04" step="1e-4" />
+            </div> }</IfAuthenticated>
+            <IfAuthenticated>{ this.state.editable && <div>
+                <h6>Position error filter rate, all winches</h6>
+                <ConfigSlider item="params.pos_err_filter_param" min="0.0" max="0.4" step="1e-6" />
+            </div> }</IfAuthenticated>
+
+
             <h6>Integral error (m&middot;s)</h6>
             <Chart>
                 <Series
@@ -79,6 +65,11 @@ export default class extends Component {
                     value={ (model) => distToMeters(model, id, model.winches[id].message.WinchStatus[1].motor.pos_err_integral) }
                     trigger={tick_trigger} timestamp={winch_timestamp} />
             </Chart>
+
+            <IfAuthenticated>{ this.state.editable && <div>
+                <h6>Integral error decay rate, all winches</h6>
+                <ConfigSlider item="params.integral_err_decay_param" min="0.0" max="0.01" step="1e-6" />
+            </div> }</IfAuthenticated>
 
             <h6>Velocity error, and filter (m/s)</h6>
             <Chart>
@@ -96,6 +87,11 @@ export default class extends Component {
                     value={ (model) => distToMeters(model, id, model.winches[id].message.WinchStatus[1].motor.vel_err_filtered) }
                     trigger={tick_trigger} timestamp={winch_timestamp} />
             </Chart>
+
+            <IfAuthenticated>{ this.state.editable && <div>
+                <h6>Velocity error filter rate, all winches</h6>
+                <ConfigSlider item="params.vel_err_filter_param" min="0.0" max="0.05" step="1e-6" />
+            </div> }</IfAuthenticated>
 
             <h6>PWM command [-1,1]</h6>
             <Chart>
@@ -119,6 +115,21 @@ export default class extends Component {
                 ]}
             />
 
+            <IfAuthenticated>{ this.state.editable && <div>
+                <h6>Proportional gain, all winches</h6>
+                <ConfigSlider item="params.pwm_gain_p" min="0" max="20.0" step="1e-3" />
+            </div> }</IfAuthenticated>
+
+            <IfAuthenticated>{ this.state.editable && <div>
+                <h6>Integral gain, all winches</h6>
+                <ConfigSlider item="params.pwm_gain_i" min="0" max="100.0" step="1e-3" />
+            </div> }</IfAuthenticated>
+
+            <IfAuthenticated>{ this.state.editable && <div>
+                <h6>Derivative gain, all winches</h6>
+                <ConfigSlider item="params.pwm_gain_d" min="0" max="20.0" step="1e-5" />
+            </div> }</IfAuthenticated>
+
             <h6>PID contributions</h6>
             <Chart>
                 <Series
@@ -135,7 +146,12 @@ export default class extends Component {
                     trigger={tick_trigger} timestamp={winch_timestamp} />
             </Chart>
 
-            <IfAuthenticated>{ params }</IfAuthenticated>
+            <IfAuthenticated>{ !this.state.editable && <div>
+                <Button block color="warning" onClick={ () => this.setState({ editable: true }) }>
+                    Edit parameters
+                </Button>
+            </div> }</IfAuthenticated>
+
         </div>;
     }
 }
