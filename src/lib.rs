@@ -35,8 +35,7 @@ extern crate mount;
 extern crate websocket;
 extern crate qrcode;
 
-extern crate vecmath as vecmath_lib;
-mod vecmath;
+extern crate vecmath;
 
 mod fygimbal;
 mod led;

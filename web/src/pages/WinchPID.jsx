@@ -24,6 +24,12 @@ export default class extends Component {
 
         ) : (<div>
 
+            <h6>Manual control velocity, all winches (m/s)</h6>
+            <ConfigSlider item="params.manual_control_velocity_m_per_sec" min="0" max="2.0" step="1e-2" />
+
+            <h6>Acceleration limit, all winches (m/s&sup2;)</h6>
+            <ConfigSlider item="params.accel_limit_m_per_sec2" min="0" max="1.0" step="1e-2" />
+ 
             <h6>Proportional gain, all winches</h6>
             <ConfigSlider item="params.pwm_gain_p" min="0" max="20.0" step="1e-3" />
 
@@ -37,7 +43,7 @@ export default class extends Component {
             <ConfigSlider item="params.vel_err_filter_param" min="0.0" max="0.05" step="1e-6" />
 
             <h6>Integral error decay rate, all winches</h6>
-            <ConfigSlider item="params.integral_err_decay_param" min="0.0" max="0.05" step="1e-6" />
+            <ConfigSlider item="params.integral_err_decay_param" min="0.0" max="0.01" step="1e-6" />
 
         </div>);
 

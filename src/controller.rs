@@ -1,6 +1,7 @@
 //! Controller thread, responding to commands and status updates, generating motor control packets
 
 use bus::*;
+use vecmath::*;
 use std::thread;
 use config::{Config, ConfigFile, ControllerMode, WinchCalibration};
 use botcomm::{BotComm, TICK_HZ};
@@ -70,11 +71,11 @@ impl Controller {
                 },
 
                 Message::Command(Command::ManualControlValue(axis, value)) => {
-                    self.state.manual_controls.insert(axis, value);
+                    self.state.manual.control_value(axis, value);
                 },
 
                 Message::Command(Command::ManualControlReset) => {
-                    self.state.manual_controls.clear();
+                    self.state.manual.control_reset();
                 },
 
                 _ => (),
@@ -83,15 +84,85 @@ impl Controller {
     }
 }
 
+
+struct RateLimitedVelocity {
+    vec: Vector3<f64>
+}
+
+impl RateLimitedVelocity {
+    fn new() -> RateLimitedVelocity {
+        RateLimitedVelocity {
+            vec: [0.0, 0.0, 0.0]
+        }
+    }
+
+    fn tick(self: &mut RateLimitedVelocity, config: &Config, target: Vector3<f64>) {
+        let dt = 1.0 / (TICK_HZ as f64);
+        let limit_per_tick = config.params.accel_limit_m_per_sec2 * dt;
+        let diff = vec3_sub(target, self.vec);
+        let len = vec3_len(diff);
+        let clipped = if len > limit_per_tick {
+            vec3_scale(diff, limit_per_tick / len)
+        } else {
+            diff
+        };
+        self.vec = vec3_add(self.vec, clipped);
+    }
+}
+
+struct ManualControls {
+    axes: HashMap<ManualControlAxis, f64>,
+    velocity: RateLimitedVelocity,
+}
+
+impl ManualControls {
+    fn new() -> ManualControls {
+        ManualControls {
+            axes: HashMap::new(),
+            velocity: RateLimitedVelocity::new(),
+        }
+    }
+
+    fn lookup_axis(self: &mut ManualControls, axis: ManualControlAxis) -> f64 {
+        self.axes.entry(axis).or_insert(0.0).min(1.0).max(-1.0)
+    }
+
+    fn lookup_relative_vec(self: &mut ManualControls) -> Vector3<f64> {
+        [
+            self.lookup_axis(ManualControlAxis::RelativeX),
+            self.lookup_axis(ManualControlAxis::RelativeY),
+            self.lookup_axis(ManualControlAxis::RelativeZ),
+        ]
+    }
+
+    fn velocity_target(self: &mut ManualControls, config: &Config) -> Vector3<f64> {
+        let velocity_scale = config.params.manual_control_velocity_m_per_sec;
+        vec3_scale(self.lookup_relative_vec(), velocity_scale)
+    }
+
+    fn control_tick(self: &mut ManualControls, config: &Config) {
+        let v = self.velocity_target(config);
+        self.velocity.tick(config, v);
+    }
+
+    fn control_value(self: &mut ManualControls, axis: ManualControlAxis, value: f64) {
+        self.axes.insert(axis, value);
+    }
+
+    fn control_reset(self: &mut ManualControls) {
+        self.axes.clear();
+    }
+}
+
 struct ControllerState {
-    manual_controls: HashMap<ManualControlAxis, f64>,
+    manual: ManualControls,
     winches: Vec<WinchController>,
 }
 
 impl ControllerState {
     fn new(config: &Config) -> ControllerState {
         ControllerState {
-            manual_controls: HashMap::new(),
+            manual: ManualControls::new(),
             winches: config.winches.iter().map( |_| WinchController::new() ).collect(),
         }
     }
@@ -103,24 +174,28 @@ impl ControllerState {
     fn winch_control_loop(self: &mut ControllerState, config: &Config, id: usize, status: WinchStatus) -> WinchCommand {
         let cal = &config.winches[id].calibration;
         self.winches[id].update(config, id, &status);
-        let vtarget = self.winch_velocity_target_m(config, id);
-        self.winches[id].velocity_target_tick(cal, vtarget);
-        self.winches[id].make_command(config, cal, &status)
-    }
 
-    fn winch_velocity_target_m(self: &mut ControllerState, config: &Config, id: usize) -> f64 {
-        match config.mode {
+        let velocity = match config.mode {
 
-            ControllerMode::ManualWinch(manual_id) =>
+            ControllerMode::ManualWinch(manual_id) => {
                 if manual_id == id {
-                    let manual_y = self.manual_controls.entry(ManualControlAxis::RelativeY).or_insert(0.0).min(1.0).max(-1.0);
-                    config.params.manual_control_velocity_m_per_sec * manual_y
+                    self.manual.control_tick(config);
+                    self.manual.velocity.vec[1]
                 } else {
                     0.0
-                },
+                }
+            },
 
-            _ => 0.0,
-        }
+            ControllerMode::Halted => {
+                self.manual = ManualControls::new();
+                0.0
+            }
+
+            _ => 0.0
+        };
+
+        self.winches[id].velocity_tick(cal, velocity);
+        self.winches[id].make_command(config, cal, &status)
     }
 }
 
@@ -139,7 +214,7 @@ impl WinchController {
         }
     }
 
-    fn velocity_target_tick(self: &mut WinchController, cal: &WinchCalibration, m_per_s: f64) {
+    fn velocity_tick(self: &mut WinchController, cal: &WinchCalibration, m_per_s: f64) {
         let counts_per_tick = cal.dist_from_m(m_per_s) / (TICK_HZ as f64);
         let pos = self.fract_position_target + counts_per_tick;
         let fract = pos.fract();

@@ -4,17 +4,15 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::fs::File;
 use std::path::{Path, PathBuf};
 use std::io::{Read, Write};
-use std::io;
 use std::fmt::Display;
 use serde_json;
 use serde_json::{Value, from_value, to_value};
 use serde_yaml;
 use atomicwrites;
 use std::thread;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use std::sync::mpsc::{Sender, Receiver, channel};
-use websocket;
-use vecmath::Vec3;
+use vecmath::{Vector3};
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Config {
@@ -43,7 +41,7 @@ pub enum ControllerMode {
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct WinchConfig {
     pub addr: SocketAddr,
-    pub loc: Vec3,
+    pub loc: Vector3<f64>,
     pub calibration: WinchCalibration,
 }
 
@@ -81,6 +79,7 @@ impl WinchCalibration {
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct BotParams {
     pub manual_control_velocity_m_per_sec: f64,
+    pub accel_limit_m_per_sec2: f64,
     pub force_neg_motion_min_kg: f64,
     pub force_pos_motion_max_kg: f64,
     pub force_lockout_below_kg: f64,

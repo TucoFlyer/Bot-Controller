@@ -25,9 +25,6 @@ export default class extends Component {
  
         ) : (<div>
 
-            <h6>Manual control velocity, all winches (m/s)</h6>
-            <ConfigSlider item="params.manual_control_velocity_m_per_sec" min="0" max="2.0" step="1e-2" />
-
             <h6>Lockout below force, all winches (kgf)</h6>
             <ConfigSlider item="params.force_lockout_below_kg" min="0" max="5" step="1e-2" />
 
