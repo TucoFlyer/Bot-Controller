@@ -10,17 +10,18 @@ web:
   connection_file_path: connection.txt
 params: 
   manual_control_velocity_m_per_sec: 0.4
-  accel_limit_m_per_sec2: 0.12
+  accel_limit_m_per_sec2: 0.44
   force_neg_motion_min_kg: 0.29
   force_pos_motion_max_kg: 3.89
   force_lockout_below_kg: 0.1
   force_lockout_above_kg: 4
   force_filter_param: 0.0402
-  vel_err_filter_param: 0.006283
+  pos_err_filter_param: 0.05898
+  vel_err_filter_param: 0.004463
   integral_err_decay_param: 0.000531
-  pwm_gain_p: 3.904
-  pwm_gain_i: 25.237
-  pwm_gain_d: 1.97652
+  pwm_gain_p: 3.117
+  pwm_gain_i: 4.503
+  pwm_gain_d: 4.61526
 winches: 
   - 
     addr: "10.32.0.10:9024"

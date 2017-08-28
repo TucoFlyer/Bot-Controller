@@ -39,24 +39,33 @@ export default class extends Component {
             <h6>Derivative gain, all winches</h6>
             <ConfigSlider item="params.pwm_gain_d" min="0" max="20.0" step="1e-5" />
 
-            <h6>Velocity error filter rate, all winches</h6>
-            <ConfigSlider item="params.vel_err_filter_param" min="0.0" max="0.05" step="1e-6" />
+            <h6>Position error filter rate, all winches</h6>
+            <ConfigSlider item="params.pos_err_filter_param" min="0.0" max="0.4" step="1e-6" />
 
             <h6>Integral error decay rate, all winches</h6>
             <ConfigSlider item="params.integral_err_decay_param" min="0.0" max="0.01" step="1e-6" />
+
+            <h6>Velocity error filter rate, all winches</h6>
+            <ConfigSlider item="params.vel_err_filter_param" min="0.0" max="0.05" step="1e-6" />
 
         </div>);
 
         return <div>
 
-            <h6>Position error (m)</h6>
+            <h6>Position error, and filter (m)</h6>
             <Chart>
                 <Series
                     value={ () => 0 } strokeStyle='#aaa'
                     trigger={tick_trigger} timestamp={winch_timestamp} />
                 <Series
                     fullDataRate
+                    strokeStyle="#bbb"
                     value={ (model) => distToMeters(model, id, model.winches[id].message.WinchStatus[1].motor.position_err) }
+                    trigger={tick_trigger} timestamp={winch_timestamp} />
+                <Series
+                    fullDataRate
+                    strokeStyle="#71b1b3"
+                    value={ (model) => distToMeters(model, id, model.winches[id].message.WinchStatus[1].motor.pos_err_filtered) }
                     trigger={tick_trigger} timestamp={winch_timestamp} />
             </Chart>
 

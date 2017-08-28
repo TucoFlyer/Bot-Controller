@@ -18,7 +18,7 @@ export const Chart = windowSize( class extends Component {
             <SmoothieComponent
                 ref={ (s) => this.reactSmoothie = s }
                 width={this.props.width || (this.props.windowWidth - SPACE_MARGIN_PIXELS)}
-                height={this.props.height || 100}
+                height={this.props.height || 150}
                 millisPerPixel={this.props.millisPerPixel || 15}
                 interpolation={this.props.interpolation || 'linear'}
 

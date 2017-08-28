@@ -129,8 +129,9 @@ pub struct PIDGains {
     pub gain_p: f32,            // PWM strength proportional to position error
     pub gain_i: f32,            // PWM strength proportional to integral of position error
     pub gain_d: f32,            // PWM gain proportional to velocity error
-    pub d_filter_param: f32,    // IIR filter parameter in range [0,1] for velocity error, 0=slow 1=fast
+    pub p_filter_param: f32,    // IIR filter parameter in range [0,1] for position error, 0=slow 1=fast
     pub i_decay_param: f32,     // Exponential decay for the integral parameter, 0=slow 1=fast
+    pub d_filter_param: f32,    // IIR filter parameter in range [0,1] for velocity error, 0=slow 1=fast
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -161,6 +162,7 @@ pub struct WinchPWM {
 pub struct WinchMotorControl {
     pub pwm: WinchPWM,
     pub position_err: i32,          // Instantaneous position error
+    pub pos_err_filtered: f32,      // Low-pass-filtered position error
     pub pos_err_integral: f32,      // Accumulated integral of the position error, reset by halt watchdog
     pub vel_err_inst: f32,          // Instantaneous velocity error
     pub vel_err_filtered: f32,      // Low-pass-filtered velocity error

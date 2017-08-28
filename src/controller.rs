@@ -260,8 +260,9 @@ impl WinchController {
             gain_p: cal.pwm_gain_from_m(config.params.pwm_gain_p) as f32,
             gain_i: cal.pwm_gain_from_m(config.params.pwm_gain_i) as f32,
             gain_d: cal.pwm_gain_from_m(config.params.pwm_gain_d) as f32,
-            d_filter_param: config.params.vel_err_filter_param as f32,
+            p_filter_param: config.params.pos_err_filter_param as f32,
             i_decay_param: config.params.integral_err_decay_param as f32,
+            d_filter_param: config.params.vel_err_filter_param as f32,
         }   
     }
 
@@ -270,8 +271,9 @@ impl WinchController {
             gain_p: 0.0,
             gain_i: 0.0,
             gain_d: 0.0,
-            d_filter_param: 1.0,
+            p_filter_param: 1.0,
             i_decay_param: 1.0,
+            d_filter_param: 1.0,
         }
     }
 

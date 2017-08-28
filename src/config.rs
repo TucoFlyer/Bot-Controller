@@ -85,6 +85,7 @@ pub struct BotParams {
     pub force_lockout_below_kg: f64,
     pub force_lockout_above_kg: f64,
     pub force_filter_param: f64,
+    pub pos_err_filter_param: f64,
     pub vel_err_filter_param: f64,
     pub integral_err_decay_param: f64,
     pub pwm_gain_p: f64,
