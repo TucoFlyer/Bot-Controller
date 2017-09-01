@@ -7,7 +7,7 @@ import time
 import math
 
 PORT = 9024
-FLYER = ('10.32.0.8', PORT)
+FLYER = ('10.32.0.10', PORT)
 MSG_LEDS = b'\x05'
 MAX_LEDS = 200
 
@@ -22,7 +22,7 @@ def shader(frame):
 
     def pixel(n):
 
-        br = [ math.pow(math.sin(n / 30.0 - center), 40.0) for center, color in blips ]
+        br = [ math.pow(math.sin(n / 10.0 - center), 40.0) for center, color in blips ]
 
         rgb = [
             sum( br[i] * tint[ch] for i, (center, tint) in enumerate(blips) )

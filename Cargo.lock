@@ -13,6 +13,7 @@ dependencies = [
  "mount 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "multiqueue 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "nom 3.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "num-traits 0.1.40 (registry+https://github.com/rust-lang/crates.io-index)",
  "palette 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "qrcode 0.4.0 (git+https://github.com/kennytm/qrcode-rust)",
  "rand 0.3.16 (registry+https://github.com/rust-lang/crates.io-index)",

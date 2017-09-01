@@ -21,6 +21,7 @@ extern crate gilrs;
 
 // For LED colors
 extern crate palette;
+extern crate num_traits;
 
 // For fygimbal
 extern crate crc16;
@@ -34,7 +35,8 @@ extern crate mount;
 extern crate websocket;
 extern crate qrcode;
 
-extern crate vecmath;
+extern crate vecmath as vecmath_lib;
+mod vecmath;
 
 mod fygimbal;
 mod led;

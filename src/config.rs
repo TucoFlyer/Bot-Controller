@@ -78,6 +78,7 @@ impl WinchCalibration {
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct BotParams {
+    pub led_rgb_brightness_scale: Vector3<f64>,
     pub manual_control_velocity_m_per_sec: f64,
     pub accel_limit_m_per_sec2: f64,
     pub force_neg_motion_min_kg: f64,

@@ -1,10 +1,12 @@
 use bus::*;
 use config::{Config, ControllerMode, WinchCalibration};
+use led::WinchLighting;
 
 pub struct WinchController {
     last_tick_counter: Option<u32>,
     quantized_position_target: i32,
     fract_position_target: f64,
+    last_velocity: f64,
 }
 
 impl WinchController {
@@ -12,7 +14,8 @@ impl WinchController {
         WinchController {
             last_tick_counter: None,
             quantized_position_target: 0,
-            fract_position_target: 0.0
+            fract_position_target: 0.0,
+            last_velocity: 0.0,
         }
     }
 
@@ -23,6 +26,14 @@ impl WinchController {
         self.fract_position_target = fract;
         let int_diff = (pos - fract).round() as i32;
         self.quantized_position_target = self.quantized_position_target.wrapping_add(int_diff);
+        self.last_velocity = m_per_s;
+    }
+
+    pub fn light_environment(&self, config: &Config) -> WinchLighting {
+        WinchLighting {
+            velocity_m_per_sec: self.last_velocity,
+            wavelength_m: 0.04,
+        }
     }
 
     fn is_contiguous(self: &mut WinchController, tick_counter: u32) -> bool {
@@ -65,7 +76,7 @@ impl WinchController {
             p_filter_param: config.params.pos_err_filter_param as f32,
             i_decay_param: config.params.integral_err_decay_param as f32,
             d_filter_param: config.params.vel_err_filter_param as f32,
-        }   
+        }
     }
 
     fn make_halted_pid_gains(self: &WinchController) -> PIDGains {
@@ -79,7 +90,7 @@ impl WinchController {
             d_filter_param: 1.0,
         }
     }
-  
+
     fn make_deadband(self: &WinchController, config: &Config, cal: &WinchCalibration) -> WinchDeadband {
         WinchDeadband {
             position: cal.dist_from_m(config.params.deadband_position_err_m).round() as i32,

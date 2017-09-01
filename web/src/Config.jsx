@@ -46,7 +46,7 @@ export const withConfig = (ComposedComponent, options) => class extends Componen
 
 // Path is something like "foo.bar.blah" or ["foo", 5, "blah"]
 export const getByPath = function(config, path) {
-    for (let part of path.split ? path.split(".") : path) {
+    for (let part of pathArray(path)) {
         if (config === undefined) {
             break;
         }
@@ -55,9 +55,19 @@ export const getByPath = function(config, path) {
     return config;
 }
 
+function pathArray(str_or_list) {
+    let array = Array.from(str_or_list.split ? str_or_list.split(".") : str_or_list);
+    for (let i in array) {
+        const str_or_int = array[i];
+        const intval = parseInt(str_or_int, 10);
+        array[i] = Number.isNaN(intval) ? str_or_int : intval;
+    }
+    return array;
+}
+
 // Inverse of getByPath, creates intermediate nodes as needed
 export const setByPath = function(config, path, item) {
-    let parts = Array.from(path.split ? path.split(".") : path);
+    let parts = pathArray(path);
     let obj = config;
     for (let i = 0; i < parts.length - 1; i++) {
         if (parts[i] in obj) {
@@ -148,7 +158,7 @@ export const ConfigRevertButton = withConfig(class extends Component {
     handleClick = (event) => {
         const item = this.props.item;
         const config = setByPath({}, item, getByPath(this.props.config, item));
-        this.context.botConnection.socket.send(JSON.stringify({ UpdateConfig: config }));        
+        this.context.botConnection.socket.send(JSON.stringify({ UpdateConfig: config }));
     }
 },{
     once: true,

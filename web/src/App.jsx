@@ -5,7 +5,7 @@ import { Route, Switch } from 'react-router';
 
 import './App.css';
 import AuthStatus from './AuthStatus';
-import Flyer from './pages/Flyer';
+import Bot from './pages/Bot';
 import Winches from './pages/Winches';
 import Network from './pages/Network';
 
@@ -18,7 +18,7 @@ export default () => (
         <AuthStatus className="right" />
 
         <Nav pills>
-            <NavItem><NavLink to="/" exact activeClassName="active" tag={RRNavLink}> Flyer </NavLink></NavItem>
+            <NavItem><NavLink to="/" exact activeClassName="active" tag={RRNavLink}> Bot </NavLink></NavItem>
             <NavItem><NavLink to="/winch" activeClassName="active" tag={RRNavLink}> Winch </NavLink></NavItem>
             <NavItem><NavLink to="/net" activeClassName="active" tag={RRNavLink}> Net </NavLink></NavItem>
         </Nav>
@@ -26,7 +26,7 @@ export default () => (
     	<Switch>
             <Route path="/winch" component={Winches} />
             <Route path="/net" component={Network} />
-            <Route path="/" component={Flyer} />
+            <Route path="/" component={Bot} />
     	</Switch>
     </div>
 );

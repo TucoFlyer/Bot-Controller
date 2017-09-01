@@ -10,6 +10,7 @@ use std::thread;
 use config::ConfigFile;
 use botcomm::BotComm;
 use self::state::ControllerState;
+use led::LightAnimator;
 
 pub fn start(bus: &Bus, comm: &BotComm, cf: ConfigFile) {
     let bus = bus.clone();
@@ -31,7 +32,8 @@ struct Controller {
 
 impl Controller {
     fn new(bus: Bus, comm: BotComm, cf: ConfigFile) -> Controller {
-        let state = ControllerState::new(&cf.config);
+        let lights = LightAnimator::start(&cf.config, &comm);
+        let state = ControllerState::new(&cf.config, lights);
         Controller { bus, comm, cf, state }
     }
 
@@ -43,6 +45,7 @@ impl Controller {
 
     fn poll(self: &mut Controller) {
         if let Ok(ts_msg) = self.bus.receiver.recv() {
+            let timestamp = ts_msg.timestamp;
             match ts_msg.message {
 
                 Message::UpdateConfig(updates) => {
@@ -84,6 +87,7 @@ impl Controller {
 
                 _ => (),
             }
+            self.state.after_each_message(timestamp, &self.cf.config);
         }
     }
 }

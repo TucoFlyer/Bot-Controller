@@ -16,6 +16,7 @@ const MSG_WINCH_STATUS      : u8 = 0x03;    // struct winch_status
 const MSG_WINCH_COMMAND     : u8 = 0x04;    // struct winch_command
 const MSG_LEDS              : u8 = 0x05;    // apa102 data, 32 bits/pixel
 
+#[derive(Debug)]
 pub struct BotComm {
     socket: UdpSocket,
     addrs: BotAddrs
@@ -29,13 +30,13 @@ impl BotComm {
         Ok(BotComm { socket, addrs })
     }
 
-    pub fn try_clone(self: &BotComm) -> Result<BotComm, io::Error> {
+    pub fn try_clone(&self) -> Result<BotComm, io::Error> {
         let socket = self.socket.try_clone()?;
         let addrs = self.addrs.clone();
         Ok(BotComm { socket, addrs })
     }
 
-    fn send<T: Serialize>(self: &BotComm, addr: &SocketAddr, header: u8, body: &T) -> io::Result<()> {
+    fn send<T: Serialize>(&self, addr: &SocketAddr, header: u8, body: &T) -> io::Result<()> {
         let limit = bincode::Bounded(2048);
         let packet = (header, body);
         let buf = bincode::serialize(&packet, limit).unwrap();
@@ -43,31 +44,36 @@ impl BotComm {
         Ok(())
     }
 
-    pub fn winch_command(self: &BotComm, id: usize, cmd: WinchCommand) -> io::Result<()> {
+    pub fn winch_command(&self, id: usize, cmd: WinchCommand) -> io::Result<()> {
         self.send(&self.addrs.winches[id], MSG_WINCH_COMMAND, &cmd)
     }
 
-    pub fn winch_leds<'a>(self: &'a BotComm, id: usize) -> LedWriter<'a> {
-        LedWriter {
+    pub fn winch_leds<'a>(&'a self, id: usize) -> LEDWriter<'a> {
+        LEDWriter {
             comm: &self,
             addr: &self.addrs.winches[id]
         }
     }
 
-    pub fn flyer_leds<'a>(self: &'a BotComm) -> LedWriter<'a> {
-        LedWriter {
+    pub fn flyer_leds<'a>(&'a self) -> LEDWriter<'a> {
+        LEDWriter {
             comm: &self,
             addr: &self.addrs.flyer
         }
     }
+
+    pub fn num_winches(&self) -> usize {
+        self.addrs.winches.len()
+    }
 }
 
-pub struct LedWriter<'a> {
+#[derive(Debug)]
+pub struct LEDWriter<'a> {
     comm: &'a BotComm,
     addr: &'a SocketAddr,
 }
 
-impl<'a> io::Write for LedWriter<'a> {
+impl<'a> io::Write for LEDWriter<'a> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.comm.send(self.addr, MSG_LEDS, &buf)?;
         Ok(buf.len())
@@ -78,7 +84,7 @@ impl<'a> io::Write for LedWriter<'a> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct BotAddrs {
     controller: SocketAddr,
     flyer: SocketAddr,
