@@ -1,20 +1,28 @@
 use vecmath::*;
 use palette;
-use config::{Config, ControllerMode};
+use palette::Mix;
 
 pub type Rgb = palette::Rgb<f64>;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct LightEnvironment {
-	pub rgb_brightness_scale: Rgb,
-	pub ctrl_mode: ControllerMode,
 	pub winches: Vec<WinchLighting>,
+	pub flash_exponent: f64,
+	pub flash_rate_hz: f64,
+	pub winch_wave_exponent: f64,
+	pub winch_wavelength: f64,
+	pub winch_command_color: Rgb,
+	pub winch_motion_color: Rgb,
+	pub brightness: f64,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct WinchLighting {
-	pub velocity_m_per_sec: f64,
-	pub wavelength_m: f64,
+	pub command_phase: f64,
+	pub motion_phase: f64,
+	pub wave_amplitude: f64,
+	pub base_color: Rgb,
+	pub flash_color: Rgb,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -32,51 +40,43 @@ pub enum PixelUsage {
 
 #[derive(Debug)]
 pub struct Shader {
-	winches: Vec<WinchState>,
+	pub flash_state_radians: f64,
 }
 
-#[derive(Debug)]
-struct WinchState {
-	position_mod_tau: f64,
-}
-
-impl WinchLighting {
-	fn m_to_radians(&self, meters: f64) -> f64 {
-		meters * TAU / self.wavelength_m
-	}
+fn pulse_wave(angle: f64, exponent: f64) -> f64 {
+	(0.5 + 0.5 * angle.sin()).powf(exponent)
 }
 
 impl Shader {
-	pub fn new(config: &Config) -> Shader {
-		let winches = config.winches.iter().map(|_config| {
-			WinchState {
-				position_mod_tau: 0.0
-			}
-		}).collect();
-		Shader { winches }
+	pub fn new() -> Shader {
+		Shader {
+			flash_state_radians: 0.0
+		}
 	}
 
 	pub fn step(&mut self, env: &LightEnvironment, seconds: f64) {
-		for (id, winch_env) in env.winches.iter().enumerate() {
-			let radians_per_sec = winch_env.m_to_radians(winch_env.velocity_m_per_sec);
-			let position = self.winches[id].position_mod_tau + radians_per_sec * seconds;
-			self.winches[id].position_mod_tau = position % TAU;
-		}
+		self.flash_state_radians = (self.flash_state_radians + seconds * env.flash_rate_hz * TAU) % TAU;
+	}
+
+	fn flash(&self, env: &LightEnvironment) -> f64 {
+		pulse_wave(self.flash_state_radians, env.flash_exponent)
+	}
+
+	fn winch_wave(&self, winch: &WinchLighting, env: &LightEnvironment, map: &PixelMapping, phase: f64) -> f64 {
+		let z = map.location[2];
+		let theta = phase + z * TAU / env.winch_wavelength;
+		winch.wave_amplitude * pulse_wave(theta, env.winch_wave_exponent)
 	}
 
 	pub fn pixel(&self, env: &LightEnvironment, map: &PixelMapping) -> Rgb {
 		let usage_specific = match map.usage {
 
 			PixelUsage::Winch(id) => {
-				let winch_state = &self.winches[id];
-				let winch_env = &env.winches[id];
-
-				let base_color = Rgb::new(0.0, 0.0, 0.0);
-				let wave_color = Rgb::new(0.6, 0.6, 0.6);
-
-				let y_axis = map.location[1];
-				let displaced_position = winch_state.position_mod_tau + winch_env.m_to_radians(y_axis);
-				base_color + wave_color * displaced_position.sin()
+				let winch = &env.winches[id];
+				winch.base_color
+					.mix(&winch.flash_color, self.flash(env))
+					+ env.winch_command_color * self.winch_wave(winch, env, map, winch.command_phase)
+					+ env.winch_motion_color * self.winch_wave(winch, env, map, winch.motion_phase)
 			},
 
 			PixelUsage::FlyerRing => {
@@ -88,6 +88,6 @@ impl Shader {
 			},
 
 		};
-		usage_specific * env.rgb_brightness_scale
+		usage_specific * env.brightness
 	}
 }

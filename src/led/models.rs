@@ -89,10 +89,10 @@ impl<'a> LEDModel<'a> {
 			});
 		}
 
-		if let Ok(_) = env::var("DEBUG_LED_MODEL") {
-			println!("Writing LED models as point cloud files");
+		if let Ok(_) = env::var("SAVE_LED_MODEL") {
 			to_point_cloud_file(&flyer(), "flyer_leds.xyz").unwrap();
 			to_point_cloud_file(&winch(0), "winch_leds.xyz").unwrap();
+			println!("Saved LED models as point cloud files");
 		}
 
 		LEDModel { vec }

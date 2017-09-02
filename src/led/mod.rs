@@ -7,3 +7,4 @@ mod animator;
 pub use self::animator::LightAnimator;
 pub use self::shader::LightEnvironment;
 pub use self::shader::WinchLighting;
+pub use self::shader::Rgb;

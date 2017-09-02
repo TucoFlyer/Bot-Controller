@@ -1,6 +1,6 @@
 use bus::*;
 use vecmath::*;
-use config::Config;
+use config::{Config, ControllerMode};
 use std::collections::HashMap;
 use controller::velocity::RateLimitedVelocity;
 
@@ -15,6 +15,10 @@ impl ManualControls {
             axes: HashMap::new(),
             velocity: RateLimitedVelocity::new(),
         }
+    }
+
+    pub fn full_reset(self: &mut ManualControls) {
+        *self = ManualControls::new();
     }
 
     fn lookup_axis(self: &mut ManualControls, axis: ManualControlAxis) -> f64 {
@@ -39,8 +43,13 @@ impl ManualControls {
     }
 
     pub fn control_tick(self: &mut ManualControls, config: &Config) {
-        let v = self.velocity_target(config);
-        self.velocity.tick(config, v);
+        match config.mode {
+            ControllerMode::Halted => self.full_reset(),
+            _ => {
+                let v = self.velocity_target(config);
+                self.velocity.tick(config, v);
+            }
+        };
     }
 
     pub fn control_value(self: &mut ManualControls, axis: ManualControlAxis, value: f64) {

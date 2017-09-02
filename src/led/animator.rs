@@ -2,7 +2,6 @@ use std::io::Write;
 use std::thread;
 use std::time::{Duration, Instant};
 use botcomm::BotComm;
-use config::Config;
 use led::apa102::APA102Pixel;
 use led::shader::{Shader, LightEnvironment, PixelMapping};
 use led::models::LEDModel;
@@ -16,13 +15,12 @@ pub struct LightAnimator {
 }
 
 impl LightAnimator {
-    pub fn start(config: &Config, comm: &BotComm) -> LightAnimator {
+    pub fn start(comm: &BotComm) -> LightAnimator {
         let last_sent = None;
         let (env_sender, env_recv) = sync_channel(128);
         let comm = comm.try_clone().unwrap();
-        let config = config.clone();
         thread::spawn(move || {
-            let mut anim = AnimatorThread::new(&config, &comm, env_recv);
+            let mut anim = AnimatorThread::new(&comm, env_recv);
             loop {
                 anim.frame();
             }
@@ -49,12 +47,12 @@ struct AnimatorThread<'a> {
 }
 
 impl<'a> AnimatorThread<'a> {
-    fn new(config: &Config, comm: &'a BotComm, recv: Receiver<Option<LightEnvironment>>) -> AnimatorThread<'a> {
+    fn new(comm: &'a BotComm, recv: Receiver<Option<LightEnvironment>>) -> AnimatorThread<'a> {
         AnimatorThread {
             env: None,
             recv,
             model: LEDModel::new(comm),
-            shader: Shader::new(config),
+            shader: Shader::new(),
             last_frame_timestamp: None,
         }
     }

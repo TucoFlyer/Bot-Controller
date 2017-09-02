@@ -12,7 +12,8 @@ use atomicwrites;
 use std::thread;
 use std::time::Duration;
 use std::sync::mpsc::{Sender, Receiver, channel};
-use vecmath::{Vector3};
+use vecmath::Vector3;
+use std::collections::BTreeMap;
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Config {
@@ -21,6 +22,7 @@ pub struct Config {
     pub flyer_addr: SocketAddr,
     pub web: WebConfig,
     pub params: BotParams,
+    pub lighting: LightingConfig,
     pub winches: Vec<WinchConfig>,
 }
 
@@ -77,8 +79,42 @@ impl WinchCalibration {
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+pub struct WinchLightingScheme {
+    pub wavelength_m: f64,
+    pub normal_color: Vector3<f64>,
+    pub error_colors: (Vector3<f64>, Vector3<f64>),
+    pub halt_color: Vector3<f64>,
+    pub manual_color: Vector3<f64>,
+    pub command_color: Vector3<f64>,
+    pub motion_color: Vector3<f64>,
+    pub wave_amplitude: f64,
+    pub wave_exponent: f64,
+    pub speed_for_full_wave_amplitude_m_per_sec: f64,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+pub struct LightingScheme {
+    pub brightness: f64,
+    pub flash_rate_hz: f64,
+    pub flash_exponent: f64,
+    pub winch: WinchLightingScheme,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+pub struct ScheduledLightingChange {
+    pub scheme: String,
+    pub cron: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+pub struct LightingConfig {
+    pub current: LightingScheme,
+    pub saved: BTreeMap<String, LightingScheme>,
+    pub schedule: Vec<ScheduledLightingChange>,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct BotParams {
-    pub led_rgb_brightness_scale: Vector3<f64>,
     pub manual_control_velocity_m_per_sec: f64,
     pub accel_limit_m_per_sec2: f64,
     pub force_neg_motion_min_kg: f64,

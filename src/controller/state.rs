@@ -1,5 +1,5 @@
 use bus::*;
-use vecmath::vec3_to_rgb;
+use vecmath::*;
 use std::time::{Instant, Duration};
 use config::{Config, ControllerMode};
 use controller::manual::ManualControls;
@@ -15,17 +15,21 @@ pub struct ControllerState {
 
 impl ControllerState {
     pub fn new(config: &Config, lights: LightAnimator) -> ControllerState {
-        let manual = ManualControls::new();
-        let winches = config.winches.iter().map( |_| WinchController::new() ).collect();
-        let last_per_tick_update = None;
-        ControllerState { manual, lights, winches, last_per_tick_update }
+        ControllerState {
+            lights,
+            manual: ManualControls::new(),
+            winches: config.winches.iter().enumerate().map(|(id, _config)| {
+                WinchController::new(id)
+            }).collect(),
+            last_per_tick_update: None,
+        }
     }
 
     pub fn after_each_message(&mut self, timestamp: Instant, config: &Config) {
         let tick_duration = Duration::new(0, 1000000000 / TICK_HZ);
         let tick_has_elapsed = match self.last_per_tick_update {
             None => true,
-            Some(inst) => (timestamp.duration_since(inst) >= tick_duration),
+            Some(inst) => (timestamp >= inst + tick_duration),
         };
         if tick_has_elapsed {
             self.every_tick(config);
@@ -33,9 +37,14 @@ impl ControllerState {
         }
     }
 
+    fn lighting_tick(&mut self, config: &Config) {
+        let env = self.light_environment(config);
+        self.lights.update(env);
+    }
+
     fn every_tick(&mut self, config: &Config) {
-        let light_env = self.light_environment(config);
-        self.lights.update(light_env);
+        self.manual.control_tick(config);
+        self.lighting_tick(config);
     }
 
     pub fn flyer_sensor_update(&mut self, _sensors: FlyerSensors) {
@@ -43,12 +52,11 @@ impl ControllerState {
 
     pub fn winch_control_loop(&mut self, config: &Config, id: usize, status: WinchStatus) -> WinchCommand {
         let cal = &config.winches[id].calibration;
-        self.winches[id].update(config, &status);
-        self.winches[id].velocity_tick(cal, match config.mode {
+        self.winches[id].update(config, cal, &status);
+        self.winches[id].velocity_tick(config, cal, match config.mode {
 
             ControllerMode::ManualWinch(manual_id) => {
                 if manual_id == id {
-                    self.manual.control_tick(config);
                     let vec = self.manual.limited_velocity();
                     vec[1]
                 } else {
@@ -56,23 +64,26 @@ impl ControllerState {
                 }
             },
 
-            ControllerMode::Halted => {
-                self.manual = ManualControls::new();
-                0.0
-            }
-
             _ => 0.0
         });
         self.winches[id].make_command(config, cal, &status)
     }
 
     pub fn light_environment(&self, config: &Config) -> LightEnvironment {
+        let winches = self.winches.iter().enumerate().map( |(id, winch)| {
+            let cal = &config.winches[id].calibration;
+            winch.light_environment(&config, cal)
+        }).collect();
+        
         LightEnvironment {
-            rgb_brightness_scale: vec3_to_rgb(config.params.led_rgb_brightness_scale),
-            ctrl_mode: config.mode.clone(),
-            winches: self.winches.iter().map(|winch| {
-                winch.light_environment(&config)
-            }).collect(),
+            winches,
+            winch_wavelength: config.lighting.current.winch.wavelength_m,
+            winch_wave_exponent: config.lighting.current.winch.wave_exponent,
+            winch_command_color: vec3_to_rgb(config.lighting.current.winch.command_color),
+            winch_motion_color: vec3_to_rgb(config.lighting.current.winch.motion_color),
+            flash_exponent: config.lighting.current.flash_exponent,
+            flash_rate_hz: config.lighting.current.flash_rate_hz,
+            brightness: config.lighting.current.brightness,
         }
     }
 }
