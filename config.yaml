@@ -1,5 +1,6 @@
 ---
-mode: Halted
+mode: 
+  ManualWinch: 0
 controller_addr: "10.32.0.1:9024"
 flyer_addr: "10.32.0.8:9024"
 web: 

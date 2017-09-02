@@ -204,7 +204,6 @@ impl ConfigFile {
                     None => config,
                 };
 
-                println!("Saving configuration");
                 let string = serde_yaml::to_string(&config).unwrap();
                 let af = atomicwrites::AtomicFile::new(&path, atomicwrites::AllowOverwrite);
                 af.write( |f| {
