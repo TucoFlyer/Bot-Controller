@@ -2,7 +2,7 @@ use std::io::Write;
 use std::thread;
 use std::time::{Duration, Instant};
 use botcomm::BotComm;
-use led::apa102::APA102Pixel;
+use led::apa102::write_apa102;
 use led::shader::{Shader, LightEnvironment, PixelMapping};
 use led::models::LEDModel;
 use std::sync::mpsc::{sync_channel, SyncSender, Receiver};
@@ -99,8 +99,7 @@ impl<'a> AnimatorThread<'a> {
     fn render(&self, mapping: &Vec<PixelMapping>, env: &LightEnvironment) -> Vec<u8> {
         let mut buf = Vec::new();
         for pixel_mapping in mapping.iter() {
-            let pix : APA102Pixel = self.shader.pixel(env, pixel_mapping).to_pixel();
-            pix.push_to_vec(&mut buf);
+            write_apa102(&mut buf, self.shader.pixel(env, pixel_mapping)).unwrap();
         }
         buf
     }

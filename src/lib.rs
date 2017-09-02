@@ -19,10 +19,6 @@ extern crate multiqueue;
 // Gamepad input
 extern crate gilrs;
 
-// For LED colors
-extern crate palette;
-extern crate num_traits;
-
 // For fygimbal
 extern crate crc16;
 extern crate byteorder;

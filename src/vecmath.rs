@@ -1,6 +1,3 @@
-use palette::Rgb;
-use num_traits::Float;
-
 pub use vecmath_lib::*;
 pub use std::f64::consts::PI;
 pub const TAU : f64 = PI * 2.0;
@@ -24,6 +21,6 @@ pub fn arbitrary_perpendicular_vector(v: Vector3<f64>) -> Vector3<f64> {
 	}
 }
 
-pub fn vec3_to_rgb<T: Float>(v: Vector3<T>) -> Rgb<T> {
-	Rgb::new(v[0], v[1], v[2])
+pub fn vec3_mix(a: Vector3<f64>, b: Vector3<f64>, scale: f64) -> Vector3<f64> {
+	vec3_add(a, vec3_scale(vec3_sub(b, a), scale))
 }

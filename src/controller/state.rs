@@ -1,5 +1,4 @@
 use bus::*;
-use vecmath::*;
 use std::time::{Instant, Duration};
 use config::{Config, ControllerMode};
 use controller::manual::ManualControls;
@@ -79,8 +78,8 @@ impl ControllerState {
             winches,
             winch_wavelength: config.lighting.current.winch.wavelength_m,
             winch_wave_exponent: config.lighting.current.winch.wave_exponent,
-            winch_command_color: vec3_to_rgb(config.lighting.current.winch.command_color),
-            winch_motion_color: vec3_to_rgb(config.lighting.current.winch.motion_color),
+            winch_command_color: config.lighting.current.winch.command_color,
+            winch_motion_color: config.lighting.current.winch.motion_color,
             flash_exponent: config.lighting.current.flash_exponent,
             flash_rate_hz: config.lighting.current.flash_rate_hz,
             brightness: config.lighting.current.brightness,

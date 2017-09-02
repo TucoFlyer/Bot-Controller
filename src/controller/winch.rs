@@ -1,7 +1,7 @@
 use bus::*;
 use vecmath::*;
 use config::{Config, ControllerMode, WinchCalibration};
-use led::{WinchLighting, Rgb};
+use led::WinchLighting;
 
 pub struct WinchController {
     id: usize,
@@ -88,21 +88,21 @@ impl WinchController {
         self.lighting_motion_phase = lighting_motion(config, self.lighting_motion_phase, distance_m);
     }
 
-    fn lighting_base_color(&self, config: &Config) -> Rgb {
+    fn lighting_base_color(&self, config: &Config) -> Vector3<f64> {
         if self.mech_status != MechStatus::Normal {
-            vec3_to_rgb(config.lighting.current.winch.error_colors.0)
+            config.lighting.current.winch.error_colors.0
         } else {
             match config.mode {
-                ControllerMode::Halted => vec3_to_rgb(config.lighting.current.winch.halt_color),
-                ControllerMode::ManualWinch(id) if id == self.id => vec3_to_rgb(config.lighting.current.winch.manual_color),
-                _ => vec3_to_rgb(config.lighting.current.winch.normal_color),
+                ControllerMode::Halted => config.lighting.current.winch.halt_color,
+                ControllerMode::ManualWinch(id) if id == self.id => config.lighting.current.winch.manual_color,
+                _ => config.lighting.current.winch.normal_color,
             }
         }
     }
 
-    fn lighting_flash_color(&self, config: &Config) -> Rgb {
+    fn lighting_flash_color(&self, config: &Config) -> Vector3<f64> {
         if self.mech_status == MechStatus::Stuck {
-            vec3_to_rgb(config.lighting.current.winch.error_colors.1)
+            config.lighting.current.winch.error_colors.1
         } else {
             self.lighting_base_color(config)
         }
