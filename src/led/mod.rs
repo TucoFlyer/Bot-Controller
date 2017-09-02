@@ -1,4 +1,4 @@
-mod apa102;
+mod format;
 mod ledshape;
 mod models;
 mod shader;
