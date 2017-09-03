@@ -27,7 +27,7 @@ params:
 lighting: 
   animation: 
     frame_rate: 160
-    filter_param: 0.04
+    filter_param: 0.15
   current: 
     brightness: 1
     flash_rate_hz: 3
@@ -62,8 +62,8 @@ lighting:
         - 0
         - 1
         - 1
-      wave_amplitude: 4
-      wave_exponent: 8
+      wave_amplitude: 1
+      wave_exponent: 6
       speed_for_full_wave_amplitude_m_per_sec: 0.4
       velocity_filter_param: 0.01
   saved: {}

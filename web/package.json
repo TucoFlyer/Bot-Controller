@@ -13,6 +13,7 @@
     "prop-types": "^15.5.10",
     "query-string": "^5.0.0",
     "react": "^15.6.1",
+    "react-color": "^2.13.5",
     "react-dom": "^15.6.1",
     "react-json-pretty": "^1.6.3",
     "react-localstorage": "^0.3.1",

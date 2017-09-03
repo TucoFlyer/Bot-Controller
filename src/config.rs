@@ -1,19 +1,20 @@
 //! Bot configuration
 
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-use std::fs::File;
-use std::path::{Path, PathBuf};
-use std::io::{Read, Write};
-use std::fmt::Display;
-use serde_json;
-use serde_json::{Value, from_value, to_value};
-use serde_yaml;
 use atomicwrites;
+use serde_json::{Value, from_value, to_value};
+use serde_json;
+use serde_yaml;
+use std::collections::BTreeMap;
+use std::env;
+use std::fmt::Display;
+use std::fs::File;
+use std::io::{Read, Write};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::path::{Path, PathBuf};
+use std::sync::mpsc::{Sender, Receiver, channel};
 use std::thread;
 use std::time::Duration;
-use std::sync::mpsc::{Sender, Receiver, channel};
 use vecmath::Vector3;
-use std::collections::BTreeMap;
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Config {
@@ -164,7 +165,13 @@ impl WebConfig {
     }
 
     pub fn http_uri(self: &WebConfig, secret_key: &str) -> String {
-        format!("http://{}/#?k={}", self.http_addr, secret_key)
+        // Allow overriding port by environment variable, handy for developing with port 3000.
+        // This doesn't affect the port we serve on, only the one we tell clients to connect to.
+        let mut http_addr = self.http_addr.clone();
+        if let Ok(port) = env::var("HTTP_URI_PORT") {
+            http_addr.set_port(port.parse::<u16>().expect("HTTP_URI_PORT override must be a port number"));
+        }
+        format!("http://{}/#?k={}", http_addr, secret_key)
     }
 
     pub fn ws_uri(self: &WebConfig) -> String {
