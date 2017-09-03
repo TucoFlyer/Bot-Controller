@@ -49,6 +49,7 @@ struct AnimatorThread<'a> {
     recv: Receiver<LightEnvironment>,
     model: LEDModel<'a>,
     shader: Shader,
+    interpolation_target: Option<LightEnvironment>,
     last_frame_timestamp: Option<Instant>,
 }
 
@@ -56,11 +57,12 @@ impl<'a> AnimatorThread<'a> {
     fn new(config: LightAnimatorConfig, comm: &'a BotComm, recv: Receiver<LightEnvironment>) -> AnimatorThread<'a> {
         AnimatorThread {
             config,
-            env: None,
             recv,
             model: LEDModel::new(comm),
             shader: Shader::new(),
+            env: None,
             last_frame_timestamp: None,
+            interpolation_target: None,
         }
     }
 
@@ -88,12 +90,15 @@ impl<'a> AnimatorThread<'a> {
         };
 
         // Receive all pending env updates, keep only the last.
-        let next_env = self.recv.try_iter().last().or_else(|| self.env.clone());
+        self.interpolation_target = self.recv.try_iter().last().or_else(|| self.interpolation_target.clone());
 
         // Interpolate between LightEnvironments to prevent flicker and make transitions less abrupt
         self.env = match self.env {
-            None => next_env,
-            Some(ref last_env) => Some(serde_interpolate(last_env, &next_env.unwrap(), self.config.filter_param)),
+            None => self.interpolation_target.clone(),
+            Some(ref last_env) => Some(match self.interpolation_target {
+                None => last_env.clone(),
+                Some(ref target) => serde_interpolate(last_env, target, self.config.filter_param),
+            }),
         };
 
         if let Some(ref env) = self.env {

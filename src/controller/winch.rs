@@ -121,8 +121,15 @@ impl WinchController {
     }
 
     fn lighting_wave_amplitude(&self, config: &Config) -> f64 {
-        let full_scale = config.lighting.current.winch.speed_for_full_wave_amplitude_m_per_sec;
-        (self.lighting_filtered_velocity.abs() / full_scale).min(1.0) * config.lighting.current.winch.wave_amplitude
+        match config.mode {
+            ControllerMode::Halted => 0.0,
+            _ => if self.mech_status != MechStatus::Normal {
+                0.0
+            } else {
+                let full_scale = config.lighting.current.winch.speed_for_full_wave_amplitude_m_per_sec;
+                (self.lighting_filtered_velocity.abs() / full_scale).min(1.0) * config.lighting.current.winch.wave_amplitude
+            }
+        }
     }
 
     fn is_contiguous(self: &mut WinchController, tick_counter: u32) -> bool {
