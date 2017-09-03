@@ -10,8 +10,12 @@ use std::time::Duration;
 struct State {
     left_enable: bool,
     right_enable: bool,
-    left_z: f64,
-    right_z: f64,
+    left_z: f32,
+    right_z: f32,
+    rel_x: f32,
+    rel_y: f32,
+    cam_x: f32,
+    cam_y: f32,
 }
 
 impl State {
@@ -20,27 +24,62 @@ impl State {
             left_enable: false,
             right_enable: false,
             left_z: 0.0,
-            right_z: 0.0
+            right_z: 0.0,
+            rel_x: 0.0,
+            rel_y: 0.0,
+            cam_x: 0.0,
+            cam_y: 0.0,
         }
     }
 
+    fn reset(&mut self) {
+        *self = State::new();
+    }
+
+    fn x_command(self: &State) -> Command {
+        Command::ManualControlValue(ManualControlAxis::RelativeX, self.rel_x as f64)
+    }
+
+    fn y_command(self: &State) -> Command {
+        Command::ManualControlValue(ManualControlAxis::RelativeY, self.rel_y as f64)
+    }
+
     fn z_command(self: &State) -> Command {
-        Command::ManualControlValue(ManualControlAxis::RelativeZ, self.right_z - self.left_z)
+        Command::ManualControlValue(ManualControlAxis::RelativeZ, (self.right_z - self.left_z) as f64)
     }
 
-    fn any_enable_button(self: &State) -> bool {
+    fn pitch_command(self: &State) -> Command {
+        Command::ManualControlValue(ManualControlAxis::CameraPitch, self.cam_y as f64)
+    }
+
+    fn yaw_command(self: &State) -> Command {
+        Command::ManualControlValue(ManualControlAxis::CameraYaw, self.cam_x as f64)
+    }
+
+    fn is_enabled(self: &State) -> bool {
         self.left_enable || self.right_enable
-    }
-
-    fn if_enabled(self: &State, cmd: Command) -> Option<Command> {
-        if self.any_enable_button() { Some(cmd) } else { None }
-    }
-
-    fn reset_if_disabled(self: &State) -> Option<Command> {
-        if self.any_enable_button() { None } else { Some(Command::ManualControlReset) }
     }
 }
 
+fn send_command(bus: &Bus, cmd: Command) {
+    drop(bus.sender.try_send(Message::Command(cmd).timestamp()))
+}
+
+fn send_reset(bus: &Bus) {
+    send_command(bus, Command::ManualControlReset)
+}
+
+fn send_complete(bus: &Bus, state: &State) {
+    if state.is_enabled() {
+        send_command(bus, state.x_command());
+        send_command(bus, state.y_command());
+        send_command(bus, state.z_command());
+        send_command(bus, state.pitch_command());
+        send_command(bus, state.yaw_command());
+    } else {
+        send_reset(bus);
+    }
+}
 
 pub fn start( bus: &Bus ) {
     let bus = bus.clone();
@@ -50,38 +89,30 @@ pub fn start( bus: &Bus ) {
 
         loop {
             for (_id, event) in gil.poll_events() {
+                match event {
 
-                let cmd = match event {
+                    Event::Connected => { state.reset(); send_reset(&bus) },
+                    Event::Disconnected => { state.reset(); send_reset(&bus) },
 
-                    Event::Connected => Some(Command::ManualControlReset),
-                    Event::Disconnected => Some(Command::ManualControlReset),
+                    Event::ButtonPressed(Button::LeftTrigger, _) => { state.left_enable = true; send_complete(&bus, &state) },
+                    Event::ButtonReleased(Button::LeftTrigger, _) => { state.left_enable = false; send_complete(&bus, &state) },
+                    Event::ButtonPressed(Button::RightTrigger, _) => { state.right_enable = true; send_complete(&bus, &state) },
+                    Event::ButtonReleased(Button::RightTrigger, _) => { state.right_enable = false; send_complete(&bus, &state) },
 
-                    Event::ButtonPressed(Button::LeftTrigger, _) => { state.left_enable = true; None },
-                    Event::ButtonReleased(Button::LeftTrigger, _) => { state.left_enable = false; state.reset_if_disabled() },
-                    Event::ButtonPressed(Button::RightTrigger, _) => { state.right_enable = true; None },
-                    Event::ButtonReleased(Button::RightTrigger, _) => { state.right_enable = false; state.reset_if_disabled() },
+                    Event::ButtonPressed(Button::East, _) => send_command(&bus, Command::SetMode(ControllerMode::Halted)),
+                    Event::ButtonPressed(Button::South, _) => send_command(&bus, Command::SetMode(ControllerMode::ManualFlyer)),
+                    Event::ButtonPressed(Button::West, _) => send_command(&bus, Command::SetMode(ControllerMode::ManualWinch(0))),
 
-                    Event::ButtonPressed(Button::East, _) => Some(Command::SetMode(ControllerMode::Halted)),
-                    Event::ButtonPressed(Button::South, _) => Some(Command::SetMode(ControllerMode::ManualFlyer)),
-                    Event::ButtonPressed(Button::West, _) => Some(Command::SetMode(ControllerMode::ManualWinch(0))),
+                    Event::AxisChanged(Axis::RightStickX, v, _) => { state.cam_x = v; if state.is_enabled() { send_command(&bus, state.yaw_command()) }},
+                    Event::AxisChanged(Axis::RightStickY, v, _) => { state.cam_y = v; if state.is_enabled() { send_command(&bus, state.pitch_command()) }},
 
-                    Event::AxisChanged(Axis::RightStickX, v, _) => state.if_enabled(Command::ManualControlValue(ManualControlAxis::CameraYaw, v as f64)),
-                    Event::AxisChanged(Axis::RightStickY, v, _) => state.if_enabled(Command::ManualControlValue(ManualControlAxis::CameraPitch, v as f64)),
-                    Event::AxisChanged(Axis::LeftStickX, v, _) => state.if_enabled(Command::ManualControlValue(ManualControlAxis::RelativeX, v as f64)),
-                    Event::AxisChanged(Axis::LeftStickY, v, _) => state.if_enabled(Command::ManualControlValue(ManualControlAxis::RelativeY, v as f64)),
-                    Event::AxisChanged(Axis::LeftTrigger2, v, _) => { state.left_z = v as f64; state.if_enabled(state.z_command()) },
-                    Event::AxisChanged(Axis::RightTrigger2, v, _) => { state.right_z = v as f64; state.if_enabled(state.z_command()) },
-                    _ => None,
+                    Event::AxisChanged(Axis::LeftStickX, v, _) => { state.rel_x = v; if state.is_enabled() { send_command(&bus, state.x_command()) }},
+                    Event::AxisChanged(Axis::LeftStickY, v, _) => { state.rel_y = v; if state.is_enabled() { send_command(&bus, state.y_command()) }},
+                    Event::AxisChanged(Axis::LeftTrigger2, v, _) => { state.left_z = v; if state.is_enabled() { send_command(&bus, state.z_command()) }},
+                    Event::AxisChanged(Axis::RightTrigger2, v, _) => { state.right_z = v; if state.is_enabled() { send_command(&bus, state.z_command()) }},
+
+                    _ => (),
                 };
-
-                if cmd == Some(Command::ManualControlReset) {
-                    state = State::new();
-                }
-
-                match cmd {
-                    Some(c) => drop(bus.sender.try_send(Message::Command(c).timestamp())),
-                    None => (),
-                }
             }
 
             thread::sleep(Duration::from_millis(10));
