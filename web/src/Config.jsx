@@ -2,7 +2,10 @@ import React, { Component } from 'react';
 import JSONPretty from 'react-json-pretty';
 import PropTypes from 'prop-types';
 import { Button } from 'reactstrap';
+import { CustomPicker } from 'react-color';
+import { Saturation, Hue } from 'react-color/lib/components/common'
 import { BotConnection } from './BotConnection';
+import reactCSS from 'reactcss';
 import './Config.css';
 
 // Higher order component that adds the configuration as a prop on the wrapped component
@@ -139,6 +142,63 @@ export const ConfigSlider = withConfig(class extends Component {
             UpdateConfig: setByPath({}, this.props.item, parseFloat(event.target.value))
         }));
     }
+});
+
+// Color picker for a vector config item
+export const ConfigColor = withConfig(class extends Component {
+    render() {
+        let { config, item } = this.props;
+        const value = getByPath(config, item);
+        return <ConfigColorPicker
+            color={{
+                r: value[0] * 255,
+                g: value[1] * 255,
+                b: value[2] * 255
+            }}
+            onChange={this.handleChange.bind(this)}
+        />
+    }
+
+    static contextTypes = {
+        botConnection: PropTypes.instanceOf(BotConnection),
+    }
+
+    handleChange(color, event) {
+       this.context.botConnection.socket.send(JSON.stringify({
+            UpdateConfig: setByPath({}, this.props.item, [
+                color.rgb.r / 255.0,
+                color.rgb.g / 255.0,
+                color.rgb.b / 255.0,
+            ])
+        }));
+    }
+});
+
+
+const ConfigColorPicker = CustomPicker(function(props) {
+    let styles = reactCSS({
+        'default': {
+            preview: {
+                background: props.hex
+            }
+        }
+    });
+    return <div className="ConfigColorPicker">
+        <div className="saturation">
+            <Saturation
+                hsl={ props.hsl }
+                hsv={ props.hsv }
+                onChange={ props.onChange }
+            />
+        </div>
+        <div className="hue">
+            <Hue
+                hsl={ props.hsl }
+                onChange={ props.onChange }
+            />
+        </div>
+        <div className="preview" style={styles.preview} ></div>
+    </div>;
 });
 
 // Button that stores the first config it gets, click to revert

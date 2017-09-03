@@ -5,4 +5,35 @@
 
 .ConfigSlider input {
 	width: 80%;
+	height: 40px;
+}
+
+.ConfigColorPicker {
+	position: relative;
+	width: 100%;
+	max-width: 600px;
+	height: 200px;
+	background: #444;
+	margin: 0 0 0.5em 0;
+}
+
+.ConfigColorPicker .saturation {
+	position: absolute;
+	top: 50px;
+	width: 80%;
+	height: 150px;
+}
+
+.ConfigColorPicker .hue {
+	position: absolute;
+	width: 80%;
+	height: 48px;
+}
+
+.ConfigColorPicker .preview {
+	position: absolute;
+	width: 20%;
+	height: 100%;
+	right: 0;
+	border: 2px solid #444;
 }

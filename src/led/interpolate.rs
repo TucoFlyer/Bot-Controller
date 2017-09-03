@@ -3,11 +3,19 @@ use serde::de::DeserializeOwned;
 use serde_json::{Value, Number, Map, to_value, from_value};
 use std::iter::FromIterator;
 
-pub fn serde_interpolate<T: Serialize + DeserializeOwned>(from: &T, to: &T, amount: f64) -> T {
-    let from = to_value(from).unwrap();
-    let to = to_value(to).unwrap();
-    let result = value_interpolate(&from, &to, amount);
-    from_value(result).unwrap()
+pub fn serde_interpolate<T: Serialize + DeserializeOwned + Clone>(from: &T, to: &T, amount: f64) -> T {
+    let from_val = to_value(from).unwrap();
+    let to_val = to_value(to).unwrap();
+    let result_val = value_interpolate(&from_val, &to_val, amount);
+    match from_value(result_val) {
+        Ok(result) => result,
+        _ => {
+            // One downside of JSON as a serialization format is we can't represent NaN
+            // or Infinity. If that happens, we'll return 'to' without the interpolation
+            // or the round trip through serde.
+            to.clone()
+        }
+    }
 }
 
 fn value_interpolate(from: &Value, to: &Value, amount: f64) -> Value {
