@@ -82,7 +82,8 @@ impl WinchCalibration {
 pub struct WinchLightingScheme {
     pub wavelength_m: f64,
     pub normal_color: Vector3<f64>,
-    pub error_colors: (Vector3<f64>, Vector3<f64>),
+    pub error_color: Vector3<f64>,
+    pub stuck_color: Vector3<f64>,
     pub halt_color: Vector3<f64>,
     pub manual_color: Vector3<f64>,
     pub command_color: Vector3<f64>,
@@ -90,6 +91,7 @@ pub struct WinchLightingScheme {
     pub wave_amplitude: f64,
     pub wave_exponent: f64,
     pub speed_for_full_wave_amplitude_m_per_sec: f64,
+    pub velocity_filter_param: f64,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
@@ -108,9 +110,16 @@ pub struct ScheduledLightingChange {
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct LightingConfig {
+    pub animation: LightAnimatorConfig,
     pub current: LightingScheme,
     pub saved: BTreeMap<String, LightingScheme>,
     pub schedule: Vec<ScheduledLightingChange>,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+pub struct LightAnimatorConfig {
+    pub frame_rate: f64,
+    pub filter_param: f64,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]

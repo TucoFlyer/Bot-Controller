@@ -32,7 +32,7 @@ struct Controller {
 
 impl Controller {
     fn new(bus: Bus, comm: BotComm, cf: ConfigFile) -> Controller {
-        let lights = LightAnimator::start(&comm);
+        let lights = LightAnimator::start(&cf.config.lighting.animation, &comm);
         let state = ControllerState::new(&cf.config, lights);
         Controller { bus, comm, cf, state }
     }

@@ -69,9 +69,8 @@ impl ControllerState {
     }
 
     pub fn light_environment(&self, config: &Config) -> LightEnvironment {
-        let winches = self.winches.iter().enumerate().map( |(id, winch)| {
-            let cal = &config.winches[id].calibration;
-            winch.light_environment(&config, cal)
+        let winches = self.winches.iter().map( |winch| {
+            winch.light_environment(&config)
         }).collect();
         
         LightEnvironment {
