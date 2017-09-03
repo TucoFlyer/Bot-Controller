@@ -76,6 +76,7 @@ impl ControllerState {
         LightEnvironment {
             winches,
             winch_wavelength: config.lighting.current.winch.wavelength_m,
+            winch_wave_window_length: config.lighting.current.winch.wave_window_length_m,
             winch_wave_exponent: config.lighting.current.winch.wave_exponent,
             winch_command_color: config.lighting.current.winch.command_color,
             winch_motion_color: config.lighting.current.winch.motion_color,

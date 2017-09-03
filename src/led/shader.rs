@@ -7,6 +7,7 @@ pub struct LightEnvironment {
 	pub flash_rate_hz: f64,
 	pub winch_wave_exponent: f64,
 	pub winch_wavelength: f64,
+	pub winch_wave_window_length: f64,
 	pub winch_command_color: Vector3<f64>,
 	pub winch_motion_color: Vector3<f64>,
 	pub brightness: f64,
@@ -60,8 +61,10 @@ impl Shader {
 
 	fn winch_wave(&self, winch: &WinchLighting, env: &LightEnvironment, map: &PixelMapping, phase: f64) -> f64 {
 		let z = map.location[2];
-		let theta = phase + z * TAU / env.winch_wavelength;
-		winch.wave_amplitude * pulse_wave(theta, env.winch_wave_exponent)
+		let pulse_theta = phase + z * TAU / env.winch_wavelength;
+		let window_theta = z * TAU / env.winch_wave_window_length;
+		let window = window_theta.min(PI).max(-PI).cos() * 0.5 + 0.5;
+		winch.wave_amplitude * window * pulse_wave(pulse_theta, env.winch_wave_exponent)
 	}
 
 	pub fn pixel(&self, env: &LightEnvironment, map: &PixelMapping) -> Vector3<f64> {

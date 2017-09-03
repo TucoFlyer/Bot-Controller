@@ -89,6 +89,7 @@ pub struct WinchLightingScheme {
     pub command_color: Vector3<f64>,
     pub motion_color: Vector3<f64>,
     pub wavelength_m: f64,
+    pub wave_window_length_m: f64,
     pub wave_amplitude: f64,
     pub wave_exponent: f64,
     pub speed_for_full_wave_amplitude_m_per_sec: f64,

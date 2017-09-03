@@ -43,6 +43,9 @@ export default class extends Component {
                 <h6>Spatial length of wave animation (m)</h6>
                 <ConfigSlider item="lighting.current.winch.wavelength_m" min="0.01" max="0.5" step="1e-2" />
 
+                <h6>Spatial length of wave window (m)</h6>
+                <ConfigSlider item="lighting.current.winch.wave_window_length_m" min="0.01" max="1.0" step="1e-2" />
+
                 <h6>Peak amplitude of wave animation</h6>
                 <ConfigSlider item="lighting.current.winch.wave_amplitude" min="0.0" max="2.0" step="1e-2" />
 
