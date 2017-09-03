@@ -56,7 +56,13 @@ export default class Gauge extends Component {
     }
 
     handleFrame = (model) => {
-        const value = this.props.value(model);
+        var value;
+        try {
+            value = this.props.value(model);
+        }
+        catch (e) {
+            return;
+        }
         this.gauge.update({ value });
     }
 }

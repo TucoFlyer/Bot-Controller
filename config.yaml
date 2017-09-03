@@ -13,7 +13,7 @@ params:
   accel_limit_m_per_sec2: 0.44
   force_neg_motion_min_kg: 0.29
   force_pos_motion_max_kg: 3.89
-  force_lockout_below_kg: 0.1
+  force_lockout_below_kg: 0.08
   force_lockout_above_kg: 4
   force_filter_param: 0.0402
   deadband_position_err_m: 0.006
