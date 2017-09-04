@@ -41,6 +41,7 @@ impl Controller {
         *self.bus.config.lock().unwrap() = self.cf.config.clone();
         drop(self.bus.sender.try_send(Message::ConfigIsCurrent(self.cf.config.clone()).timestamp()));
         self.cf.save_async();
+        self.state.config_changed(&self.cf.config);
     }
 
     fn poll(self: &mut Controller) {

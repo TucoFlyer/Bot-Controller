@@ -10,6 +10,7 @@ pub struct ControllerState {
     lights: LightAnimator,
     winches: Vec<WinchController>,
     last_per_tick_update: Option<Instant>,
+    last_mode: ControllerMode,
 }
 
 impl ControllerState {
@@ -21,6 +22,14 @@ impl ControllerState {
                 WinchController::new(id)
             }).collect(),
             last_per_tick_update: None,
+            last_mode: config.mode.clone(),
+        }
+    }
+
+    pub fn config_changed(&mut self, config: &Config) {
+        if config.mode != self.last_mode {
+            self.mode_changed(&config.mode);
+            self.last_mode = config.mode.clone();
         }
     }
 
@@ -34,6 +43,14 @@ impl ControllerState {
             self.every_tick(config);
             self.last_per_tick_update = Some(timestamp);
         }
+    }
+
+    fn mode_changed(&mut self, _mode: &ControllerMode) {
+        self.halt_motion();
+    }
+
+    fn halt_motion(&mut self) {
+        self.manual.full_reset();
     }
 
     fn lighting_tick(&mut self, config: &Config) {
