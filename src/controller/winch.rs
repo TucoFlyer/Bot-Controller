@@ -54,9 +54,9 @@ impl WinchController {
     }
 
     pub fn update(self: &mut WinchController, config: &Config, cal: &WinchCalibration, status: &WinchStatus) {
-        if status.motor.pwm.enabled == 0
-            || !self.is_contiguous(status.tick_counter)
-            || config.mode == ControllerMode::Halted {
+        if config.mode == ControllerMode::Halted
+            || self.was_motor_shutoff(status)
+            || self.was_tick_discontinuity(status) {
             self.reset(status);
         }
 
@@ -139,10 +139,17 @@ impl WinchController {
         }
     }
 
-    fn is_contiguous(self: &mut WinchController, tick_counter: u32) -> bool {
+    fn was_motor_shutoff(&self, status: &WinchStatus) -> bool {
         match self.last_winch_status {
-            None => false,
-            Some(ref status) => tick_counter.wrapping_sub(status.tick_counter) <= 2,
+            None => status.motor.pwm.enabled == 0,
+            Some(ref last_status) => last_status.motor.pwm.enabled != 0 && status.motor.pwm.enabled == 0
+        }
+    }
+
+    fn was_tick_discontinuity(&self, status: &WinchStatus) -> bool {
+        match self.last_winch_status {
+            None => true,
+            Some(ref last_status) => status.tick_counter.wrapping_sub(last_status.tick_counter) > 2,
         }
     }
 
