@@ -237,6 +237,7 @@ fn merge_values(base: &mut Value, updates: Value) {
             if let Value::Array(ref mut base_arr) = *base {
                 for (i, item) in update_arr.into_iter().enumerate() {
                     match item {
+                        // Nulls in an array are used to skip that element
                         Value::Null => {},
                         item => {
                             while i >= base_arr.len() {
@@ -253,11 +254,20 @@ fn merge_values(base: &mut Value, updates: Value) {
         Value::Object(update_obj) => {
             if let Value::Object(ref mut base_obj) = *base {
                 for (key, item) in update_obj.into_iter() {
-                    if let Some(mut value) = base_obj.get_mut(&key) {
-                        merge_values(value, item);
-                        continue;
+                    match item {
+                        // Nulls in an object will *delete* that element.
+                        // This is used to remove elements in the lighting scheme map.
+                        Value::Null => {
+                            base_obj.remove(&key);
+                        },
+                        item => {
+                            if let Some(mut value) = base_obj.get_mut(&key) {
+                                merge_values(value, item);
+                                continue;
+                            }
+                            base_obj.insert(key, item);
+                        }
                     }
-                    base_obj.insert(key, item);
                 }
             } else {
                 *base = Value::Object(update_obj);

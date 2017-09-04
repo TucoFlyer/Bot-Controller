@@ -58,12 +58,15 @@ export const getByPath = function(config, path) {
     return config;
 }
 
+function toNumberMaybe(obj) {
+    const intval = parseFloat(obj);
+    return Number.isNaN(intval) ? obj : intval;
+}
+
 function pathArray(str_or_list) {
     let array = Array.from(str_or_list.split ? str_or_list.split(".") : str_or_list);
     for (let i in array) {
-        const str_or_int = array[i];
-        const intval = parseInt(str_or_int, 10);
-        array[i] = Number.isNaN(intval) ? str_or_int : intval;
+        array[i] = toNumberMaybe(array[i]);
     }
     return array;
 }
@@ -223,3 +226,26 @@ export const ConfigRevertButton = withConfig(class extends Component {
 },{
     once: true,
 });
+
+// Button that stores a specific config value
+export class ConfigButton extends Component {
+    render() {
+        let { item, value, children, ...props } = this.props;
+        return <Button
+                    color="warning"
+                    onClick={this.handleClick}
+                    {...props} >
+            { children }
+        </Button>;
+    }
+
+    static contextTypes = {
+        botConnection: PropTypes.instanceOf(BotConnection),
+    }
+
+    handleClick = (event) => {
+        let { item, value } = this.props;
+        const config = setByPath({}, item, toNumberMaybe(value));
+        this.context.botConnection.socket.send(JSON.stringify({ UpdateConfig: config }));
+    }
+}

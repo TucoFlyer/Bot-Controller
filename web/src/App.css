@@ -9,8 +9,16 @@
     padding: 4px 0;
 }
 
-.App .nav, .btn-toolbar, p, h1, h2, h3, h4, h5, h6 {
+.App .nav, .btn-toolbar, p {
     margin: 10px 4px;
+}
+
+.App h1, h2, h3, h4, h5, h6 {
+    padding: 0.3em 4px;
+}
+
+.App h1, h2, h3, h4 {
+    background: #eee;
 }
 
 .App .right {
@@ -30,4 +38,8 @@
 
 .App .Gauge {
     text-align: right;
+}
+
+.App .btn-toolbar button {
+    margin: 0 0.8em 0 0;
 }
