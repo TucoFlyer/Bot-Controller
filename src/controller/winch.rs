@@ -4,6 +4,7 @@ use config::{Config, ControllerMode, WinchCalibration};
 use led::WinchLighting;
 
 pub struct WinchController {
+    pub mech_status: MechStatus,
     id: usize,
     last_winch_status: Option<WinchStatus>,
     quantized_position_target: i32,
@@ -11,7 +12,13 @@ pub struct WinchController {
     lighting_command_phase: f64,
     lighting_motion_phase: f64,
     lighting_filtered_velocity: f64,
-    mech_status: MechStatus,
+}
+
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub enum MechStatus {
+    Normal,
+    ForceLimited(f64),
+    Stuck,
 }
 
 impl WinchController {
@@ -64,7 +71,7 @@ impl WinchController {
         let velocity_filter_param = config.lighting.current.winch.velocity_filter_param;
         self.lighting_filtered_velocity += (velocity_m - self.lighting_filtered_velocity) * velocity_filter_param;
 
-        self.mech_status.update(cal, status);
+        self.mech_status = MechStatus::new(cal, status);
         self.last_winch_status = Some(status.clone());
     }
 
@@ -187,21 +194,14 @@ impl WinchController {
     }
 }
 
-#[derive(Debug, PartialEq, Copy, Clone)]
-enum MechStatus {
-    Normal,
-    ForceLimited(f64),
-    Stuck,
-}
-
 impl MechStatus {
-    fn update(&mut self, cal: &WinchCalibration, status: &WinchStatus) {
+    fn new(cal: &WinchCalibration, status: &WinchStatus) -> MechStatus {
         let motor_off = status.motor.pwm.enabled == 0;
         let position_err = status.command.position.wrapping_sub(status.sensors.position);
         let outside_position_deadband = position_err.abs() > status.command.deadband.position;
 
         // Force lockout and we're stuck
-        *self = if status.sensors.force.filtered > status.command.force.lockout_above {
+        if status.sensors.force.filtered > status.command.force.lockout_above {
             MechStatus::Stuck
         } else if status.sensors.force.filtered < status.command.force.lockout_below {
             MechStatus::Stuck
@@ -219,12 +219,12 @@ impl MechStatus {
                 // Motor off and we're trying to move, call it stuck
                 MechStatus::Stuck
             } else {
-                // Motor off but maybe it's fine, keep last value
-                *self
+                // Motor off but no big deal
+                MechStatus::Normal
             }
         } else {
             // Motor on, sensors in range
             MechStatus::Normal
-        };
+        }
     }
 }

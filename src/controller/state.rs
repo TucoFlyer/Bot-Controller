@@ -2,7 +2,7 @@ use bus::*;
 use std::time::{Instant, Duration};
 use config::{Config, ControllerMode};
 use controller::manual::ManualControls;
-use controller::winch::WinchController;
+use controller::winch::{WinchController, MechStatus};
 use led::{LightAnimator, LightEnvironment};
 
 pub struct ControllerState {
@@ -69,19 +69,26 @@ impl ControllerState {
     pub fn winch_control_loop(&mut self, config: &Config, id: usize, status: WinchStatus) -> WinchCommand {
         let cal = &config.winches[id].calibration;
         self.winches[id].update(config, cal, &status);
-        self.winches[id].velocity_tick(config, cal, match config.mode {
+
+        let velocity = match config.mode {
 
             ControllerMode::ManualWinch(manual_id) => {
                 if manual_id == id {
-                    let vec = self.manual.limited_velocity();
-                    vec[1]
+                    let v = self.manual.limited_velocity()[1];
+                    match self.winches[id].mech_status {
+                        MechStatus::Normal => v,
+                        MechStatus::Stuck => 0.0,
+                        MechStatus::ForceLimited(f) => if v * f < 0.0 { v } else { 0.0 },
+                    }
                 } else {
                     0.0
                 }
             },
 
             _ => 0.0
-        });
+        };
+
+        self.winches[id].velocity_tick(config, cal, velocity);
         self.winches[id].make_command(config, cal, &status)
     }
 
