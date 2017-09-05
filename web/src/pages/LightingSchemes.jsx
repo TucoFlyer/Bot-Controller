@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { ConfigSlider, ConfigTextBlock, ConfigButton, withConfig } from '../Config';
+import { ConfigSlider, ConfigButton, withConfig } from '../Config';
 import { ButtonToolbar } from 'reactstrap';
 import './LightingSchemes.css';
 
@@ -22,7 +22,8 @@ export default class extends Component {
             <NewScheme />
 
             <h4>Lighting schedule</h4>
-            <ConfigTextBlock item="lighting.schedule" />
+            <ScheduledChanges />
+            <NewScheduledChange />
 
         </div>;
     }
@@ -36,7 +37,7 @@ const SavedSchemes = withConfig(class extends Component {
             const this_scheme = this.props.config.lighting.saved[name];
             const is_current = JSON.stringify(this_scheme) === JSON.stringify(current_scheme);
             schemes.push(
-                <ButtonToolbar>
+                <ButtonToolbar key={`scheme-${name}`}>
                     <ConfigButton
                         color="warning"
                         item={["lighting", "saved", name]}
@@ -94,3 +95,61 @@ const NewScheme = withConfig(class extends Component {
         this.setState({ name: event.target.value });
     }
 });
+
+const ScheduledChanges = withConfig(class extends Component {
+    render() {
+        let changes = [];
+        for (let time in this.props.config.lighting.schedule) {
+            let update = {};
+            update[time] = null;
+            changes.push(
+                <ButtonToolbar key={`schedule-${time}`}>
+                    <ConfigButton
+                        color="warning"
+                        item="lighting.schedule"
+                        value={update}>
+                        Delete
+                    </ConfigButton>
+                    <span>
+                        At {time} &rarr; {this.props.config.lighting.schedule[time]}
+                    </span>
+                </ButtonToolbar>
+            );
+        }
+        return <div className="ScheduledChanges">{changes}</div>;
+    }
+});
+
+class NewScheduledChange extends Component {
+    constructor() {
+        super();
+        this.state ={
+            time: "",
+            scheme: ""
+        }
+    }
+
+    render() {
+        let update = {};
+        update[this.state.time] = this.state.scheme;
+        return <div className="NewScheduledChange">
+            <ButtonToolbar>
+                <ConfigButton
+                    item="lighting.schedule"
+                    value={update} >
+                    Schedule:
+                </ConfigButton>
+                At
+                <input
+                    type="text"
+                    value={this.state.time}
+                    onChange={(e) => this.setState({ time: e.target.value })} />
+                switch to
+                <input
+                    type="text"
+                    value={this.state.scheme}
+                    onChange={(e) => this.setState({ scheme: e.target.value })} />
+            </ButtonToolbar>
+        </div>;
+    }
+}

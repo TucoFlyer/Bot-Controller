@@ -246,6 +246,7 @@ export class ConfigButton extends Component {
     handleClick = (event) => {
         let { item, value } = this.props;
         const config = setByPath({}, item, toNumberMaybe(value));
+        console.log("Changing config", config);
         this.context.botConnection.socket.send(JSON.stringify({ UpdateConfig: config }));
     }
 }

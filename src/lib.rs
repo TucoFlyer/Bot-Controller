@@ -13,6 +13,8 @@ extern crate serde_yaml;
 extern crate bincode;
 extern crate atomicwrites;
 
+extern crate chrono;
+
 // Bus parts
 extern crate multiqueue;
 

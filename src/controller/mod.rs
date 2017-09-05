@@ -4,12 +4,14 @@ mod manual;
 mod velocity;
 mod winch;
 mod state;
+mod scheduler;
 
 use bus::*;
 use std::thread;
 use config::ConfigFile;
 use botcomm::BotComm;
 use self::state::ControllerState;
+use self::scheduler::Scheduler;
 use led::LightAnimator;
 
 pub fn start(bus: &Bus, comm: &BotComm, cf: ConfigFile) {
@@ -28,13 +30,15 @@ struct Controller {
     comm: BotComm,
     cf: ConfigFile,
     state: ControllerState,
+    sched: Scheduler,
 }
 
 impl Controller {
     fn new(bus: Bus, comm: BotComm, cf: ConfigFile) -> Controller {
         let lights = LightAnimator::start(&cf.config.lighting.animation, &comm);
         let state = ControllerState::new(&cf.config, lights);
-        Controller { bus, comm, cf, state }
+        let sched = Scheduler::new();
+        Controller { bus, comm, cf, state, sched }
     }
 
     fn config_changed(self: &mut Controller) {
@@ -89,6 +93,9 @@ impl Controller {
                 _ => (),
             }
             self.state.after_each_message(timestamp, &self.cf.config);
+            if self.sched.poll_config_changes(timestamp, &mut self.cf.config) {
+                self.config_changed();
+            }
         }
     }
 }

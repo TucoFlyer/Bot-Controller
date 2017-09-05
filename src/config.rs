@@ -15,6 +15,7 @@ use std::sync::mpsc::{Sender, Receiver, channel};
 use std::thread;
 use std::time::Duration;
 use vecmath::Vector3;
+use chrono::NaiveTime;
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Config {
@@ -105,17 +106,11 @@ pub struct LightingScheme {
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct ScheduledLightingChange {
-    pub scheme: String,
-    pub cron: String,
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct LightingConfig {
     pub animation: LightAnimatorConfig,
     pub current: LightingScheme,
     pub saved: BTreeMap<String, LightingScheme>,
-    pub schedule: Vec<ScheduledLightingChange>,
+    pub schedule: BTreeMap<NaiveTime, String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
