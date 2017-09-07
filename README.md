@@ -10,7 +10,7 @@ Central controller software for the Tuco Flyer bot.
 
 ## Getting going
 
-* Configuration via `config.toml`
+* Configuration via `config.yaml`
 * Building the web app:
 
 		cd web
