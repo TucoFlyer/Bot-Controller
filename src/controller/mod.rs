@@ -1,11 +1,18 @@
 //! Controller thread, responding to commands and status updates, generating motor control packets
 
+mod manual;
+mod velocity;
+mod winch;
+mod state;
+mod scheduler;
 
-use bus::{Bus, Message, Command, FlyerSensors, WinchStatus, WinchCommand, ManualControlAxis};
+use bus::*;
 use std::thread;
-use config::{Config, ConfigFile, ControllerMode};
+use config::ConfigFile;
 use botcomm::BotComm;
-use std::collections::HashMap;
+use self::state::ControllerState;
+use self::scheduler::Scheduler;
+use led::LightAnimator;
 
 pub fn start(bus: &Bus, comm: &BotComm, cf: ConfigFile) {
     let bus = bus.clone();
@@ -23,29 +30,27 @@ struct Controller {
     comm: BotComm,
     cf: ConfigFile,
     state: ControllerState,
-}
-
-struct ControllerState {
-    manual_controls: HashMap<ManualControlAxis, f64>,
+    sched: Scheduler,
 }
 
 impl Controller {
-
     fn new(bus: Bus, comm: BotComm, cf: ConfigFile) -> Controller {
-        let state = ControllerState {
-            manual_controls: HashMap::new(),
-        }; 
-        Controller { bus, comm, cf, state }
+        let lights = LightAnimator::start(&cf.config.lighting.animation, &comm);
+        let state = ControllerState::new(&cf.config, lights);
+        let sched = Scheduler::new();
+        Controller { bus, comm, cf, state, sched }
     }
 
     fn config_changed(self: &mut Controller) {
         *self.bus.config.lock().unwrap() = self.cf.config.clone();
         drop(self.bus.sender.try_send(Message::ConfigIsCurrent(self.cf.config.clone()).timestamp()));
         self.cf.save_async();
+        self.state.config_changed(&self.cf.config);
     }
 
     fn poll(self: &mut Controller) {
         if let Ok(ts_msg) = self.bus.receiver.recv() {
+            let timestamp = ts_msg.timestamp;
             match ts_msg.message {
 
                 Message::UpdateConfig(updates) => {
@@ -78,53 +83,19 @@ impl Controller {
                 },
 
                 Message::Command(Command::ManualControlValue(axis, value)) => {
-                    self.state.manual_controls.insert(axis, value);
+                    self.state.manual.control_value(axis, value);
                 },
 
                 Message::Command(Command::ManualControlReset) => {
-                    self.state.manual_controls.clear();
+                    self.state.manual.control_reset();
                 },
 
                 _ => (),
             }
-        }
-    }
-}
-
-impl ControllerState {
-
-    fn flyer_sensor_update(self: &mut ControllerState, sensors: FlyerSensors) {
-
-    }
-
-    fn winch_control_loop(self: &mut ControllerState,  config: &Config, id: usize, status: WinchStatus) -> WinchCommand {
-        let cal = &config.winches[id].calibration;
-        WinchCommand {
-            velocity_target: cal.dist_from_m(self.winch_velocity_target_m(config, id, status)) as f32,
-            accel_rate: cal.dist_from_m(config.params.accel_rate_m_per_sec2) as f32,
-            force_min: cal.force_from_kg(config.params.force_min_kg) as f32,
-            force_max: cal.force_from_kg(config.params.force_max_kg) as f32,
-            force_filter_param: config.params.force_filter_param as f32,
-            pwm_gain_p: cal.pwm_gain_from_m(config.params.pwm_gain_p) as f32,
-            pwm_gain_i: cal.pwm_gain_from_m(config.params.pwm_gain_i) as f32,
-            pwm_gain_d: cal.pwm_gain_from_m(config.params.pwm_gain_d) as f32,
-        }
-    }
-
-    fn winch_velocity_target_m(self: &mut ControllerState, config: &Config, id: usize, status: WinchStatus) -> f64 {
-        match config.mode {
-
-            ControllerMode::Halted => 0.0,
-
-            ControllerMode::ManualWinch(manual_id) =>
-                if manual_id == id {
-                    let manual_y = self.manual_controls.entry(ManualControlAxis::RelativeY).or_insert(0.0).min(1.0).max(-1.0);
-                    config.params.manual_control_velocity_m_per_sec * manual_y
-                } else {
-                    0.0
-                },
-
-            _ => 0.0,
+            self.state.after_each_message(timestamp, &self.cf.config);
+            if self.sched.poll_config_changes(timestamp, &mut self.cf.config) {
+                self.config_changed();
+            }
         }
     }
 }

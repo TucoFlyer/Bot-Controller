@@ -8,20 +8,18 @@ extern crate base64;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde;
-#[macro_use]
 extern crate serde_json;
 extern crate serde_yaml;
 extern crate bincode;
 extern crate atomicwrites;
+
+extern crate chrono;
 
 // Bus parts
 extern crate multiqueue;
 
 // Gamepad input
 extern crate gilrs;
-
-// For LED colors
-extern crate palette;
 
 // For fygimbal
 extern crate crc16;
@@ -34,9 +32,13 @@ extern crate staticfile;
 extern crate mount;
 extern crate websocket;
 extern crate qrcode;
+extern crate open;
+
+extern crate vecmath as vecmath_lib;
+mod vecmath;
 
 mod fygimbal;
-mod leds;
+mod led;
 
 mod bus;
 pub use bus::*;

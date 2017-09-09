@@ -59,7 +59,7 @@ class CalibratorBase extends Component {
                 this.context.botConnection.socket.send(JSON.stringify({ UpdateConfig: cal.config }));
                 this.setState({ saved: true });
             }}
-        > { children } </Button>;        
+        > { children } </Button>;
     }
 }
 
@@ -71,7 +71,7 @@ class DistanceCalibrator extends CalibratorBase {
     }
 
     makeCalibration() {
-        const measures = this.state.measures;        
+        const measures = this.state.measures;
         const delta_1 = Math.abs(measures[1] - measures[0]);
         const delta_2 = Math.abs(measures[2] - measures[1]);
         const delta_3 = Math.abs(measures[3] - measures[2]);
@@ -119,7 +119,7 @@ class ForceCalibrator extends CalibratorBase {
         const measures = this.state.measures;
         const added_weight = parseFloat(this.state.added_weight);
         if (!(added_weight > 0)) {
-            return { error: "Invalid added weight value" };            
+            return { error: "Invalid added weight value" };
         }
 
         const avg_zero = ( measures[6] + measures[0] ) / 2;
@@ -151,8 +151,8 @@ class ForceCalibrator extends CalibratorBase {
 
     render() {
         return <ol>
-            <li>Temporarily adjust the filtering to be quite slow (near 1.0) damping any visible vibration.
-                <ConfigSlider item="params.force_filter_param" min="0.9" max="0.9999" step="1e-4" /></li>
+            <li>Temporarily adjust the filtering to be quite slow (near 0.0) damping any visible vibration.
+                <ConfigSlider item="params.force_filter_param" min="0.000001" max="0.2" step="1e-4" /></li>
             <li>The filter should take several seconds to settle after each change. Make sure to wait for it.</li>
             <li>Pull the cord down toward the winch, letting it go slack.</li>
             <li>{this.measurementButton(0, "Record")} a zero reading {this.measurementValue(0)}</li>
@@ -177,7 +177,7 @@ class ForceCalibrator extends CalibratorBase {
                 <div><ConfigRevertButton
                     color={this.state.saved ? "primary" : "secondary"}
                     item="params.force_filter_param" /></div></li>
-       
+
         </ol>;
     }
 }

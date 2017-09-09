@@ -5,6 +5,9 @@ use serde_json::Value;
 use std::time::Instant;
 use std::sync::{Arc, Mutex};
 use config::{Config, ControllerMode};
+use vecmath::{Vector3, Vector4};
+
+pub const TICK_HZ : u32 = 250;
 
 #[derive(Clone)]
 pub struct Bus {
@@ -86,29 +89,14 @@ pub struct AnalogTelemetry {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct Vec16 {
-    pub x: i16,
-    pub y: i16,
-    pub z: i16,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct Quat16 {
-    pub w: i16,
-    pub x: i16,
-    pub y: i16,
-    pub z: i16,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct IMUTelemetry {
-    pub accelerometer: Vec16,
-    pub magnetometer: Vec16,
-    pub gyroscope: Vec16,
-    pub euler_angles: Vec16,
-    pub quaternion: Quat16,
-    pub linear_accel: Vec16,
-    pub gravity: Vec16,
+    pub accelerometer: Vector3<i16>,
+    pub magnetometer: Vector3<i16>,
+    pub gyroscope: Vector3<i16>,
+    pub euler_angles: Vector3<i16>,
+    pub quaternion: Vector4<i16>,
+    pub linear_accel: Vector3<i16>,
+    pub gravity: Vector3<i16>,
     pub temperature: i8,
     pub calib_stat: i8,
     pub counter: u32,
@@ -130,15 +118,36 @@ pub struct ForceTelemetry {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct ForceCommand {
+    pub filter_param: f32,      // IIR filter parameter in range [0,1] for force sensor, 0=slow 1=fast
+    pub neg_motion_min: f32,    // Uncalibrated load cell units, no negative motion below
+    pub pos_motion_max: f32,    // Uncalibrated load cell units, no positive motion above this filtered force value
+    pub lockout_below: f32,     // Uncalibrated load cell units, no motion at all below
+    pub lockout_above: f32,     // Uncalibrated load cell units, no motion at all above
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct PIDGains {
+    pub gain_p: f32,            // PWM strength proportional to position error
+    pub gain_i: f32,            // PWM strength proportional to integral of position error
+    pub gain_d: f32,            // PWM gain proportional to velocity error
+    pub p_filter_param: f32,    // IIR filter parameter in range [0,1] for position error, 0=slow 1=fast
+    pub i_decay_param: f32,     // Exponential decay for the integral parameter, 0=slow 1=fast
+    pub d_filter_param: f32,    // IIR filter parameter in range [0,1] for velocity error, 0=slow 1=fast
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct WinchDeadband {
+    pub position: i32,          // How close is close enough when stopped?
+    pub velocity: f32,          // By "stopped", we mean under this instantaneous velocity
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct WinchCommand {
-    pub velocity_target: f32,       // Encoder position units per second
-    pub force_filter_param: f32,    // IIR filter parameter in range [0,1] for force sensor
-    pub force_min: f32,             // Uncalibrated load cell units, no negative motion below
-    pub force_max: f32,             // Uncalibrated load cell unitsNo positive motion above this filtered force value
-    pub accel_rate: f32,            // Encoder units per second per second for velocity ramp
-    pub pwm_gain_p: f32,            // PWM gain proportional to velocity error
-    pub pwm_gain_i: f32,            // PWM gain proportional to integral of velocity error
-    pub pwm_gain_d: f32,            // PWM gain proportional to integral of velocity error
+    pub position: i32,
+    pub force: ForceCommand,
+    pub pid: PIDGains,
+    pub deadband: WinchDeadband,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -149,15 +158,23 @@ pub struct WinchSensors {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct WinchPWM {
+    pub total: f32,                 // PWM calculated by the PID loop, clamped to [-1, 1]
+    pub p: f32,                     // Just the contribution from proportional gain
+    pub i: f32,                     // Just the contribution from integral gain
+    pub d: f32,                     // Just the contribution from derivative gain
+    pub quant: i16,                 // PWM state after quantizing into clock ticks
+    pub enabled: i16,               // Is the H-bridge enabled? Can be turned off by halt conditions.
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct WinchMotorControl {
-    pub pwm: f32,                   // Current motor PWM state, updated by the PID loop, clamped to [-1, 1]
-    pub pwm_quant: i16,             // PWM state after quantizing into clock ticks
-    pub enabled: u8,                // Is the H-bridge enabled? Can be turned off by halt watchdog
-    pub _reserved: u8,             // (spare byte for padding)
-    pub ramp_velocity: f32,         // Current acting velocity_target due to accel_rate limit
-    pub vel_err: f32,               // Instantaneous velocity error
-    pub vel_err_diff: f32,          // Rate of change in velocity error
-    pub vel_err_integral: f32,      // Accumulated integral of the velocity error, reset by halt watchdog
+    pub pwm: WinchPWM,
+    pub position_err: i32,          // Instantaneous position error
+    pub pos_err_filtered: f32,      // Low-pass-filtered position error
+    pub pos_err_integral: f32,      // Accumulated integral of the position error, reset by halt watchdog
+    pub vel_err_inst: f32,          // Instantaneous velocity error
+    pub vel_err_filtered: f32,      // Low-pass-filtered velocity error
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]

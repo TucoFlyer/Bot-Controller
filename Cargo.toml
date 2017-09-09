@@ -21,11 +21,14 @@ serde_yaml = "0.7.1"
 serde = "1.0.11"
 bincode = "0.8.0"
 atomicwrites = "0.1.3"
+chrono = { version = "0.4", features = ["serde"] }
 
 multiqueue = "0.3.2"
 
+vecmath = "0.3.0"
 gilrs = "0.4.4"
-palette = "0.2"
+num-traits = "0.1.40"
+
 byteorder = "1.0.0"
 crc16 = "0.3.3"
 nom = "3.0.0"
@@ -40,3 +43,4 @@ websocket = "0.20.1"
 iron = "0.5.1"
 staticfile = "0.4.0"
 mount = "0.3.0"
+open = "1.2.0"

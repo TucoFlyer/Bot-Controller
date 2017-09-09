@@ -1,19 +1,21 @@
 //! Bot configuration
 
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-use std::fs::File;
-use std::path::{Path, PathBuf};
-use std::io::{Read, Write};
-use std::io;
-use std::fmt::Display;
-use serde_json;
-use serde_json::{Value, from_value, to_value};
-use serde_yaml;
 use atomicwrites;
-use std::thread;
-use std::time::{Duration, Instant};
+use serde_json::{Value, from_value, to_value};
+use serde_json;
+use serde_yaml;
+use std::collections::BTreeMap;
+use std::env;
+use std::fmt::Display;
+use std::fs::File;
+use std::io::{Read, Write};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::path::{Path, PathBuf};
 use std::sync::mpsc::{Sender, Receiver, channel};
-use websocket;
+use std::thread;
+use std::time::Duration;
+use vecmath::Vector3;
+use chrono::NaiveTime;
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Config {
@@ -22,6 +24,7 @@ pub struct Config {
     pub flyer_addr: SocketAddr,
     pub web: WebConfig,
     pub params: BotParams,
+    pub lighting: LightingConfig,
     pub winches: Vec<WinchConfig>,
 }
 
@@ -42,21 +45,8 @@ pub enum ControllerMode {
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct WinchConfig {
     pub addr: SocketAddr,
-    pub loc: Point3,
+    pub loc: Vector3<f64>,
     pub calibration: WinchCalibration,
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct Point3 {
-    pub x: f64,
-    pub y: f64,
-    pub z: f64,
-}
-
-impl Point3 {
-    pub fn new(x: f64, y: f64, z: f64) -> Point3 {
-        Point3 { x, y, z }
-    }
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
@@ -91,12 +81,58 @@ impl WinchCalibration {
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+pub struct WinchLightingScheme {
+    pub normal_color: Vector3<f64>,
+    pub manual_color: Vector3<f64>,
+    pub halt_color: Vector3<f64>,
+    pub error_color: Vector3<f64>,
+    pub stuck_color: Vector3<f64>,
+    pub command_color: Vector3<f64>,
+    pub motion_color: Vector3<f64>,
+    pub wavelength_m: f64,
+    pub wave_window_length_m: f64,
+    pub wave_amplitude: f64,
+    pub wave_exponent: f64,
+    pub speed_for_full_wave_amplitude_m_per_sec: f64,
+    pub velocity_filter_param: f64,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+pub struct LightingScheme {
+    pub brightness: f64,
+    pub flash_rate_hz: f64,
+    pub flash_exponent: f64,
+    pub winch: WinchLightingScheme,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+pub struct LightingConfig {
+    pub animation: LightAnimatorConfig,
+    pub current: LightingScheme,
+    pub saved: BTreeMap<String, LightingScheme>,
+    pub schedule: BTreeMap<NaiveTime, String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+pub struct LightAnimatorConfig {
+    pub frame_rate: f64,
+    pub filter_param: f64,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct BotParams {
-    pub accel_rate_m_per_sec2: f64,
     pub manual_control_velocity_m_per_sec: f64,
-    pub force_min_kg: f64,
-    pub force_max_kg: f64,
+    pub accel_limit_m_per_sec2: f64,
+    pub force_neg_motion_min_kg: f64,
+    pub force_pos_motion_max_kg: f64,
+    pub force_lockout_below_kg: f64,
+    pub force_lockout_above_kg: f64,
     pub force_filter_param: f64,
+    pub deadband_position_err_m: f64,
+    pub deadband_velocity_limit_m_per_sec: f64,
+    pub pos_err_filter_param: f64,
+    pub vel_err_filter_param: f64,
+    pub integral_err_decay_param: f64,
     pub pwm_gain_p: f64,
     pub pwm_gain_i: f64,
     pub pwm_gain_d: f64,
@@ -125,7 +161,13 @@ impl WebConfig {
     }
 
     pub fn http_uri(self: &WebConfig, secret_key: &str) -> String {
-        format!("http://{}/#?k={}", self.http_addr, secret_key)
+        // Allow overriding port by environment variable, handy for developing with port 3000.
+        // This doesn't affect the port we serve on, only the one we tell clients to connect to.
+        let mut http_addr = self.http_addr.clone();
+        if let Ok(port) = env::var("HTTP_URI_PORT") {
+            http_addr.set_port(port.parse::<u16>().expect("HTTP_URI_PORT override must be a port number"));
+        }
+        format!("http://{}/#?k={}", http_addr, secret_key)
     }
 
     pub fn ws_uri(self: &WebConfig) -> String {
@@ -174,7 +216,6 @@ impl ConfigFile {
                     None => config,
                 };
 
-                println!("Saving configuration");
                 let string = serde_yaml::to_string(&config).unwrap();
                 let af = atomicwrites::AtomicFile::new(&path, atomicwrites::AllowOverwrite);
                 af.write( |f| {
@@ -191,6 +232,7 @@ fn merge_values(base: &mut Value, updates: Value) {
             if let Value::Array(ref mut base_arr) = *base {
                 for (i, item) in update_arr.into_iter().enumerate() {
                     match item {
+                        // Nulls in an array are used to skip that element
                         Value::Null => {},
                         item => {
                             while i >= base_arr.len() {
@@ -207,11 +249,20 @@ fn merge_values(base: &mut Value, updates: Value) {
         Value::Object(update_obj) => {
             if let Value::Object(ref mut base_obj) = *base {
                 for (key, item) in update_obj.into_iter() {
-                    if let Some(mut value) = base_obj.get_mut(&key) {
-                        merge_values(value, item);
-                        continue;
+                    match item {
+                        // Nulls in an object will *delete* that element.
+                        // This is used to remove elements in the lighting scheme map.
+                        Value::Null => {
+                            base_obj.remove(&key);
+                        },
+                        item => {
+                            if let Some(mut value) = base_obj.get_mut(&key) {
+                                merge_values(value, item);
+                                continue;
+                            }
+                            base_obj.insert(key, item);
+                        }
                     }
-                    base_obj.insert(key, item);
                 }
             } else {
                 *base = Value::Object(update_obj);
