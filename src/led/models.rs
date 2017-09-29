@@ -55,9 +55,9 @@ fn flyer() -> Vec<PixelMapping> {
 		top_strip.line(&mut model, vec3_add(top_center, radius), radius);
 	}
 
-	ring_strip.circle(&mut model, upper_ring, ring_normal);
-	ring_strip.circle(&mut model, middle_ring, ring_normal);
-	ring_strip.circle(&mut model, lower_ring, ring_normal);
+	ring_strip.circle(&mut model, upper_ring, ring_normal, [1.0, 0.0, 0.0]);
+	ring_strip.circle(&mut model, middle_ring, ring_normal, [-1.0, 0.0, 0.0]);
+	ring_strip.circle(&mut model, lower_ring, ring_normal, [1.0, 0.0, 0.0]);
 
 	model
 }

@@ -23,11 +23,11 @@ impl LEDShapeTemplate {
 		}
 	}
 
-	pub fn circle(self: &LEDShapeTemplate, model: &mut Vec<PixelMapping>, center: Vector3<f64>, normal: Vector3<f64>) {
+	pub fn circle(self: &LEDShapeTemplate, model: &mut Vec<PixelMapping>, center: Vector3<f64>, normal: Vector3<f64>, radius_vec: Vector3<f64>) {
 		let normal = vec3_normalized(normal);
 		let circumference = self.count as f64 * self.spacing;
 		let radius = circumference / TAU;
-		let radius_vec = vec3_scale(arbitrary_perpendicular_vector(normal), radius);
+		let radius_vec = vec3_scale(vec3_normalized(radius_vec), radius);
 		for index in 0..self.count {
 			let theta = (index as f64) / (self.count as f64) * TAU;
 			let mat = rotation_matrix(normal, theta);
