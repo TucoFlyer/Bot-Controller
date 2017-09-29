@@ -6,6 +6,7 @@ import { ConfigTextBlock } from '../Config';
 import { IfAuthenticated } from '../BotConnection';
 
 import FlyerAnalog from './FlyerAnalog';
+import FlyerMotion from './FlyerMotion';
 import Lighting from './Lighting';
 
 export default (props) => (
@@ -15,12 +16,16 @@ export default (props) => (
                 <NavLink to="/lighting" activeClassName="active" tag={RRNavLink}> Lighting </NavLink>
             </NavItem></IfAuthenticated>
             <NavItem>
+                <NavLink to="/flyer/motion" activeClassName="active" tag={RRNavLink}> Motion </NavLink>
+            </NavItem>
+            <NavItem>
                 <NavLink to="/flyer/analog" activeClassName="active" tag={RRNavLink}> Analog </NavLink>
             </NavItem>
         </Nav>
 
         <Switch>
             <Route path="/lighting" component={Lighting} />
+            <Route path="/flyer/motion" component={FlyerMotion} />
             <Route path="/flyer/analog" component={FlyerAnalog} />
             <Route path="*" component={FlyerHome} />
         </Switch>
