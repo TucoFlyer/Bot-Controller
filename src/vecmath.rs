@@ -13,14 +13,6 @@ pub fn rotation_matrix(normalized_axis: Vector3<f64>, angle: f64) -> Matrix3x4<f
     ]
 }
 
-pub fn arbitrary_perpendicular_vector(v: Vector3<f64>) -> Vector3<f64> {
-	if v[1].is_normal() && v[2].is_normal() {
-		vec3_cross(v, [1.0, 0.0, 0.0])
-	} else {
-		vec3_cross(v, [0.0, 1.0, 0.0])
-	}
-}
-
 pub fn vec3_mix(a: Vector3<f64>, b: Vector3<f64>, scale: f64) -> Vector3<f64> {
 	vec3_add(a, vec3_scale(vec3_sub(b, a), scale))
 }
