@@ -96,7 +96,7 @@ impl ControllerState {
         let winches = self.winches.iter().map( |winch| {
             winch.light_environment(&config)
         }).collect();
-        
+
         LightEnvironment {
             winches,
             winch_wavelength: config.lighting.current.winch.wavelength_m,
