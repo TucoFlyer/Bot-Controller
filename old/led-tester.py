@@ -7,7 +7,7 @@ import time
 import math
 
 PORT = 9024
-FLYER = ('10.32.0.10', PORT)
+FLYER = ('10.32.0.8', PORT)
 MSG_LEDS = b'\x05'
 MAX_LEDS = 200
 
