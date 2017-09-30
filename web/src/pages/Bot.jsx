@@ -5,8 +5,7 @@ import { Route, Switch } from 'react-router';
 import { ConfigTextBlock } from '../Config';
 import { IfAuthenticated } from '../BotConnection';
 
-import FlyerAnalog from './FlyerAnalog';
-import FlyerMotion from './FlyerMotion';
+import FlyerSensors from './FlyerSensors';
 import Lighting from './Lighting';
 
 export default (props) => (
@@ -16,17 +15,13 @@ export default (props) => (
                 <NavLink to="/lighting" activeClassName="active" tag={RRNavLink}> Lighting </NavLink>
             </NavItem></IfAuthenticated>
             <NavItem>
-                <NavLink to="/flyer/motion" activeClassName="active" tag={RRNavLink}> Motion </NavLink>
-            </NavItem>
-            <NavItem>
-                <NavLink to="/flyer/analog" activeClassName="active" tag={RRNavLink}> Analog </NavLink>
+                <NavLink to="/flyer/sensors" activeClassName="active" tag={RRNavLink}> Sensors </NavLink>
             </NavItem>
         </Nav>
 
         <Switch>
             <Route path="/lighting" component={Lighting} />
-            <Route path="/flyer/motion" component={FlyerMotion} />
-            <Route path="/flyer/analog" component={FlyerAnalog} />
+            <Route path="/flyer/sensors" component={FlyerSensors} />
             <Route path="*" component={FlyerHome} />
         </Switch>
     </div>
