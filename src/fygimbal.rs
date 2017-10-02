@@ -1,51 +1,47 @@
 //! Communication protocol for the Feiyu Tech gimbals, especially
 //! the Mini3D we're using on this robot.
 
-
-pub trait FyPacket {
-
-
-    
-}
+use std::time::Duration;
+use bus::Bus;
+use botcomm::BotSender;
 
 
-
-/*
-use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
-
-trait PacketFormat {
-
-    
-}
-
-pub enum PacketFormat {
-    BootPacket,
-    GimbalPacket
-}
-
-pub struct FyPacket {
-    format:
-    command
-    framing
-    target
-    data
+#[derive(Debug, Clone)]
+pub struct GimbalPort {
 
 }
 
 
+#[derive(Debug)]
+pub struct GimbalPoller {
 
-/// Packet-based codec for Feiyu Tech gimbal messages
-pub struct FyCodec;
+}
 
 
+impl GimbalPoller {
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+	pub fn new() -> GimbalPoller {
+		GimbalPoller {
 
-    #[test]
-    fn try_it() {
-        assert!(blah(5) == 5);
+		}
+	}
+
+	pub fn read_timeout() -> Duration {
+		return Duration::from_millis(50);
+	}
+
+	pub fn port(&self) -> GimbalPort {
+		GimbalPort {
+
+		}
+	}
+
+    pub fn received(&mut self, msg: &[u8], sender: &BotSender, bus: &Bus) {
+
     }
+
+    pub fn check_for_timeout(&mut self, sender: &BotSender) {
+
+    }
+
 }
-*/

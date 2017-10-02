@@ -8,6 +8,7 @@ use config::Config;
 use std::net::{SocketAddr, UdpSocket};
 use std::io;
 use serde::Serialize;
+use fygimbal::{GimbalPoller, GimbalPort};
 
 const MSG_LOOPBACK          : u8 = 0x20;    // copy data
 const MSG_GIMBAL            : u8 = 0x01;    // fygimbal protocol data
@@ -16,24 +17,40 @@ const MSG_WINCH_STATUS      : u8 = 0x03;    // struct winch_status
 const MSG_WINCH_COMMAND     : u8 = 0x04;    // struct winch_command
 const MSG_LEDS              : u8 = 0x05;    // apa102 data, 32 bits/pixel
 
-#[derive(Debug)]
-pub struct BotComm {
-    socket: UdpSocket,
-    addrs: BotAddrs
+pub fn start(bus: &Bus) -> Result<BotSender, io::Error> {
+    let addrs = BotAddrs::new(&bus.config.lock().unwrap());
+    let socket = UdpSocket::bind(addrs.controller)?;
+
+    let recv = BotReceiver {
+        bus: bus.clone(),
+        addrs: addrs.clone(),
+        socket: socket.try_clone()?,
+        gimbal: GimbalPoller::new(),
+    };
+
+    let sender = BotSender {
+        socket,
+        addrs,
+        gimbal: recv.gimbal.port(),
+    };
+
+    recv.start(sender.try_clone()?);
+    Ok(sender)
 }
 
-impl BotComm {
-    pub fn start(bus: &Bus) -> Result<BotComm, io::Error> {
-        let addrs = BotAddrs::new(&bus.config.lock().unwrap());
-        let socket = UdpSocket::bind(addrs.controller)?;
-        start_receiver(bus.clone(), addrs.clone(), socket.try_clone()?);
-        Ok(BotComm { socket, addrs })
-    }
+#[derive(Debug)]
+pub struct BotSender {
+    socket: UdpSocket,
+    addrs: BotAddrs,
+    gimbal: GimbalPort,
+}
 
-    pub fn try_clone(&self) -> Result<BotComm, io::Error> {
+impl BotSender {
+    pub fn try_clone(&self) -> Result<BotSender, io::Error> {
         let socket = self.socket.try_clone()?;
         let addrs = self.addrs.clone();
-        Ok(BotComm { socket, addrs })
+        let gimbal = self.gimbal.clone();
+        Ok(BotSender { socket, addrs, gimbal })
     }
 
     fn send<T: Serialize>(&self, addr: &SocketAddr, header: u8, body: &T) -> io::Result<()> {
@@ -50,14 +67,14 @@ impl BotComm {
 
     pub fn winch_leds<'a>(&'a self, id: usize) -> LEDWriter<'a> {
         LEDWriter {
-            comm: &self,
+            sender: &self,
             addr: &self.addrs.winches[id]
         }
     }
 
     pub fn flyer_leds<'a>(&'a self) -> LEDWriter<'a> {
         LEDWriter {
-            comm: &self,
+            sender: &self,
             addr: &self.addrs.flyer
         }
     }
@@ -69,13 +86,29 @@ impl BotComm {
 
 #[derive(Debug)]
 pub struct LEDWriter<'a> {
-    comm: &'a BotComm,
+    sender: &'a BotSender,
     addr: &'a SocketAddr,
 }
 
 impl<'a> io::Write for LEDWriter<'a> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.comm.send(self.addr, MSG_LEDS, &buf)?;
+        self.sender.send(self.addr, MSG_LEDS, &buf)?;
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
+}
+
+#[derive(Debug)]
+pub struct GimbalWriter<'a> {
+    sender: &'a BotSender,
+}
+
+impl<'a> io::Write for GimbalWriter<'a> {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.sender.send(&self.sender.addrs.flyer, MSG_GIMBAL, &buf)?;
         Ok(buf.len())
     }
 
@@ -101,47 +134,68 @@ impl BotAddrs {
     }
 }
 
-fn start_receiver(bus: Bus, addrs: BotAddrs, socket: UdpSocket) {
-    thread::spawn(move || {
-        let mut buf = [0; 2048];
-        loop {
-            let (num_bytes, src_addr) = socket.recv_from(&mut buf).expect("Didn't receive data");
-            if num_bytes >= 1 {
-                handle_bot_message(&bus, &addrs, src_addr, buf[0], &buf[1..num_bytes]);
-            }
-        }
-    });
+struct BotReceiver {
+    bus: Bus,
+    addrs: BotAddrs,
+    socket: UdpSocket,
+    gimbal: GimbalPoller,
 }
 
-fn handle_bot_message(bus: &Bus, addrs: &BotAddrs, addr: SocketAddr, code: u8, msg: &[u8]) {
-    match code {
+impl BotReceiver {
 
-        MSG_WINCH_STATUS => {
-            for (id, winch_addr) in addrs.winches.iter().enumerate() {
-                if *winch_addr == addr {
-                    match bincode::deserialize(msg) {
-                        Err(_) => (),
-                        Ok(status) => drop(bus.sender.try_send(Message::WinchStatus(id, status).timestamp())),
+    fn start(mut self, sender: BotSender) {
+        thread::spawn(move || {
+            let mut buf = [0; 2048];
+            self.socket.set_read_timeout(Some(GimbalPoller::read_timeout())).unwrap();
+            loop {
+                match self.socket.recv_from(&mut buf) {
+                    Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => (),
+                    Err(ref e) if e.kind() == io::ErrorKind::TimedOut => (),
+                    Err(ref e) => panic!("Receiver thread failed: {:?}", e),
+
+                    Ok((num_bytes, src_addr)) => {
+                        if num_bytes >= 1 {
+                            self.bot_message(&sender, src_addr, buf[0], &buf[1..num_bytes]);
+                        }
+                    }
+                }
+                self.gimbal.check_for_timeout(&sender);
+            }
+        });
+    }    
+
+    fn bot_message(&mut self, sender: &BotSender, addr: SocketAddr, code: u8, msg: &[u8]) {
+        match code {
+
+            MSG_WINCH_STATUS => {
+                for (id, winch_addr) in self.addrs.winches.iter().enumerate() {
+                    if *winch_addr == addr {
+                        match bincode::deserialize(msg) {
+                            Err(_) => (),
+                            Ok(status) => drop(self.bus.sender.try_send(Message::WinchStatus(id, status).timestamp())),
+                        }
                     }
                 }
             }
-        }
 
-        MSG_FLYER_SENSORS => {
-            if addrs.flyer == addr {
-                match bincode::deserialize(msg) {
-                    Err(_) => (),
-                    Ok(sensors) => drop(bus.sender.try_send(Message::FlyerSensors(sensors).timestamp())),
+            MSG_FLYER_SENSORS => {
+                if self.addrs.flyer == addr {
+                    match bincode::deserialize(msg) {
+                        Err(_) => (),
+                        Ok(sensors) => drop(self.bus.sender.try_send(Message::FlyerSensors(sensors).timestamp())),
+                    }
                 }
             }
+
+            MSG_GIMBAL => {
+                if self.addrs.flyer == addr {
+                    self.gimbal.received(msg, sender, &self.bus);
+                }
+            },
+
+            MSG_LOOPBACK => (),  
+            _ => (),
         }
-
-        MSG_GIMBAL => {
-            println!("Unhandled gimbal data: {:?}", msg);
-        },
-
-        MSG_LOOPBACK => (),  
-        _ => (),
     }
 }
 

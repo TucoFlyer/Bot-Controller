@@ -9,12 +9,12 @@ mod scheduler;
 use bus::*;
 use std::thread;
 use config::ConfigFile;
-use botcomm::BotComm;
+use botcomm::BotSender;
 use self::state::ControllerState;
 use self::scheduler::Scheduler;
 use led::LightAnimator;
 
-pub fn start(bus: &Bus, comm: &BotComm, cf: ConfigFile) {
+pub fn start(bus: &Bus, comm: &BotSender, cf: ConfigFile) {
     let bus = bus.clone();
     let comm = comm.try_clone().unwrap();
     thread::spawn(move || {
@@ -27,14 +27,14 @@ pub fn start(bus: &Bus, comm: &BotComm, cf: ConfigFile) {
 
 struct Controller {
     bus: Bus,
-    comm: BotComm,
+    comm: BotSender,
     cf: ConfigFile,
     state: ControllerState,
     sched: Scheduler,
 }
 
 impl Controller {
-    fn new(bus: Bus, comm: BotComm, cf: ConfigFile) -> Controller {
+    fn new(bus: Bus, comm: BotSender, cf: ConfigFile) -> Controller {
         let lights = LightAnimator::start(&cf.config.lighting.animation, &comm);
         let state = ControllerState::new(&cf.config, lights);
         let sched = Scheduler::new();
