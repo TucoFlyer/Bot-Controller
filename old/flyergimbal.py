@@ -65,7 +65,7 @@ class GimbalPort:
     transactionTimeout = 2.0
     connectTimeout = 10.0
 
-    def __init__(self, verbose=True, connected=None):
+    def __init__(self, verbose=False, connected=None):
         self.verbose = verbose
         self.version = None
 
