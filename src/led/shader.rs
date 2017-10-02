@@ -83,24 +83,24 @@ impl Shader {
 				c
 			},
 
-			// PixelUsage::FlyerRing => {
-			// 	[0.3, 0.3, 0.3]
-			// },
+			PixelUsage::FlyerRing => {
+				[0.2, 0.2, 0.2]
+			},
 
-			// PixelUsage::FlyerTop => {
-			// 	[0.3, 0.3, 0.3]
-			// },
+			PixelUsage::FlyerTop => {
+				[0.2, 0.2, 0.2]
+			},
 
-			_ => {
-				let spin_vec = [ self.temp_spin_radians.cos(), self.temp_spin_radians.sin() ];
-				let xy_vec = vec2_normalized([ map.location[0], map.location[1] ]);
-				let blip = vec2_dot(spin_vec, xy_vec).powi(15);
-				let color_z = (map.location[2] * 10.0) % 1.0;
-				let color_z = if color_z < 0.0 { color_z + 1.0 } else { color_z };
-				let color = vec3_mix([1.0, 0.0, 0.0], [0.0, 0.0, 1.0], color_z);
-				let result = vec3_scale(color, blip);
-				result
-			}
+			// _ => {
+			// 	let spin_vec = [ self.temp_spin_radians.cos(), self.temp_spin_radians.sin() ];
+			// 	let xy_vec = vec2_normalized([ map.location[0], map.location[1] ]);
+			// 	let blip = vec2_dot(spin_vec, xy_vec).powi(15);
+			// 	let color_z = (map.location[2] * 10.0) % 1.0;
+			// 	let color_z = if color_z < 0.0 { color_z + 1.0 } else { color_z };
+			// 	let color = vec3_mix([1.0, 0.0, 0.0], [0.0, 0.0, 1.0], color_z);
+			// 	let result = vec3_scale(color, blip);
+			// 	result
+			// }
 
 		};
 		vec3_scale(c, env.brightness)
