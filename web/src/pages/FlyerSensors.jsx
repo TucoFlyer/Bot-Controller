@@ -8,12 +8,21 @@ const AnalogCharts = (props) => {
     const analog_trigger = (model) => model.flyer.message.FlyerSensors.analog.counter;
     let charts = [];
     for (let id = 0; id < 8; id += 1) {
-        charts.push(<Chart height="30"><Series
-            key={`flyer-analog-${id}`}
-            strokeStyle={colors[id]}
-            value={ (model) => model.flyer.message.FlyerSensors.analog.values[id] }
-            trigger={analog_trigger} timestamp={flyer_timestamp}
-        /></Chart>);
+        charts.push(
+            <Chart
+                key={`flyer-analog-${id}`}
+                height="50"
+                minValue="0"
+                maxValue="4096"
+                >
+                <Series
+               
+                    strokeStyle={colors[id]}
+                    value={ (model) => model.flyer.message.FlyerSensors.analog.values[id] }
+                    trigger={analog_trigger} timestamp={flyer_timestamp}
+                    />
+            </Chart>
+        );
     }
     return <div>{ charts }</div>;
 }
@@ -21,13 +30,16 @@ const AnalogCharts = (props) => {
 const LidarCharts = (props) => {
     let charts = [];
     for (let id = 0; id < 4; id += 1) {
-        charts.push(<Chart height="30"><Series
-            key={`flyer-lidar-${id}`}
-            strokeStyle={colors[id]}
-            value={ (model) => model.flyer.message.FlyerSensors.lidar.ranges[id] }
-            trigger={ (model) => model.flyer.message.FlyerSensors.lidar.counters[id] }
-            timestamp={flyer_timestamp}
-        /></Chart>);
+        charts.push(
+            <Chart height="80" key={`flyer-lidar-${id}`}>
+                <Series
+                    strokeStyle={colors[id]}
+                    value={ (model) => model.flyer.message.FlyerSensors.lidar.ranges[id] }
+                    trigger={ (model) => model.flyer.message.FlyerSensors.lidar.counters[id] }
+                    timestamp={flyer_timestamp}
+                    />
+            </Chart>
+        );
     }
     return <div>{ charts }</div>;
 }

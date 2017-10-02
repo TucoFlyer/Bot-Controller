@@ -14,13 +14,14 @@ export const Chart = windowSize( class extends Component {
     // Some of it is to make the charts fit in with our visual theme.
     // Disable bezier interpolation by default; it looks cool but hinders analysis and eats CPU
     render() {
+        const { grid, labels, windowWidth, windowHeight, children, ...props } = this.props;
         return <div>
             <SmoothieComponent
                 ref={ (s) => this.reactSmoothie = s }
-                width={this.props.width || (this.props.windowWidth - SPACE_MARGIN_PIXELS)}
-                height={this.props.height || 150}
-                millisPerPixel={this.props.millisPerPixel || 15}
-                interpolation={this.props.interpolation || 'linear'}
+                width={windowWidth - SPACE_MARGIN_PIXELS}
+                height={150}
+                millisPerPixel={15}
+                interpolation='linear'
 
                 grid={Object.assign({
                     fillStyle: '#fff',
@@ -29,11 +30,13 @@ export const Chart = windowSize( class extends Component {
                     millisPerLine: 1000,
                     verticalSections: 4,
                     borderVisible: true,
-                }, this.props.grid || {})}
+                }, grid || {})}
            
                 labels={Object.assign({
                     fillStyle: '#444',
-                }, this.props.labels || {})}
+                }, labels || {})}
+
+                {...props}
             />
             { this.props.children }
         </div>;
