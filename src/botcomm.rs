@@ -7,6 +7,7 @@ use bincode;
 use config::Config;
 use std::net::{SocketAddr, UdpSocket};
 use std::io;
+use std::io::Write;
 use serde::Serialize;
 use fygimbal::{GimbalPoller, GimbalPort};
 
@@ -53,12 +54,17 @@ impl BotSender {
         Ok(BotSender { socket, addrs, gimbal })
     }
 
+    fn send_bytes(&self, addr: &SocketAddr, header: u8, body: &[u8]) -> io::Result<()> {
+        let mut buf = vec![header];
+        buf.write(body);
+        self.socket.send_to(&buf, &addr)?;
+        Ok(())
+    }
+
     fn send<T: Serialize>(&self, addr: &SocketAddr, header: u8, body: &T) -> io::Result<()> {
         let limit = bincode::Bounded(2048);
-        let packet = (header, body);
-        let buf = bincode::serialize(&packet, limit).unwrap();
-        self.socket.send_to(&buf[..], &addr)?;
-        Ok(())
+        let bytes = bincode::serialize(body, limit).unwrap();
+        self.send_bytes(addr, header, &bytes)
     }
 
     pub fn winch_command(&self, id: usize, cmd: WinchCommand) -> io::Result<()> {
@@ -92,7 +98,7 @@ pub struct LEDWriter<'a> {
 
 impl<'a> io::Write for LEDWriter<'a> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.sender.send(self.addr, MSG_LEDS, &buf)?;
+        self.sender.send_bytes(self.addr, MSG_LEDS, buf)?;
         Ok(buf.len())
     }
 
