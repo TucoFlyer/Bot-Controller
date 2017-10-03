@@ -1,10 +1,6 @@
-//! Communication protocol for the Feiyu Tech gimbals, especially
-//! the Mini3D we're using on this robot.
-
 use std::time::Duration;
 use bus::Bus;
 use botcomm::BotSender;
-
 
 #[derive(Debug, Clone)]
 pub struct GimbalPort {
@@ -16,7 +12,6 @@ pub struct GimbalPort {
 pub struct GimbalPoller {
 
 }
-
 
 impl GimbalPoller {
 

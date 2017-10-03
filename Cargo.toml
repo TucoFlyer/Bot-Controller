@@ -31,7 +31,6 @@ num-traits = "0.1.40"
 
 byteorder = "1.0.0"
 crc16 = "0.3.3"
-nom = "3.0.0"
 
 rand = "0.3"
 hmac = "0.4.2"

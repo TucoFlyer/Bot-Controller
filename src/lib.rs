@@ -24,7 +24,6 @@ extern crate gilrs;
 // For fygimbal
 extern crate crc16;
 extern crate byteorder;
-extern crate nom;
 
 // For the web interface
 extern crate iron;
