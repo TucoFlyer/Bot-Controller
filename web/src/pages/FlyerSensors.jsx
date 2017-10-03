@@ -11,7 +11,6 @@ const AnalogCharts = (props) => {
         charts.push(
             <Chart
                 key={`flyer-analog-${id}`}
-                height="50"
                 minValue="0"
                 maxValue="4096"
                 >
@@ -31,7 +30,7 @@ const LidarCharts = (props) => {
     let charts = [];
     for (let id = 0; id < 4; id += 1) {
         charts.push(
-            <Chart height="80" key={`flyer-lidar-${id}`}>
+            <Chart key={`flyer-lidar-${id}`}>
                 <Series
                     strokeStyle={colors[id]}
                     value={ (model) => model.flyer.message.FlyerSensors.lidar.ranges[id] }
