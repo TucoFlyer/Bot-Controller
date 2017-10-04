@@ -54,16 +54,22 @@ export default (props) => {
                 value={ (model) => model.flyer.message.FlyerSensors.imu.quaternion[0] }
                 trigger={ (model) => model.flyer.message.FlyerSensors.imu.counter }
                 timestamp={ (model) => model.flyer.local_timestamp } />
+        </Chart>
+        <Chart>
             <Series
                 strokeStyle='#a22'
                 value={ (model) => model.flyer.message.FlyerSensors.imu.quaternion[1] }
                 trigger={ (model) => model.flyer.message.FlyerSensors.imu.counter }
                 timestamp={ (model) => model.flyer.local_timestamp } />
+        </Chart>
+        <Chart>
             <Series
                 strokeStyle='#2a2'
                 value={ (model) => model.flyer.message.FlyerSensors.imu.quaternion[2] }
                 trigger={ (model) => model.flyer.message.FlyerSensors.imu.counter }
                 timestamp={ (model) => model.flyer.local_timestamp } />
+        </Chart>
+        <Chart>
             <Series
                 strokeStyle='#22a'
                 value={ (model) => model.flyer.message.FlyerSensors.imu.quaternion[3] }
