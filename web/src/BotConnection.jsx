@@ -24,6 +24,9 @@ export class BotModel {
         if (msg.message.ConfigIsCurrent) {
             this.config = msg;
         }
+        if (msg.message.GimbalStatus) {
+            this.gimbal = msg;
+        }
     }
 }
 
@@ -88,6 +91,9 @@ export class BotConnection extends Component {
                 this.model.update(msg);
                 if (msg.message.ConfigIsCurrent) {
                     this.events.emit('config', msg);
+                }
+                if (msg.message.UnhandledGimbalPacket) {
+                    this.events.emit('gimbal', msg);
                 }
             }
 

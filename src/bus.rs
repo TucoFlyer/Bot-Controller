@@ -5,7 +5,8 @@ use serde_json::Value;
 use std::time::Instant;
 use std::sync::{Arc, Mutex};
 use config::{Config, ControllerMode};
-use vecmath::{Vector3, Vector4};
+use vecmath::{Vector2, Vector3, Vector4};
+use fygimbal::GimbalPacket;
 
 pub const TICK_HZ : u32 = 250;
 
@@ -45,6 +46,8 @@ pub enum Message {
     WinchStatus(usize, WinchStatus),
     UpdateConfig(Value),
     ConfigIsCurrent(Config),
+    GimbalStatus(GimbalStatus),
+    UnhandledGimbalPacket(GimbalPacket),
 }
 
 impl Message {
@@ -54,6 +57,20 @@ impl Message {
             message: self
         }
     }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct GimbalCommand {
+    pub motor_on: bool,
+    pub rates: Vector2<i16>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct GimbalStatus {
+    pub command: GimbalCommand,
+    pub counter: u32,
+    pub encoder_angles: Vector3<u16>,
+    pub center_calibration: Vector3<u16>
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]

@@ -71,6 +71,12 @@ impl BotSender {
         self.send(&self.addrs.winches[id], MSG_WINCH_COMMAND, &cmd)
     }
 
+    fn gimbal<'a>(&'a self) -> GimbalWriter<'a> {
+        GimbalWriter {
+            sender: &self,
+        }
+    }
+
     pub fn winch_leds<'a>(&'a self, id: usize) -> LEDWriter<'a> {
         LEDWriter {
             sender: &self,
@@ -114,7 +120,7 @@ pub struct GimbalWriter<'a> {
 
 impl<'a> io::Write for GimbalWriter<'a> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.sender.send(&self.sender.addrs.flyer, MSG_GIMBAL, &buf)?;
+        self.sender.send_bytes(&self.sender.addrs.flyer, MSG_GIMBAL, buf)?;
         Ok(buf.len())
     }
 
@@ -165,10 +171,10 @@ impl BotReceiver {
                         }
                     }
                 }
-                self.gimbal.check_for_timeout(&sender);
+                self.gimbal.check_for_timeout(&mut sender.gimbal());
             }
         });
-    }    
+    }
 
     fn bot_message(&mut self, sender: &BotSender, addr: SocketAddr, code: u8, msg: &[u8]) {
         match code {
@@ -195,7 +201,7 @@ impl BotReceiver {
 
             MSG_GIMBAL => {
                 if self.addrs.flyer == addr {
-                    self.gimbal.received(msg, sender, &self.bus);
+                    self.gimbal.received(msg, &mut sender.gimbal(), &self.bus);
                 }
             },
 

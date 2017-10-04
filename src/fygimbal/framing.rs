@@ -3,12 +3,18 @@ use std::io::{Cursor, Write};
 use byteorder::{ByteOrder, LittleEndian, WriteBytesExt, ReadBytesExt};
 use crc16;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 pub struct GimbalPacket {
-    framing: FramingType,
-    command: u8,
-    target: u8,
-    data: Vec<u8>,
+    pub framing: GimbalFraming,
+    pub command: u8,
+    pub target: u8,
+    pub data: Vec<u8>,
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
+pub enum GimbalFraming {
+    Bootloader,
+    Normal,
 }
 
 impl GimbalPacket {
@@ -35,7 +41,7 @@ impl GimbalPacket {
     }
 
     fn parse(buffer: &[u8]) -> (&[u8], Option<GimbalPacket>) {
-        let (remainder, framing) = FramingType::parse(buffer);
+        let (remainder, framing) = GimbalFraming::parse(buffer);
         match framing {
             None => (remainder, None),
             Some(framing) => {
@@ -52,7 +58,7 @@ impl GimbalPacket {
                         Some(length) => {
                             let length_with_crc = length + 2;
 
-                            if buffer.len() < length_with_crc {
+                            if remainder.len() < length_with_crc {
                                 // Wait for more data
                                 (buffer, None)
                             } else {
@@ -75,6 +81,93 @@ impl GimbalPacket {
     }
 }
 
+impl GimbalFraming {
+    fn to_bytes(&self) -> [u8; 2] {
+        match self {
+            &GimbalFraming::Bootloader => [0x55, 0xaa],
+            &GimbalFraming::Normal => [0xa5, 0x5a],
+        }
+    }
+
+    fn from_bytes(bytes: &[u8]) -> Option<GimbalFraming> {
+        if bytes.len() >= 2 {
+            if bytes[0..2] == GimbalFraming::Bootloader.to_bytes() {
+                Some(GimbalFraming::Bootloader)
+            } else if bytes[0..2] == GimbalFraming::Normal.to_bytes() {
+                Some(GimbalFraming::Normal)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+
+    fn parse(buffer: &[u8]) -> (&[u8], Option<GimbalFraming>) {
+        if buffer.len() >= 2 {
+            // Look for framing sequence at each byte offset
+            for ignored in 0..(buffer.len() - 2) {
+                if let Some(result) = GimbalFraming::from_bytes(&buffer[ignored..]) {
+                    return (&buffer[ignored + 2 ..], Some(result));
+                }
+            }
+        }
+
+        if buffer.len() >= 1 {
+            // Discard junk but save the last byte, in case it's part of an incomplete framing
+            return (&buffer[buffer.len()-1..], None);
+        }
+
+        (buffer, None)
+    }
+
+    fn write_length(&self, wr: &mut io::Write, len: usize) -> io::Result<()> {
+        match self {
+            &GimbalFraming::Bootloader => {
+                assert!(len <= 0xFFFF);
+                wr.write_u16::<LittleEndian>(len as u16)?;
+            },
+            &GimbalFraming::Normal => {
+                assert!(len <= 0xFF);
+                wr.write_u8(len as u8)?;
+            },
+        }
+        Ok(())
+    }
+
+    fn parse_length<'a>(&self, buffer: &'a [u8]) -> (&'a [u8], Option<usize>) {
+        let (offset, result) = {
+            let mut cursor = Cursor::new(buffer);
+            let result = match self {
+                &GimbalFraming::Bootloader => match cursor.read_u16::<LittleEndian>() {
+                    Err(_) => None,
+                    Ok(len) => Some(len as usize),
+                },
+                &GimbalFraming::Normal => match cursor.read_u8() {
+                    Err(_) => None,
+                    Ok(len) => Some(len as usize),
+                },
+            };
+            (cursor.position() as usize, result)
+        };
+        (&buffer[offset..], result)
+    }
+
+    fn calculate_crc(&self, data: &[u8]) -> u16 {
+        match self {
+            &GimbalFraming::Bootloader => crc16::State::<crc16::CCITT_FALSE>::calculate(data),
+            &GimbalFraming::Normal => crc16::State::<crc16::XMODEM>::calculate(data),
+        }
+    }
+
+    fn crc_bytes(&self, data: &[u8]) -> [u8; 2] {
+        let mut bytes = [0; 2];
+        LittleEndian::write_u16(&mut bytes, self.calculate_crc(data));
+        bytes
+    }
+}
+
+#[derive(Debug)]
 pub struct PacketReceiver {
     buffer: Vec<u8>,
 }
@@ -110,92 +203,6 @@ impl Iterator for PacketReceiver {
     }
 }
 
-#[derive(Debug, PartialEq)]
-pub enum FramingType {
-    Bootloader,
-    Normal,
-}
-
-impl FramingType {
-    fn to_bytes(&self) -> [u8; 2] {
-        match self {
-            &FramingType::Bootloader => [0x55, 0xaa],
-            &FramingType::Normal => [0xa5, 0x5a],
-        }
-    }
-
-    fn from_bytes(bytes: &[u8]) -> Option<FramingType> {
-        if bytes.len() >= 2 {
-            if bytes[0..2] == FramingType::Bootloader.to_bytes() {
-                Some(FramingType::Bootloader)
-            } else if bytes[0..2] == FramingType::Normal.to_bytes() {
-                Some(FramingType::Normal)
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-    }
-
-    fn parse(buffer: &[u8]) -> (&[u8], Option<FramingType>) {
-        // Look for framing sequence at each byte offset
-        for ignored in 0..(buffer.len() - 2) {
-            if let Some(result) = FramingType::from_bytes(&buffer[ignored..]) {
-                return (&buffer[ignored + 2 ..], Some(result));
-            }
-        }
-
-        // Save the last byte, in case it's part of an incomplete framing
-        (&buffer[buffer.len()-1..], None)
-    }
-
-    fn write_length(&self, wr: &mut io::Write, len: usize) -> io::Result<()> {
-        match self {
-            &FramingType::Bootloader => {
-                assert!(len <= 0xFFFF);
-                wr.write_u16::<LittleEndian>(len as u16)?;
-            },
-            &FramingType::Normal => {
-                assert!(len <= 0xFF);
-                wr.write_u8(len as u8)?;
-            },
-        }
-        Ok(())
-    }
-
-    fn parse_length<'a>(&self, buffer: &'a [u8]) -> (&'a [u8], Option<usize>) {
-        let (offset, result) = {
-            let mut cursor = Cursor::new(buffer);
-            let result = match self {
-                &FramingType::Bootloader => match cursor.read_u16::<LittleEndian>() {
-                    Err(_) => None,
-                    Ok(len) => Some(len as usize),
-                },
-                &FramingType::Normal => match cursor.read_u8() {
-                    Err(_) => None,
-                    Ok(len) => Some(len as usize),
-                },
-            };
-            (cursor.position() as usize, result)
-        };
-        (&buffer[offset..], result)
-    }
-
-    fn calculate_crc(&self, data: &[u8]) -> u16 {
-        match self {
-            &FramingType::Bootloader => crc16::State::<crc16::CCITT_FALSE>::calculate(data),
-            &FramingType::Normal => crc16::State::<crc16::XMODEM>::calculate(data),
-        }
-    }
-
-    fn crc_bytes(&self, data: &[u8]) -> [u8; 2] {
-        let mut bytes = [0; 2];
-        LittleEndian::write_u16(&mut bytes, self.calculate_crc(data));
-        bytes
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -203,7 +210,7 @@ mod tests {
     #[test]
     fn encode_boot_cmd01() {
         let packet = GimbalPacket {
-            framing: FramingType::Bootloader,
+            framing: GimbalFraming::Bootloader,
             command: 1,
             target: 0,
             data: vec![]
@@ -218,7 +225,7 @@ mod tests {
         let mut recv = PacketReceiver::new();
         recv.write(&[0x12, 0x34, 0x55, 0xaa, 0x00, 0x01, 0x00, 0x00, 0xf0, 0xb3, 0x55, 0xaa]).unwrap();
         assert_eq!(recv.next(), Some(GimbalPacket {
-            framing: FramingType::Bootloader,
+            framing: GimbalFraming::Bootloader,
             command: 1,
             target: 0,
             data: vec![]
@@ -237,7 +244,7 @@ mod tests {
     #[test]
     fn encode_version_packet() {
         let packet = GimbalPacket {
-            framing: FramingType::Normal,
+            framing: GimbalFraming::Normal,
             command: 8,
             target: 0,
             data: vec![0x65, 0x00, 0x2c, 0x01]
@@ -252,7 +259,7 @@ mod tests {
         let mut recv = PacketReceiver::new();
         recv.write(&[0xa5, 0x5a, 0x00, 0x08, 0x04, 0x65, 0x00, 0x2c, 0x01, 0x79, 0x32, 0x00, 0x00, 0x00]).unwrap();
         assert_eq!(recv.next(), Some(GimbalPacket {
-            framing: FramingType::Normal,
+            framing: GimbalFraming::Normal,
             command: 8,
             target: 0,
             data: vec![0x65, 0x00, 0x2c, 0x01]
