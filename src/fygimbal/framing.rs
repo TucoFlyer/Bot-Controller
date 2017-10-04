@@ -1,8 +1,9 @@
 use std::io;
-use std::io::Write;
-use byteorder::{LittleEndian, WriteBytesExt};
+use std::io::{Cursor, Write};
+use byteorder::{ByteOrder, LittleEndian, WriteBytesExt, ReadBytesExt};
 use crc16;
 
+#[derive(Debug, PartialEq)]
 pub struct GimbalPacket {
     framing: FramingType,
     command: u8,
@@ -13,14 +14,64 @@ pub struct GimbalPacket {
 impl GimbalPacket {
     pub fn write_to(&self, wr: &mut io::Write) -> io::Result<()> {
         wr.write(&self.framing.to_bytes())?;
-        let mut body = Vec::new();
-        body.write_u8(self.target)?;
-        body.write_u8(self.command)?;
-        self.framing.write_length(&mut body, self.data.len())?;
-        body.write(&self.data)?;
-        wr.write(&body)?;
-        wr.write_u16::<LittleEndian>(self.framing.calculate_crc(&body))?;
+        self.write_header(wr)?;
+        wr.write(&self.data)?;
+        wr.write(&self.crc_bytes())?;
         Ok(())
+    }
+
+    fn write_header(&self, wr: &mut io::Write) -> io::Result<()> {
+        wr.write_u8(self.target)?;
+        wr.write_u8(self.command)?;
+        self.framing.write_length(wr, self.data.len())?;
+        Ok(())
+    }
+
+    fn crc_bytes(&self) -> [u8; 2] {
+        let mut body = Vec::new();
+        self.write_header(&mut body).unwrap();
+        body.write(&self.data).unwrap();
+        self.framing.crc_bytes(&body)
+    }
+
+    fn parse(buffer: &[u8]) -> (&[u8], Option<GimbalPacket>) {
+        let (remainder, framing) = FramingType::parse(buffer);
+        match framing {
+            None => (remainder, None),
+            Some(framing) => {
+                if remainder.len() <= 2 {
+                    // Wait for full header
+                    (buffer, None)
+                } else {
+                    let (header, remainder) = remainder.split_at(2);
+                    let target = header[0];
+                    let command = header[1];
+                    let (remainder, length) = framing.parse_length(remainder);
+                    match length {
+                        None => (buffer, None),
+                        Some(length) => {
+                            let length_with_crc = length + 2;
+
+                            if buffer.len() < length_with_crc {
+                                // Wait for more data
+                                (buffer, None)
+                            } else {
+                                let (data, remainder) = remainder.split_at(length_with_crc);
+                                let (data, stored_crc) = data.split_at(length);
+                                let data = data.to_vec();
+                                let packet = GimbalPacket { framing, command, target, data };
+                                if packet.crc_bytes() == stored_crc {
+                                    (remainder, Some(packet))
+                                } else {
+                                    // Ignore whole packet, bad CRC
+                                    (remainder, None)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -29,7 +80,7 @@ pub struct PacketReceiver {
 }
 
 impl PacketReceiver {
-    fn new() -> PacketReceiver {
+    pub fn new() -> PacketReceiver {
         PacketReceiver { 
             buffer: Vec::new(),
         }
@@ -50,23 +101,16 @@ impl Iterator for PacketReceiver {
     type Item = GimbalPacket;
 
     fn next(&mut self) -> Option<GimbalPacket> {
-        loop {
-            match FramingType::from_bytes(&self.buffer[..2]) {
-                None => break,
-                Some(framing) => {
-                    return Some(GimbalPacket {
-                        framing,
-                        command: 0,
-                        target: 0,
-                        data: vec![],
-                    });
-                } 
-            }
-        }
-        None
+        let (buffer, packet) = {
+            let (remainder, packet) = GimbalPacket::parse(&self.buffer);
+            (remainder.to_vec(), packet)
+        };
+        self.buffer = buffer;
+        packet
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum FramingType {
     Bootloader,
     Normal,
@@ -94,6 +138,18 @@ impl FramingType {
         }
     }
 
+    fn parse(buffer: &[u8]) -> (&[u8], Option<FramingType>) {
+        // Look for framing sequence at each byte offset
+        for ignored in 0..(buffer.len() - 2) {
+            if let Some(result) = FramingType::from_bytes(&buffer[ignored..]) {
+                return (&buffer[ignored + 2 ..], Some(result));
+            }
+        }
+
+        // Save the last byte, in case it's part of an incomplete framing
+        (&buffer[buffer.len()-1..], None)
+    }
+
     fn write_length(&self, wr: &mut io::Write, len: usize) -> io::Result<()> {
         match self {
             &FramingType::Bootloader => {
@@ -108,11 +164,35 @@ impl FramingType {
         Ok(())
     }
 
+    fn parse_length<'a>(&self, buffer: &'a [u8]) -> (&'a [u8], Option<usize>) {
+        let (offset, result) = {
+            let mut cursor = Cursor::new(buffer);
+            let result = match self {
+                &FramingType::Bootloader => match cursor.read_u16::<LittleEndian>() {
+                    Err(_) => None,
+                    Ok(len) => Some(len as usize),
+                },
+                &FramingType::Normal => match cursor.read_u8() {
+                    Err(_) => None,
+                    Ok(len) => Some(len as usize),
+                },
+            };
+            (cursor.position() as usize, result)
+        };
+        (&buffer[offset..], result)
+    }
+
     fn calculate_crc(&self, data: &[u8]) -> u16 {
         match self {
             &FramingType::Bootloader => crc16::State::<crc16::CCITT_FALSE>::calculate(data),
             &FramingType::Normal => crc16::State::<crc16::XMODEM>::calculate(data),
         }
+    }
+
+    fn crc_bytes(&self, data: &[u8]) -> [u8; 2] {
+        let mut bytes = [0; 2];
+        LittleEndian::write_u16(&mut bytes, self.calculate_crc(data));
+        bytes
     }
 }
 
@@ -133,6 +213,26 @@ mod tests {
         assert_eq!(v, vec![0x55, 0xaa, 0x00, 0x01, 0x00, 0x00, 0xf0, 0xb3]);
     }
 
+    #[test]
+    fn decode_boot_cmd01() {
+        let mut recv = PacketReceiver::new();
+        recv.write(&[0x12, 0x34, 0x55, 0xaa, 0x00, 0x01, 0x00, 0x00, 0xf0, 0xb3, 0x55, 0xaa]).unwrap();
+        assert_eq!(recv.next(), Some(GimbalPacket {
+            framing: FramingType::Bootloader,
+            command: 1,
+            target: 0,
+            data: vec![]
+        }));
+        assert_eq!(recv.buffer, vec![0x55, 0xaa]);
+    }
+
+    #[test]
+    fn decode_boot_cmd01_bad_crc() {
+        let mut recv = PacketReceiver::new();
+        recv.write(&[0x12, 0x34, 0x55, 0xaa, 0x00, 0x01, 0x00, 0x00, 0xff, 0xb3, 0x99, 0xaa]).unwrap();
+        assert_eq!(recv.next(), None);
+        assert_eq!(recv.buffer, vec![0x99, 0xaa]);
+    }
 
     #[test]
     fn encode_version_packet() {
@@ -145,6 +245,19 @@ mod tests {
         let mut v = Vec::new();
         packet.write_to(&mut v).unwrap();
         assert_eq!(v, vec![0xa5, 0x5a, 0x00, 0x08, 0x04, 0x65, 0x00, 0x2c, 0x01, 0x79, 0x32]);
+    }
+
+    #[test]
+    fn decode_version_packet() {
+        let mut recv = PacketReceiver::new();
+        recv.write(&[0xa5, 0x5a, 0x00, 0x08, 0x04, 0x65, 0x00, 0x2c, 0x01, 0x79, 0x32, 0x00, 0x00, 0x00]).unwrap();
+        assert_eq!(recv.next(), Some(GimbalPacket {
+            framing: FramingType::Normal,
+            command: 8,
+            target: 0,
+            data: vec![0x65, 0x00, 0x2c, 0x01]
+        }));
+        assert_eq!(recv.buffer, vec![0x00, 0x00, 0x00]);
     }
 
 }

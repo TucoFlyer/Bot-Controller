@@ -56,7 +56,7 @@ impl BotSender {
 
     fn send_bytes(&self, addr: &SocketAddr, header: u8, body: &[u8]) -> io::Result<()> {
         let mut buf = vec![header];
-        buf.write(body);
+        buf.write(body)?;
         self.socket.send_to(&buf, &addr)?;
         Ok(())
     }
