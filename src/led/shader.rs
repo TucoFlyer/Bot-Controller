@@ -84,11 +84,11 @@ impl Shader {
 			},
 
 			PixelUsage::FlyerRing => {
-				[0.2, 0.2, 0.2]
+				[0.1, 0.1, 0.1]
 			},
 
 			PixelUsage::FlyerTop => {
-				[0.2, 0.2, 0.2]
+				[0.1, 0.1, 0.1]
 			},
 
 			// _ => {
