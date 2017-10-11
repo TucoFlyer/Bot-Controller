@@ -15,14 +15,14 @@ MAX_LEDS = 200
 def shader(frame):
 
     blips = [
-        (frame * 0.02,  (0.8, 1.0, 0.2)),
-        (frame * 0.03,  (0.2, 0.6, 0.9)),
-        (-frame * 0.01, (0.9, 0.3, 0.2)),
+        (frame * 0.012,  (0.8, 1.0, 0.2)),
+        (frame * 0.013,  (0.2, 0.6, 0.9)),
+        (-frame * 0.011, (0.9, 0.3, 0.2)),
     ]
 
     def pixel(n):
 
-        br = [ math.pow(math.sin(n / 10.0 - center), 40.0) for center, color in blips ]
+        br = [ 0.3 * math.pow(math.sin(n / 10.0 - center), 40.0) for center, color in blips ]
 
         rgb = [
             sum( br[i] * tint[ch] for i, (center, tint) in enumerate(blips) )

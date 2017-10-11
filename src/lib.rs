@@ -15,6 +15,8 @@ extern crate atomicwrites;
 
 extern crate chrono;
 
+extern crate bmfont;
+
 // Bus parts
 extern crate multiqueue;
 
@@ -38,6 +40,7 @@ mod vecmath;
 
 mod fygimbal;
 mod led;
+mod overlay;
 
 mod bus;
 pub use bus::*;

@@ -29,6 +29,8 @@ vecmath = "0.3.0"
 gilrs = "0.4.4"
 num-traits = "0.1.40"
 
+bmfont = "0.2.1"
+
 byteorder = "1.0.0"
 crc16 = "0.3.3"
 

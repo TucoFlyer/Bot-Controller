@@ -31,6 +31,8 @@ pub enum Command {
     SetMode(ControllerMode),
     ManualControlReset,
     ManualControlValue(ManualControlAxis, f64),
+    CameraObjectDetection(Vec<CameraDetectedObject>),
+    CameraRegionTracking(CameraTrackedRegion),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -48,6 +50,32 @@ pub enum Message {
     ConfigIsCurrent(Config),
     GimbalStatus(GimbalStatus),
     UnhandledGimbalPacket(GimbalPacket),
+    CameraOverlayScene(Vec<OverlayRect>),
+    CameraInitTrackedRegion(Vector4<f64>),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct OverlayRect {
+    /// Texels with [0,0] at top left
+    pub src: Vector4<f64>,
+    /// Arbitrary coordinates centered on zero with horizontal from [-1,1] and aspect correct
+    pub dest: Vector4<f64>,
+    pub rgba: Vector4<f64>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct CameraTrackedRegion {
+    /// Horizontal camera extents [-1,1], aspect correct, Y+ down
+    pub rect: Vector4<f64>,
+    /// Peak to side ratio (tracking quality)
+    pub psr: f64,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct CameraDetectedObject {
+    pub rect: Vector4<f64>,
+    pub prob: f64,
+    pub label: String,
 }
 
 impl Message {

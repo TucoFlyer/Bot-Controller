@@ -1,15 +1,15 @@
 use bus::*;
-use std::time::{Instant, Duration};
 use config::{Config, ControllerMode};
 use controller::manual::ManualControls;
 use controller::winch::{WinchController, MechStatus};
 use led::{LightAnimator, LightEnvironment};
+use overlay::DrawingContext;
 
 pub struct ControllerState {
     pub manual: ManualControls,
     lights: LightAnimator,
     winches: Vec<WinchController>,
-    last_per_tick_update: Option<Instant>,
+    flyer_sensors: Option<FlyerSensors>,
     last_mode: ControllerMode,
 }
 
@@ -21,7 +21,7 @@ impl ControllerState {
             winches: config.winches.iter().enumerate().map(|(id, _config)| {
                 WinchController::new(id)
             }).collect(),
-            last_per_tick_update: None,
+            flyer_sensors: None,
             last_mode: config.mode.clone(),
         }
     }
@@ -30,18 +30,6 @@ impl ControllerState {
         if config.mode != self.last_mode {
             self.mode_changed(&config.mode);
             self.last_mode = config.mode.clone();
-        }
-    }
-
-    pub fn after_each_message(&mut self, timestamp: Instant, config: &Config) {
-        let tick_duration = Duration::new(0, 1000000000 / TICK_HZ);
-        let tick_has_elapsed = match self.last_per_tick_update {
-            None => true,
-            Some(inst) => (timestamp >= inst + tick_duration),
-        };
-        if tick_has_elapsed {
-            self.every_tick(config);
-            self.last_per_tick_update = Some(timestamp);
         }
     }
 
@@ -58,12 +46,18 @@ impl ControllerState {
         self.lights.update(env);
     }
 
-    fn every_tick(&mut self, config: &Config) {
+    pub fn every_tick(&mut self, config: &Config) {
         self.manual.control_tick(config);
         self.lighting_tick(config);
     }
 
-    pub fn flyer_sensor_update(&mut self, _sensors: FlyerSensors) {
+    pub fn draw_camera_overlay(&self, _config: &Config, draw: &mut DrawingContext) {
+        let s = format!("Some text, yeah!!\n\nflyer_sensors:\n{:?}", self.flyer_sensors);
+        draw.text_box([0.1, 0.1], &s).unwrap();
+    }
+
+    pub fn flyer_sensor_update(&mut self, sensors: FlyerSensors) {
+        self.flyer_sensors = Some(sensors);
     }
 
     pub fn winch_control_loop(&mut self, config: &Config, id: usize, status: WinchStatus) -> WinchCommand {

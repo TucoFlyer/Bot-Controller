@@ -13,6 +13,8 @@ use botcomm::BotSender;
 use self::state::ControllerState;
 use self::scheduler::Scheduler;
 use led::LightAnimator;
+use std::time::{Duration, Instant};
+use overlay::{DrawingContext, VIDEO_HZ};
 
 pub fn start(bus: &Bus, comm: &BotSender, cf: ConfigFile) {
     let bus = bus.clone();
@@ -25,20 +27,52 @@ pub fn start(bus: &Bus, comm: &BotSender, cf: ConfigFile) {
     });
 }
 
+struct IntervalTimer {
+    period: Duration,
+    timestamp: Instant,
+}
+
+impl IntervalTimer {
+    fn new(hz: u32) -> IntervalTimer {
+        IntervalTimer {
+            period: Duration::new(0, 1000000000 / hz),
+            timestamp: Instant::now(),
+        }
+    }
+
+    fn poll(&mut self) -> bool {
+        let now = Instant::now();
+        if now > self.timestamp + self.period {
+            self.timestamp = now;
+            true
+        } else {
+            false
+        }
+    }
+}
+
 struct Controller {
     bus: Bus,
     comm: BotSender,
     cf: ConfigFile,
     state: ControllerState,
     sched: Scheduler,
+    per_tick: IntervalTimer,
+    per_video_frame: IntervalTimer,
+    draw: DrawingContext,
 }
 
 impl Controller {
     fn new(bus: Bus, comm: BotSender, cf: ConfigFile) -> Controller {
         let lights = LightAnimator::start(&cf.config.lighting.animation, &comm);
         let state = ControllerState::new(&cf.config, lights);
-        let sched = Scheduler::new();
-        Controller { bus, comm, cf, state, sched }
+        Controller {
+            bus, comm, cf, state,
+            sched: Scheduler::new(),
+            per_tick: IntervalTimer::new(TICK_HZ),
+            per_video_frame: IntervalTimer::new(VIDEO_HZ),
+            draw: DrawingContext::new(),
+        }
     }
 
     fn config_changed(self: &mut Controller) {
@@ -92,7 +126,18 @@ impl Controller {
 
                 _ => (),
             }
-            self.state.after_each_message(timestamp, &self.cf.config);
+
+            if self.per_tick.poll() {
+                self.state.every_tick(&self.cf.config);
+            }
+
+            if self.per_video_frame.poll() {
+                self.draw.clear();
+                self.state.draw_camera_overlay(&self.cf.config, &mut self.draw);
+                let scene = self.draw.scene.drain(..).collect();
+                drop(self.bus.sender.try_send(Message::CameraOverlayScene(scene).timestamp()));
+            }
+
             if self.sched.poll_config_changes(timestamp, &mut self.cf.config) {
                 self.config_changed();
             }
