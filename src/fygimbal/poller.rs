@@ -1,11 +1,10 @@
 use std::time::Duration;
-use bus::Bus;
 use std::time::Instant;
 use std::io;
 use std::io::Write;
 use std::sync::mpsc;
 use fygimbal::framing::{GimbalPacket, GimbalFraming, PacketReceiver};
-use bus::{GimbalCommand, GimbalStatus, Message};
+use message::{GimbalCommand, GimbalStatus, Message, Bus};
 
 #[derive(Debug, Clone)]
 pub struct GimbalPort {
@@ -61,7 +60,7 @@ impl GimbalPoller {
         let mut received_anything = false;
         self.receiver.write(msg).unwrap();
         while let Some(packet) = self.receiver.next() {
-            drop(bus.sender.try_send(Message::UnhandledGimbalPacket(packet).timestamp()));
+            drop(bus.try_broadcast(Message::UnhandledGimbalPacket(packet).timestamp()));
             received_anything = true;
         }
         if received_anything {

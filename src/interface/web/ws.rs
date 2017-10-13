@@ -1,4 +1,4 @@
-use bus::{Message, Command, TimestampedMessage, Bus};
+use message::{Message, Command, TimestampedMessage, Bus};
 use config::{WebConfig};
 use serde_json::{to_string, from_str, Value};
 use std::net::TcpStream;
@@ -88,11 +88,14 @@ fn start_ws_bus_receiver(client_info: &ClientInfo, bus: &Bus, send_port: &Messag
     let client_flags = client_info.flags.clone();
 
     thread::spawn(move || {
+        println!("ws_bus_receiver loop starting");
         loop {
+            println!("ws_bus_receiver starting iter");
             let msg = match bus_receiver.recv() {
                 Ok(msg) => msg,
                 _ => break,
             };
+            println!("ws_bus_receiver msg {:?}", msg);
             if !client_flags.is_alive() {
                 break;
             }
@@ -104,6 +107,7 @@ fn start_ws_bus_receiver(client_info: &ClientInfo, bus: &Bus, send_port: &Messag
             }
         }
         client_flags.kill();
+        println!("ws_bus_receiver loop stopped");
     });
 }
 

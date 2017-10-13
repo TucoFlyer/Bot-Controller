@@ -1,6 +1,6 @@
 //! Bot control via a local gamepad
 
-use bus::{Bus, Command, Message, ManualControlAxis};
+use message::{Bus, Command, Message, ManualControlAxis};
 use config::ControllerMode;
 use gilrs::{Event, Button, Axis, Gilrs};
 use std::thread;
@@ -62,7 +62,7 @@ impl State {
 }
 
 fn send_command(bus: &Bus, cmd: Command) {
-    drop(bus.sender.try_send(Message::Command(cmd).timestamp()))
+    drop(bus.try_broadcast(Message::Command(cmd).timestamp()))
 }
 
 fn send_reset(bus: &Bus) {

@@ -1,4 +1,4 @@
-use bus::*;
+use message::*;
 use config::{Config, ControllerMode};
 use controller::manual::ManualControls;
 use controller::winch::{WinchController, MechStatus};

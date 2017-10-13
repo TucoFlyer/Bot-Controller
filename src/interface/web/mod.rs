@@ -1,4 +1,4 @@
-use bus::Bus;
+use message::Bus;
 use qrcode::QrCode;
 use std::fs::File;
 use std::io::prelude::*;

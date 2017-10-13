@@ -23,7 +23,7 @@ bincode = "0.8.0"
 atomicwrites = "0.1.3"
 chrono = { version = "0.4", features = ["serde"] }
 
-multiqueue = "0.3.2"
+bus = "1.3.2"
 
 vecmath = "0.3.0"
 gilrs = "0.4.4"

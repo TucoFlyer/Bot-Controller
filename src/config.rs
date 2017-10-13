@@ -12,6 +12,7 @@ use std::io::{Read, Write};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::{Sender, Receiver, channel};
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 use vecmath::Vector3;
@@ -28,9 +29,9 @@ pub struct Config {
     pub winches: Vec<WinchConfig>,
 }
 
-pub struct ConfigFile {
-    pub path: PathBuf,
-    pub config: Config,
+#[derive(Clone)]
+pub struct SharedConfigFile {
+    config: Arc<Mutex<Config>>,
     async_save_channel: Sender<Config>,
 }
 
@@ -183,23 +184,28 @@ impl Config {
     }
 }
 
-impl ConfigFile {
-    pub fn load<P: AsRef<Path>>(path: P) -> Result<ConfigFile, String> {
+impl SharedConfigFile {
+    pub fn load<P: AsRef<Path>>(path: P) -> Result<SharedConfigFile, String> {
         let path = path.as_ref().to_path_buf();
         let mut file = err_string(File::open(&path))?;
         let mut buffer = String::new();
         err_string(file.read_to_string(&mut buffer))?;
-        let config = err_string(serde_yaml::from_str(&buffer))?;
+        let config = Arc::new(Mutex::new(err_string(serde_yaml::from_str(&buffer))?));
         let (async_save_channel, save_thread_receiver) = channel();
-        ConfigFile::start_save_thread(path.clone(), save_thread_receiver);
-        Ok(ConfigFile { path, config, async_save_channel })
+        SharedConfigFile::start_save_thread(path, save_thread_receiver);
+        Ok(SharedConfigFile { config, async_save_channel })
     }
 
-    pub fn save_async(self: &ConfigFile) {
-        drop(self.async_save_channel.send(self.config.clone()));
+    pub fn get_latest(&self) -> Config {
+        self.config.lock().unwrap().clone()
     }
 
-    pub fn start_save_thread(path: PathBuf, receiver: Receiver<Config>) {
+    pub fn set(&self, config: Config) {
+        *self.config.lock().unwrap() = config.clone();
+        drop(self.async_save_channel.send(config));
+    }
+
+    fn start_save_thread(path: PathBuf, receiver: Receiver<Config>) {
         const CONSOLIDATION_MILLIS : u64 = 1000;
         thread::spawn(move || {
             loop {

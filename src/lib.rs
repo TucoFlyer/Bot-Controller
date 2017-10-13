@@ -14,11 +14,8 @@ extern crate bincode;
 extern crate atomicwrites;
 
 extern crate chrono;
-
 extern crate bmfont;
-
-// Bus parts
-extern crate multiqueue;
+extern crate bus;
 
 // Gamepad input
 extern crate gilrs;
@@ -42,8 +39,8 @@ mod fygimbal;
 mod led;
 mod overlay;
 
-mod bus;
-pub use bus::*;
+mod message;
+pub use message::*;
 
 mod config;
 pub use config::*;

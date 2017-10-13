@@ -1,4 +1,4 @@
-use bus::*;
+use message::*;
 use vecmath::*;
 use config::{Config, ControllerMode};
 use std::collections::HashMap;

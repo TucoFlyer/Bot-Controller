@@ -1,29 +1,10 @@
-//! Command and status busses shared between components and threads
-
-use multiqueue;
 use serde_json::Value;
 use std::time::Instant;
-use std::sync::{Arc, Mutex};
 use config::{Config, ControllerMode};
 use vecmath::{Vector2, Vector3, Vector4};
 use fygimbal::GimbalPacket;
 
 pub const TICK_HZ : u32 = 250;
-
-#[derive(Clone)]
-pub struct Bus {
-    pub sender: multiqueue::BroadcastSender<TimestampedMessage>,
-    pub receiver: multiqueue::BroadcastReceiver<TimestampedMessage>,
-    pub config: Arc<Mutex<Config>>,
-}
-
-impl Bus {
-    pub fn new(config: Config) -> Bus {
-        let (sender, receiver) = multiqueue::broadcast_queue(512);
-        let config = Arc::new(Mutex::new(config));
-        Bus { sender, receiver, config }
-    }
-}
 
 /// Commands can be sent unmodified by an authenticated websockets client
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]

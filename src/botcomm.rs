@@ -1,7 +1,7 @@
 //! This module is about communicating with our many robot
 //! modules via a custom UDP protocol.
 
-use bus::{Bus, Message, WinchCommand};
+use message::{Bus, Message, WinchCommand};
 use std::thread;
 use bincode;
 use config::Config;

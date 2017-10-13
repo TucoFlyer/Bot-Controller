@@ -5,56 +5,25 @@ mod velocity;
 mod winch;
 mod state;
 mod scheduler;
+mod timer;
 
-use bus::*;
+use message::*;
+use std::sync::mpsc::{SyncSender, Receiver, sync_channel};
+use bus::{Bus, BusReader};
 use std::thread;
-use config::ConfigFile;
+use config::SharedConfigFile;
 use botcomm::BotSender;
 use self::state::ControllerState;
 use self::scheduler::Scheduler;
+use self::timer::IntervalTimer;
 use led::LightAnimator;
 use std::time::{Duration, Instant};
 use overlay::{DrawingContext, VIDEO_HZ};
 
-pub fn start(bus: &Bus, comm: &BotSender, cf: ConfigFile) {
-    let bus = bus.clone();
-    let comm = comm.try_clone().unwrap();
-    thread::spawn(move || {
-        let mut controller = Controller::new(bus, comm, cf);
-        loop {
-            controller.poll();
-        }
-    });
-}
-
-struct IntervalTimer {
-    period: Duration,
-    timestamp: Instant,
-}
-
-impl IntervalTimer {
-    fn new(hz: u32) -> IntervalTimer {
-        IntervalTimer {
-            period: Duration::new(0, 1000000000 / hz),
-            timestamp: Instant::now(),
-        }
-    }
-
-    fn poll(&mut self) -> bool {
-        let now = Instant::now();
-        if now > self.timestamp + self.period {
-            self.timestamp = now;
-            true
-        } else {
-            false
-        }
-    }
-}
-
-struct Controller {
+pub struct Controller {
     bus: Bus,
     comm: BotSender,
-    cf: ConfigFile,
+    cf: SharedConfigFile,
     state: ControllerState,
     sched: Scheduler,
     per_tick: IntervalTimer,
@@ -62,8 +31,18 @@ struct Controller {
     draw: DrawingContext,
 }
 
+#[derive(Clone)]
+pub struct ControllerPort {
+    msg_in: SyncSender<TimestampedMessage>,
+    reader_request: SyncSender<SyncSender<BusReader<TimestampedMessage>>>,
+}
+
 impl Controller {
-    fn new(bus: Bus, comm: BotSender, cf: ConfigFile) -> Controller {
+    fn new(bus: &Bus, comm: &BotSender, cf: &SharedConfigFile) -> Controller {
+        let bus = bus.clone();
+        let comm = comm.try_clone().unwrap();
+        let cf = cf.clone();
+
         let lights = LightAnimator::start(&cf.config.lighting.animation, &comm);
         let state = ControllerState::new(&cf.config, lights);
         Controller {

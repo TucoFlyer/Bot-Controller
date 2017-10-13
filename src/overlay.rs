@@ -1,4 +1,4 @@
-use bus::OverlayRect;
+use message::OverlayRect;
 use vecmath::{Vector2, Vector4};
 use std::io::Cursor;
 use std::mem;

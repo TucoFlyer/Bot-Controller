@@ -1,3 +1,5 @@
+//! Schedule configuration changes at a particular time of day
+
 use chrono::prelude::*;
 use config::Config;
 use std::time::{Instant, Duration};
