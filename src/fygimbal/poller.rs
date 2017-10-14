@@ -4,7 +4,8 @@ use std::io;
 use std::io::Write;
 use std::sync::mpsc;
 use fygimbal::framing::{GimbalPacket, GimbalFraming, PacketReceiver};
-use message::{GimbalCommand, GimbalStatus, Message, Bus};
+use controller::ControllerPort;
+use message::{GimbalCommand, Message};
 
 #[derive(Debug, Clone)]
 pub struct GimbalPort {
@@ -14,11 +15,11 @@ pub struct GimbalPort {
 
 impl GimbalPort {
     pub fn raw_packet(&self, packet: GimbalPacket) {
-        self.packet_sender.send(packet);
+        drop(self.packet_sender.send(packet));
     }
 
     pub fn command(&self, command: GimbalCommand) {
-        self.cmd_sender.send(command);
+        drop(self.cmd_sender.send(command));
     }
 }
 
@@ -56,11 +57,11 @@ impl GimbalPoller {
         self.port.clone()
     }
 
-    pub fn received(&mut self, msg: &[u8], writer: &mut io::Write, bus: &Bus) {
+    pub fn received(&mut self, msg: &[u8], writer: &mut io::Write, controller: &ControllerPort) {
         let mut received_anything = false;
         self.receiver.write(msg).unwrap();
         while let Some(packet) = self.receiver.next() {
-            drop(bus.try_broadcast(Message::UnhandledGimbalPacket(packet).timestamp()));
+            controller.send(Message::UnhandledGimbalPacket(packet).timestamp());
             received_anything = true;
         }
         if received_anything {
@@ -81,7 +82,7 @@ impl GimbalPoller {
 
     fn write_next_batch(&mut self, writer: &mut io::Write) -> io::Result<()> {
 
-        for i in 0..10 {
+        for _ in 0..10 {
             for target in 0..3 {
                 GimbalPacket {
                     framing: GimbalFraming::Normal,

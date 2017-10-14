@@ -2,9 +2,9 @@
 //! Runs on the main thread.
 
 use std::{thread, time};
-use message::Bus;
+use controller::ControllerPort;
 
-pub fn run(_bus: &Bus) {
+pub fn run(_controller: &ControllerPort) {
 
 	// fix me: Check for outgoing messages before declaring that we're running
 

@@ -15,7 +15,7 @@ pub fn start(web_config: &WebConfig) {
     let ws_link = WsLink { uri: web_config.ws_uri() };
     let web_root = Static::new(&web_config.web_root_path);
 
-    thread::spawn(move || {
+    thread::Builder::new().name("HTTP Server".into()).spawn(move || {
         let mut m = Mount::new();
 
         m.mount("/", web_root);
@@ -26,5 +26,5 @@ pub fn start(web_config: &WebConfig) {
         });
 
         iron::Iron::new(m).http(addr).expect("failed to start built-in HTTP server");
-    });
+    }).unwrap();
 }

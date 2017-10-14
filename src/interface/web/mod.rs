@@ -1,22 +1,23 @@
-use message::Bus;
+use controller::ControllerPort;
 use qrcode::QrCode;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io;
+use config::SharedConfigFile;
 use open;
 
 mod ws;
 mod http;
 pub mod auth;
 
-pub fn start(bus: &Bus) {
-    let web_config = bus.config.lock().unwrap().web.clone();
+pub fn start(config: &SharedConfigFile, controller: &ControllerPort) {
+    let web_config = config.get_latest().web;
     let secret_key = auth::make_random_string();
     let http_uri = web_config.http_uri(&secret_key);
     let connect_string = make_connect_string(&http_uri);
 
     http::start(&web_config);
-    ws::start(bus.clone(), &web_config, secret_key);
+    ws::start(controller, config, secret_key);
 
     store_connect_string(&connect_string, &web_config.connection_file_path).expect("can't write to connection info file");
     show_connect_string(&connect_string);

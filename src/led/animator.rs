@@ -1,7 +1,7 @@
 use std::io::Write;
 use std::thread;
 use std::time::{Duration, Instant};
-use botcomm::BotSender;
+use botcomm::BotSocket;
 use led::format::write_apa102_pixel;
 use led::shader::{Shader, LightEnvironment, PixelMapping};
 use led::models::LEDModel;
@@ -15,17 +15,17 @@ pub struct LightAnimator {
 }
 
 impl LightAnimator {
-    pub fn start(config: &LightAnimatorConfig, comm: &BotSender) -> LightAnimator {
+    pub fn start(config: &LightAnimatorConfig, socket: &BotSocket) -> LightAnimator {
         let last_sent = None;
         let (env_sender, env_recv) = sync_channel(128);
-        let comm = comm.try_clone().unwrap();
+        let socket = socket.try_clone().unwrap();
         let config = config.clone();
-        thread::spawn(move || {
-            let mut anim = AnimatorThread::new(config, &comm, env_recv);
+        thread::Builder::new().name("LightAnimator".into()).spawn(move || {
+            let mut anim = AnimatorThread::new(config, &socket, env_recv);
             loop {
                 anim.frame();
             }
-        });
+        }).unwrap();
         LightAnimator {
             env_sender,
             last_sent,
@@ -54,11 +54,11 @@ struct AnimatorThread<'a> {
 }
 
 impl<'a> AnimatorThread<'a> {
-    fn new(config: LightAnimatorConfig, comm: &'a BotSender, recv: Receiver<LightEnvironment>) -> AnimatorThread<'a> {
+    fn new(config: LightAnimatorConfig, socket: &'a BotSocket, recv: Receiver<LightEnvironment>) -> AnimatorThread<'a> {
         AnimatorThread {
             config,
             recv,
-            model: LEDModel::new(comm),
+            model: LEDModel::new(socket),
             shader: Shader::new(),
             env: None,
             last_frame_timestamp: None,

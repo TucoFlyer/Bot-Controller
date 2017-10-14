@@ -1,12 +1,17 @@
 extern crate tucoflyer;
-use tucoflyer::{SharedConfigFile, Bus, botcomm, interface, controller, watchdog};
+use tucoflyer::{SharedConfigFile, BotSocket, Controller, interface, watchdog};
 
 fn main() {
-    let cf = SharedConfigFile::load("config.yaml").expect("Failed to read configuration");
-    let bus = Bus::new(512);
-    let sender = botcomm::start(&bus).expect("Failed to start bot networking");
-    interface::web::start(&bus);
-    interface::gamepad::start(&bus);
-    controller::start(&bus, &sender, &cf);
-    watchdog::run(&bus);
+    let config = SharedConfigFile::load("config.yaml").expect("Failed to read configuration");
+    let socket = BotSocket::new(&config.get_latest()).expect("Failed to start bot networking");
+
+    let controller = Controller::new(&config, &socket);
+    let port = controller.port();
+    socket.start_receiver(&port);
+    controller.start();
+
+    interface::web::start(&config, &port);
+    interface::gamepad::start(&port);
+
+    watchdog::run(&port);
 }

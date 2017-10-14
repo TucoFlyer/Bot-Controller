@@ -4,122 +4,186 @@ mod manual;
 mod velocity;
 mod winch;
 mod state;
-mod scheduler;
 mod timer;
 
 use message::*;
 use std::sync::mpsc::{SyncSender, Receiver, sync_channel};
 use bus::{Bus, BusReader};
 use std::thread;
-use config::SharedConfigFile;
-use botcomm::BotSender;
+use config::{SharedConfigFile, Config};
+use botcomm::BotSocket;
 use self::state::ControllerState;
-use self::scheduler::Scheduler;
-use self::timer::IntervalTimer;
+use self::timer::{ConfigScheduler, ControllerTimers};
 use led::LightAnimator;
-use std::time::{Duration, Instant};
-use overlay::{DrawingContext, VIDEO_HZ};
+use overlay::DrawingContext;
 
 pub struct Controller {
-    bus: Bus,
-    comm: BotSender,
-    cf: SharedConfigFile,
+    recv: Receiver<ControllerInput>,
+    bus: Bus<TimestampedMessage>,
+    port_prototype: ControllerPort,
+    socket: BotSocket,
+    shared_config: SharedConfigFile,
+    local_config: Config,
     state: ControllerState,
-    sched: Scheduler,
-    per_tick: IntervalTimer,
-    per_video_frame: IntervalTimer,
+    config_scheduler: ConfigScheduler,
+    timers: ControllerTimers,
     draw: DrawingContext,
+}
+
+enum ControllerInput {
+    Message(TimestampedMessage),
+    ReaderRequest(SyncSender<BusReader<TimestampedMessage>>),
 }
 
 #[derive(Clone)]
 pub struct ControllerPort {
-    msg_in: SyncSender<TimestampedMessage>,
-    reader_request: SyncSender<SyncSender<BusReader<TimestampedMessage>>>,
+    sender: SyncSender<ControllerInput>,
 }
 
-impl Controller {
-    fn new(bus: &Bus, comm: &BotSender, cf: &SharedConfigFile) -> Controller {
-        let bus = bus.clone();
-        let comm = comm.try_clone().unwrap();
-        let cf = cf.clone();
-
-        let lights = LightAnimator::start(&cf.config.lighting.animation, &comm);
-        let state = ControllerState::new(&cf.config, lights);
-        Controller {
-            bus, comm, cf, state,
-            sched: Scheduler::new(),
-            per_tick: IntervalTimer::new(TICK_HZ),
-            per_video_frame: IntervalTimer::new(VIDEO_HZ),
-            draw: DrawingContext::new(),
+impl ControllerPort {
+    pub fn send(&self, msg: TimestampedMessage) {
+        if self.sender.try_send(ControllerInput::Message(msg)).is_err() {
+            println!("Controller input queue overflow!");
         }
     }
 
-    fn config_changed(self: &mut Controller) {
-        *self.bus.config.lock().unwrap() = self.cf.config.clone();
-        drop(self.bus.sender.try_send(Message::ConfigIsCurrent(self.cf.config.clone()).timestamp()));
-        self.cf.save_async();
-        self.state.config_changed(&self.cf.config);
+    pub fn add_rx(&self) -> BusReader<TimestampedMessage> {
+        let (result_sender, result_recv) = sync_channel(1);
+        drop(self.sender.try_send(ControllerInput::ReaderRequest(result_sender)));
+        result_recv.recv().unwrap()
+    }
+}
+
+impl Controller {
+    pub fn new(config: &SharedConfigFile, socket: &BotSocket) -> Controller {
+
+        const DEPTH : usize = 1024;
+
+        let (sender, recv) = sync_channel(DEPTH);
+        let bus = Bus::new(DEPTH);
+        let port_prototype = ControllerPort { sender };
+
+        let shared_config = config.clone();
+        let local_config = config.get_latest();
+        let lights = LightAnimator::start(&local_config.lighting.animation, &socket);
+        let socket = socket.try_clone().unwrap();
+        let state = ControllerState::new(&local_config, lights);
+        let config_scheduler = ConfigScheduler::new();
+        let timers = ControllerTimers::new();
+        let draw = DrawingContext::new();
+
+        Controller {
+            recv,
+            bus,
+            port_prototype,
+            socket,
+            shared_config,
+            local_config,
+            state,
+            config_scheduler,
+            timers,
+            draw,
+        }
     }
 
-    fn poll(self: &mut Controller) {
-        if let Ok(ts_msg) = self.bus.receiver.recv() {
-            let timestamp = ts_msg.timestamp;
-            match ts_msg.message {
+    pub fn port(&self) -> ControllerPort {
+        self.port_prototype.clone()
+    }
 
-                Message::UpdateConfig(updates) => {
-                    // Merge a freeform update into the configuration, and save it.
-                    // Errors here go right to the console, since errors caused by a
-                    // client should have been detected earlier and sent to that client.
-                    match self.cf.config.merge(updates) {
-                        Err(e) => println!("Error in UpdateConfig from message bus: {}", e),
-                        Ok(config) => {
-                            self.cf.config = config;
-                            self.config_changed();
-                        }
-                    }
-                }
+    pub fn start(mut self) {
+        thread::Builder::new().name("Controller".into()).spawn(move || {
+            loop {
+                self.poll();
+            }
+        }).unwrap();
+    }
 
-                Message::Command(Command::SetMode(mode)) => {
-                    // The controller mode is part of the config, so this could be changed via UpdateConfig as well, but this option is strongly typed
-                    if self.cf.config.mode != mode {
-                        self.cf.config.mode = mode;
+    fn broadcast(&mut self, ts_msg: TimestampedMessage) {
+        if self.bus.try_broadcast(ts_msg).is_err() {
+            println!("Controller output bus overflow!");
+        }
+    }
+
+    fn config_changed(&mut self) {
+        self.shared_config.set(self.local_config.clone());
+        let msg = Message::ConfigIsCurrent(self.local_config.clone());
+        self.broadcast(msg.timestamp());
+        self.state.config_changed(&self.local_config);
+    }
+
+    fn poll(&mut self) {
+        match self.recv.recv().unwrap() {
+
+            ControllerInput::ReaderRequest(result_channel) => {
+                // Never blocks, result_channel must already have room
+                let rx = self.bus.add_rx();
+                drop(result_channel.try_send(rx));
+            }
+
+            ControllerInput::Message(ts_msg) => {
+                self.broadcast(ts_msg.clone());
+                self.handle_message(ts_msg);
+            }
+        }
+
+        if self.timers.tick.poll() {
+            self.state.every_tick(&self.local_config);
+        }
+
+        if self.timers.video_frame.poll() {
+            self.draw.clear();
+            self.state.draw_camera_overlay(&self.local_config, &mut self.draw);
+            let scene = self.draw.scene.drain(..).collect();
+            self.broadcast(Message::CameraOverlayScene(scene).timestamp());
+        }
+
+        if self.config_scheduler.poll(&mut self.local_config) {
+            self.config_changed();
+        }
+    }
+
+    fn handle_message(&mut self, ts_msg: TimestampedMessage) {
+        match ts_msg.message {
+
+            Message::UpdateConfig(updates) => {
+                // Merge a freeform update into the configuration, and save it.
+                // Errors here go right to the console, since errors caused by a
+                // client should have been detected earlier and sent to that client.
+                match self.local_config.merge(updates) {
+                    Err(e) => println!("Error in UpdateConfig from message bus: {}", e),
+                    Ok(config) => {
+                        self.local_config = config;
                         self.config_changed();
                     }
                 }
-
-                Message::WinchStatus(id, status) => {
-                    drop(self.comm.winch_command(id, self.state.winch_control_loop(&self.cf.config, id, status)));
-                },
-
-                Message::FlyerSensors(sensors) => {
-                    self.state.flyer_sensor_update(sensors);
-                },
-
-                Message::Command(Command::ManualControlValue(axis, value)) => {
-                    self.state.manual.control_value(axis, value);
-                },
-
-                Message::Command(Command::ManualControlReset) => {
-                    self.state.manual.control_reset();
-                },
-
-                _ => (),
             }
 
-            if self.per_tick.poll() {
-                self.state.every_tick(&self.cf.config);
+            Message::Command(Command::SetMode(mode)) => {
+                // The controller mode is part of the config, so this could be changed via UpdateConfig as well, but this option is strongly typed
+                if self.local_config.mode != mode {
+                    self.local_config.mode = mode;
+                    self.config_changed();
+                }
             }
 
-            if self.per_video_frame.poll() {
-                self.draw.clear();
-                self.state.draw_camera_overlay(&self.cf.config, &mut self.draw);
-                let scene = self.draw.scene.drain(..).collect();
-                drop(self.bus.sender.try_send(Message::CameraOverlayScene(scene).timestamp()));
-            }
+            Message::WinchStatus(id, status) => {
+                let command = self.state.winch_control_loop(&self.local_config, id, status);
+                drop(self.socket.winch_command(id, command));
+            },
 
-            if self.sched.poll_config_changes(timestamp, &mut self.cf.config) {
-                self.config_changed();
-            }
+            Message::FlyerSensors(sensors) => {
+                self.state.flyer_sensor_update(sensors);
+            },
+
+            Message::Command(Command::ManualControlValue(axis, value)) => {
+                self.state.manual.control_value(axis, value as f64);
+            },
+
+            Message::Command(Command::ManualControlReset) => {
+                self.state.manual.control_reset();
+            },
+
+            _ => (),
         }
     }
 }

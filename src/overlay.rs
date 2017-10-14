@@ -4,7 +4,7 @@ use std::io::Cursor;
 use std::mem;
 use bmfont::{BMFont, OrdinateOrientation, CharPosition, StringParseError};
 
-pub const VIDEO_HZ : u32 = 60;
+pub const VIDEO_HZ : u32 = 30;
 
 #[derive(Debug, Clone)]
 pub struct DrawingContext {
@@ -15,13 +15,13 @@ pub struct DrawingContext {
 
 #[derive(Debug, Clone)]
 pub struct DrawingState {
-	pub color: Vector4<f64>,
-	pub background_color: Vector4<f64>,
+	pub color: Vector4<f32>,
+	pub background_color: Vector4<f32>,
 	pub font: BMFont,
-	pub pixel_unit_size: f64,
-	pub line_thickness: f64,
-	pub text_height: f64,
-	pub text_margin: f64,
+	pub pixel_unit_size: f32,
+	pub line_thickness: f32,
+	pub text_height: f32,
+	pub text_margin: f32,
 }
 
 fn load_default_font() -> BMFont {
@@ -61,15 +61,15 @@ impl DrawingContext {
 		self.current = DrawingState::new(&self.default_font);
 	}
 
-	pub fn pixels(&self, pix: f64) -> f64 {
+	pub fn pixels(&self, pix: f32) -> f32 {
 		pix * self.current.pixel_unit_size
 	}
 
-	pub fn ems(&self, em: f64) -> f64 {
+	pub fn ems(&self, em: f32) -> f32 {
 		em * self.current.text_height
 	}
 
-	pub fn solid_rect(&mut self, rect: Vector4<f64>) {
+	pub fn solid_rect(&mut self, rect: Vector4<f32>) {
 		self.scene.push(OverlayRect {
 			src: [ 511.0, 511.0, 1.0, 1.0 ],
 			dest: rect,
@@ -77,7 +77,7 @@ impl DrawingContext {
 		});
 	}
 
-	pub fn outline_rect(&mut self, rect: Vector4<f64>) {
+	pub fn outline_rect(&mut self, rect: Vector4<f32>) {
 		// Thin rectangular outline outside the rect
 		// ---
 		// | |
@@ -93,13 +93,13 @@ impl DrawingContext {
 		self.solid_rect([ x+w, y, t, h ]);
 	}
 
-	pub fn text(&mut self, top_left: Vector2<f64>, text: &str) -> Result<(), StringParseError> {
+	pub fn text(&mut self, top_left: Vector2<f32>, text: &str) -> Result<(), StringParseError> {
 		let shape = TextShape::parse(&self.current.font, self.current.text_height, text)?;
 		shape.draw(&mut self.scene, self.current.color, top_left);
 		Ok(())
 	}
 
-	pub fn text_box(&mut self, top_left: Vector2<f64>, text: &str) -> Result<Vector4<f64>, StringParseError> {
+	pub fn text_box(&mut self, top_left: Vector2<f32>, text: &str) -> Result<Vector4<f32>, StringParseError> {
 		let shape = TextShape::parse(&self.current.font, self.current.text_height, text)?;
 		let size = shape.size();
 		let m = self.current.text_margin;
@@ -113,38 +113,38 @@ impl DrawingContext {
 }
 
 struct TextShape {
-	scale: f64,
+	scale: f32,
 	chars: Vec<CharPosition>,
 }
 
 impl TextShape {
-	fn parse(font: &BMFont, height: f64, s: &str) -> Result<TextShape, StringParseError> {
+	fn parse(font: &BMFont, height: f32, s: &str) -> Result<TextShape, StringParseError> {
 		Ok(TextShape {
-			scale: height / (font.base_height() as f64),
+			scale: height / (font.base_height() as f32),
 			chars: font.parse(s)?
 		})
 	}
 
-	fn size(&self) -> Vector2<f64> {
+	fn size(&self) -> Vector2<f32> {
 		self.chars.iter().fold([0.0, 0.0], |size, char| { [
-			size[0].max((char.screen_rect.x + (char.screen_rect.width as i32)) as f64 * self.scale),
-			size[1].max((char.screen_rect.y + (char.screen_rect.height as i32)) as f64 * self.scale),
+			size[0].max((char.screen_rect.x + (char.screen_rect.width as i32)) as f32 * self.scale),
+			size[1].max((char.screen_rect.y + (char.screen_rect.height as i32)) as f32 * self.scale),
 		]})
 	}
 
-	fn draw(&self, scene: &mut Vec<OverlayRect>, rgba: Vector4<f64>, top_left: Vector2<f64>) {
+	fn draw(&self, scene: &mut Vec<OverlayRect>, rgba: Vector4<f32>, top_left: Vector2<f32>) {
 		for char in &self.chars {
 			let src = [
-				char.page_rect.x as f64 * self.scale,
-				char.page_rect.y as f64 * self.scale,
-				char.page_rect.width as f64 * self.scale,
-				char.page_rect.height as f64 * self.scale,
+				char.page_rect.x as f32 * self.scale,
+				char.page_rect.y as f32 * self.scale,
+				char.page_rect.width as f32 * self.scale,
+				char.page_rect.height as f32 * self.scale,
 			];
 			let dest = [
-				char.screen_rect.x as f64 * self.scale + top_left[0],
-				char.screen_rect.y as f64 * self.scale + top_left[1],
-				char.screen_rect.width as f64 * self.scale,
-				char.screen_rect.height as f64 * self.scale,
+				char.screen_rect.x as f32 * self.scale + top_left[0],
+				char.screen_rect.y as f32 * self.scale + top_left[1],
+				char.screen_rect.width as f32 * self.scale,
+				char.screen_rect.height as f32 * self.scale,
 			];
 			scene.push(OverlayRect { src, dest, rgba });
 		}

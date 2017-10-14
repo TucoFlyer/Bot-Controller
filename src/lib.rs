@@ -45,7 +45,11 @@ pub use message::*;
 mod config;
 pub use config::*;
 
+mod controller;
+pub use controller::{Controller, ControllerPort};
+
+mod botcomm;
+pub use botcomm::BotSocket;
+
 pub mod interface;
-pub mod controller;
 pub mod watchdog;
-pub mod botcomm;

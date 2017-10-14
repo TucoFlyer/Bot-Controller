@@ -1,5 +1,6 @@
-use message::{Message, Command, TimestampedMessage, Bus};
-use config::{WebConfig};
+use message::{Message, Command, TimestampedMessage};
+use controller::ControllerPort;
+use config::SharedConfigFile;
 use serde_json::{to_string, from_str, Value};
 use std::net::TcpStream;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -41,20 +42,21 @@ struct ClientError {
 enum ErrorCode {
     ParseFailed,
     AuthRequired,
-    MessageDeliveryFailed,
     UpdateConfigFailed,
 }
 
-pub fn start(bus: Bus, web_config: &WebConfig, secret_key: String) {
-    let addr = web_config.ws_bind_addr();
-    thread::spawn(move || {
-        // Websocket acceptor thread
+pub fn start(controller: &ControllerPort, config: &SharedConfigFile, secret_key: String) {
+    let controller = controller.clone();
+    let config = config.clone();
+    let addr = config.get_latest().web.ws_bind_addr();
+    let server = websocket::sync::Server::bind(addr).expect("failed to bind to WebSocket server port");
 
-        let server = websocket::sync::Server::bind(addr).expect("failed to bind to WebSocket server port");
+    thread::Builder::new().name("Websocket Server".into()).spawn(move || {
         for request in server.filter_map(Result::ok) {
             let secret_key = secret_key.clone();
-            let bus = bus.clone();
-            thread::spawn(move || {
+            let controller = controller.clone();
+            let config = config.clone();
+            thread::Builder::new().name("Websocket Connection".into()).spawn(move || {
                 // Per-connection thread
 
                 let (receiver, sender) = request.accept().unwrap().split().unwrap();
@@ -66,36 +68,34 @@ pub fn start(bus: Bus, web_config: &WebConfig, secret_key: String) {
                 // Start authentication by offering the client a challenge
                 send_port.direct.send(MessageToClient::Auth(client_info.challenge.clone())).unwrap();
 
-                // Send the initial config state as grabbed from the bus' shared area.
-                send_port.stream.send(Message::ConfigIsCurrent(bus.config.lock().unwrap().clone()).timestamp()).unwrap();
+                // Send the first config state this client will see
+                send_port.stream.send(Message::ConfigIsCurrent(config.get_latest()).timestamp()).unwrap();
 
-                // Start the message pump that reads from 'bus' and writes to 'send_port'
-                start_ws_bus_receiver(&client_info, &bus, &send_port);
+                // Start the message pump that reads from controller's Bus and writes to 'send_port'
+                start_ws_bus_receiver(&client_info, &controller, &send_port);
 
                 // Now handle incoming messages
-                ws_message_loop(client_info, receiver, bus, send_port);
-            });
+                let handler = MessageHandler { client_info, send_port, controller, config };
+                handler.receive(receiver);
+            }).unwrap();
         }
-    });
+    }).unwrap();
 }
 
-fn start_ws_bus_receiver(client_info: &ClientInfo, bus: &Bus, send_port: &MessageSendPort) {
+fn start_ws_bus_receiver(client_info: &ClientInfo, controller: &ControllerPort, send_port: &MessageSendPort) {
     // This thread just shuttles messages from the (fast, must not block)
     // internal message bus to the per-connection batching fifo buffer.
 
-    let bus_receiver = bus.receiver.add_stream();
+    let mut bus_receiver = controller.add_rx();
     let send_port = send_port.clone();
     let client_flags = client_info.flags.clone();
 
-    thread::spawn(move || {
-        println!("ws_bus_receiver loop starting");
+    thread::Builder::new().name("WebSocket bus receiver".into()).spawn(move || {
         loop {
-            println!("ws_bus_receiver starting iter");
             let msg = match bus_receiver.recv() {
                 Ok(msg) => msg,
                 _ => break,
             };
-            println!("ws_bus_receiver msg {:?}", msg);
             if !client_flags.is_alive() {
                 break;
             }
@@ -107,23 +107,7 @@ fn start_ws_bus_receiver(client_info: &ClientInfo, bus: &Bus, send_port: &Messag
             }
         }
         client_flags.kill();
-        println!("ws_bus_receiver loop stopped");
-    });
-}
-
-fn ws_message_loop(client_info: ClientInfo, mut receiver: websocket::sync::receiver::Reader<TcpStream>, bus: Bus, send_port: MessageSendPort) {
-    let client_flags = client_info.flags.clone();
-    let handler = MessageHandler::new(client_info, bus, send_port);
-    for message in receiver.incoming_messages() {
-        match message {
-            Ok(m) => handler.handle(m),
-            Err(_) => break,
-        };
-        if !client_flags.is_alive() {
-            break;
-        }
-    }
-    client_flags.kill();
+    }).unwrap();
 }
 
 #[derive(Clone)]
@@ -277,7 +261,7 @@ impl MessageSendThread {
 
     fn start(mut self: MessageSendThread) -> MessageSendPort {
         let port = self.port.clone();
-        thread::spawn(move || {
+        thread::Builder::new().name("WebSocket MessageSendThread".into()).spawn(move || {
             // WebSocket senders iterate in batches somewhat slower than our internal control loop rate,
             // and we can skip cycles to control backlog and latency.
 
@@ -312,7 +296,7 @@ impl MessageSendThread {
                 thread::sleep(Duration::from_millis(batch_period as u64));
             }
             self.writer.close();
-        });
+        }).unwrap();
         port
     }
 
@@ -343,16 +327,26 @@ impl MessageSendThread {
 
 struct MessageHandler {
     client_info: ClientInfo,
-    bus: Bus,
     send_port: MessageSendPort,
+    controller: ControllerPort,
+    config: SharedConfigFile,
 }
 
 impl MessageHandler {
-    fn new(client_info: ClientInfo, bus: Bus, send_port: MessageSendPort) -> MessageHandler {
-        MessageHandler { client_info, bus, send_port }
+    fn receive(&self, mut receiver: websocket::sync::receiver::Reader<TcpStream>) {
+        for message in receiver.incoming_messages() {
+            match message {
+                Ok(m) => self.handle(m),
+                Err(_) => break,
+            };
+            if !self.client_info.flags.is_alive() {
+                break;
+            }
+        }
+        self.client_info.flags.kill();
     }
 
-    fn handle(self: &MessageHandler, message: websocket::OwnedMessage) {
+    fn handle(&self, message: websocket::OwnedMessage) {
         match message {
             websocket::OwnedMessage::Pong(m) => self.handle_pong(m),
             websocket::OwnedMessage::Text(m) => match self.handle_json(m) {
@@ -364,7 +358,7 @@ impl MessageHandler {
         };
     }
 
-    fn handle_pong(self: &MessageHandler, message: Vec<u8>) {
+    fn handle_pong(&self, message: Vec<u8>) {
         if let Ok(message) = String::from_utf8(message) {
             if let Ok(timestamp) = message.parse::<f64>() {
                 let now = self.client_info.relative_time(Instant::now());
@@ -381,7 +375,7 @@ impl MessageHandler {
         self.client_info.flags.kill();
     }
 
-    fn handle_json(self: &MessageHandler, message: String) -> ClientResult {
+    fn handle_json(&self, message: String) -> ClientResult {
         match from_str(&message) {
             Ok(message) => self.handle_message(message),
             Err(err) => Err(ClientError {
@@ -391,7 +385,7 @@ impl MessageHandler {
         }
     }
 
-    fn handle_message(self: &MessageHandler, message: MessageToServer) -> ClientResult {
+    fn handle_message(&self, message: MessageToServer) -> ClientResult {
         match message {
             MessageToServer::Auth(r) => self.try_authenticate(r),
             MessageToServer::Command(r) => self.try_command(r),
@@ -399,7 +393,7 @@ impl MessageHandler {
         }
     }
 
-    fn try_authenticate(self: &MessageHandler, response: AuthResponse) -> ClientResult {
+    fn try_authenticate(&self, response: AuthResponse) -> ClientResult {
         let challenge = &self.client_info.challenge.challenge;
         let key = &self.client_info.secret_key;
         let status = auth::authenticate(challenge, key, &response.digest);
@@ -409,33 +403,27 @@ impl MessageHandler {
         Ok(Some(MessageToClient::AuthStatus(status)))
     }
 
-    fn deliver_message(self: &MessageHandler, message: Message) -> ClientResult {
-        match self.bus.sender.try_send(message.timestamp()) {
-            Ok(_) => Ok(None),
-            Err(e) => Err(ClientError {
-                code: ErrorCode::MessageDeliveryFailed,
-                message: Some(format!("{}", e)),
-            })
-        }
-    }
-
-    fn try_command(self: &MessageHandler, command: Command) -> ClientResult {
+    fn try_command(&self, command: Command) -> ClientResult {
         if !self.client_info.flags.is_authenticated() {
             Err(ClientError { code: ErrorCode::AuthRequired, message: None })
         } else {
-            self.deliver_message(Message::Command(command))
+            self.controller.send(Message::Command(command).timestamp());
+            Ok(None)
         }
     }
 
-    fn try_update_config(self: &MessageHandler, updates: Value) -> ClientResult {
+    fn try_update_config(&self, updates: Value) -> ClientResult {
         if !self.client_info.flags.is_authenticated() {
             Err(ClientError { code: ErrorCode::AuthRequired, message: None })
         } else {
             // Errors later on the command handler thread can't be reported here.
             // Do a trial run, making sure we can apply the change to a recent
             // config first.
-            match self.bus.config.lock().unwrap().merge(updates.clone()) {
-                Ok(_) => self.deliver_message(Message::UpdateConfig(updates)),
+            match self.config.get_latest().merge(updates.clone()) {
+                Ok(_) => {
+                    self.controller.send(Message::UpdateConfig(updates).timestamp());
+                    Ok(None)
+                }
                 Err(e) => Err(ClientError {
                     code: ErrorCode::UpdateConfigFailed,
                     message: Some(format!("{}", e)),

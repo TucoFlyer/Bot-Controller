@@ -2,7 +2,7 @@ use vecmath::*;
 use std::env;
 use led::ledshape::{LEDShapeTemplate, to_point_cloud_file};
 use led::shader::{PixelMapping, PixelUsage};
-use botcomm::{BotSender, LEDWriter};
+use botcomm::{BotSocket, LEDWriter};
 
 fn winch(id: usize) -> Vec<PixelMapping> {
 	let mut model = Vec::new();
@@ -74,17 +74,17 @@ pub struct LEDModel<'a> {
 }
 
 impl<'a> LEDModel<'a> {
-	pub fn new(comm: &'a BotSender) -> LEDModel<'a> {
+	pub fn new(socket: &'a BotSocket) -> LEDModel<'a> {
 		let mut vec = Vec::new();
 
 		vec.push(LEDWriterMapping {
-			writer: comm.flyer_leds(),
+			writer: socket.flyer_leds(),
 			pixels: flyer(),
 		});
 
-		for id in 0..comm.num_winches() {
+		for id in 0..socket.num_winches() {
 			vec.push(LEDWriterMapping {
-				writer: comm.winch_leds(id),
+				writer: socket.winch_leds(id),
 				pixels: winch(id),
 			});
 		}

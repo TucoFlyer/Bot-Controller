@@ -207,7 +207,7 @@ impl SharedConfigFile {
 
     fn start_save_thread(path: PathBuf, receiver: Receiver<Config>) {
         const CONSOLIDATION_MILLIS : u64 = 1000;
-        thread::spawn(move || {
+        thread::Builder::new().name("SharedConfigFile".into()).spawn(move || {
             loop {
                 // Block until any config save at all shows up
                 let config = match receiver.recv() {
@@ -228,7 +228,7 @@ impl SharedConfigFile {
                     f.write_all(string.as_bytes())
                 }).expect("Failed to write new configuration file");
             }
-        });
+        }).unwrap();
     }
 }
 

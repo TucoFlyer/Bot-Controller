@@ -14,15 +14,15 @@ pub struct ControllerState {
 }
 
 impl ControllerState {
-    pub fn new(config: &Config, lights: LightAnimator) -> ControllerState {
+    pub fn new(initial_config: &Config, lights: LightAnimator) -> ControllerState {
         ControllerState {
             lights,
             manual: ManualControls::new(),
-            winches: config.winches.iter().enumerate().map(|(id, _config)| {
+            winches: initial_config.winches.iter().enumerate().map(|(id, _config)| {
                 WinchController::new(id)
             }).collect(),
             flyer_sensors: None,
-            last_mode: config.mode.clone(),
+            last_mode: initial_config.mode.clone(),
         }
     }
 
