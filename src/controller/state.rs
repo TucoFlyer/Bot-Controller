@@ -52,8 +52,8 @@ impl ControllerState {
     }
 
     pub fn draw_camera_overlay(&self, _config: &Config, draw: &mut DrawingContext) {
-        let s = format!("Some text, yeah!!\n\nflyer_sensors:\n{:?}", self.flyer_sensors);
-        draw.text_box([0.1, 0.1], &s).unwrap();
+        let s = format!("flyer_sensors:\n{:#?}", self.flyer_sensors);
+        draw.text_box([0.0, -0.4], [0.5, 0.0], &s).unwrap();
     }
 
     pub fn flyer_sensor_update(&mut self, sensors: FlyerSensors) {

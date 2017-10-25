@@ -262,7 +262,7 @@ fn merge_values(base: &mut Value, updates: Value) {
                             base_obj.remove(&key);
                         },
                         item => {
-                            if let Some(mut value) = base_obj.get_mut(&key) {
+                            if let Some(value) = base_obj.get_mut(&key) {
                                 merge_values(value, item);
                                 continue;
                             }

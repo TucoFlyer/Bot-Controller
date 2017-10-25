@@ -2,7 +2,7 @@ use chrono::prelude::*;
 use config::Config;
 use std::time::{Duration, Instant};
 use message::TICK_HZ;
-use overlay::VIDEO_HZ;
+use overlay::OVERLAY_HZ;
 
 pub struct ControllerTimers {
     pub tick: IntervalTimer,
@@ -13,7 +13,7 @@ impl ControllerTimers {
     pub fn new() -> ControllerTimers {
         ControllerTimers {
             tick: IntervalTimer::new(TICK_HZ),
-            video_frame: IntervalTimer::new(VIDEO_HZ),
+            video_frame: IntervalTimer::new(OVERLAY_HZ),
         }
     }
 }

@@ -38,7 +38,7 @@ pub enum Message {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct OverlayRect {
     /// Texels with [0,0] at top left
-    pub src: Vector4<f32>,
+    pub src: Vector4<i32>,
     /// Arbitrary coordinates centered on zero with horizontal from [-1,1] and aspect correct
     pub dest: Vector4<f32>,
     pub rgba: Vector4<f32>,

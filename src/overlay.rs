@@ -1,10 +1,10 @@
+use vecmath::*;
 use message::OverlayRect;
-use vecmath::{Vector2, Vector4};
 use std::io::Cursor;
 use std::mem;
 use bmfont::{BMFont, OrdinateOrientation, CharPosition, StringParseError};
 
-pub const VIDEO_HZ : u32 = 30;
+pub const OVERLAY_HZ : u32 = 60;
 
 #[derive(Debug, Clone)]
 pub struct DrawingContext {
@@ -17,9 +17,10 @@ pub struct DrawingContext {
 pub struct DrawingState {
 	pub color: Vector4<f32>,
 	pub background_color: Vector4<f32>,
+	pub outline_color: Vector4<f32>,
 	pub font: BMFont,
 	pub pixel_unit_size: f32,
-	pub line_thickness: f32,
+	pub outline_thickness: f32,
 	pub text_height: f32,
 	pub text_margin: f32,
 }
@@ -35,16 +36,13 @@ impl DrawingState {
 		DrawingState {
 			color: [1.0, 1.0, 1.0, 1.0],
 			background_color: [0.0, 0.0, 0.0, 0.25],
+			outline_color: [1.0, 1.0, 1.0, 0.33],
 			font: default_font.clone(),
 			pixel_unit_size: pix_1080p,
-			line_thickness: pix_1080p * 2.0,
+			outline_thickness: pix_1080p * 2.0,
 			text_height: pix_1080p * 24.0,
-			text_margin: pix_1080p * 3.0,
+			text_margin: pix_1080p * 6.0,
 		}
-	}
-
-	pub fn swap_colors(&mut self) {
-		mem::swap(&mut self.color, &mut self.background_color);
 	}
 }
 
@@ -71,10 +69,16 @@ impl DrawingContext {
 
 	pub fn solid_rect(&mut self, rect: Vector4<f32>) {
 		self.scene.push(OverlayRect {
-			src: [ 511.0, 511.0, 1.0, 1.0 ],
+			src: [ 511, 511, 1, 1 ],
 			dest: rect,
 			rgba: self.current.color
 		});
+	}
+
+	pub fn background_rect(&mut self, rect: Vector4<f32>) {
+		mem::swap(&mut self.current.color, &mut self.current.background_color);
+		self.solid_rect(rect);
+		mem::swap(&mut self.current.color, &mut self.current.background_color);
 	}
 
 	pub fn outline_rect(&mut self, rect: Vector4<f32>) {
@@ -84,31 +88,43 @@ impl DrawingContext {
 		// ---
 	
 		let (x, y, w, h) = (rect[0], rect[1], rect[2], rect[3]);
-		let t = self.current.line_thickness;
+		let t = self.current.outline_thickness;
 		let t2 = t * 2.0;
+
+		mem::swap(&mut self.current.color, &mut self.current.outline_color);
 
 		self.solid_rect([ x-t, y-t, w+t2, t ]);
 		self.solid_rect([ x-t, y+h, w+t2, t ]);
 		self.solid_rect([ x-t, y, t, h ]);
 		self.solid_rect([ x+w, y, t, h ]);
+
+		mem::swap(&mut self.current.color, &mut self.current.outline_color);
 	}
 
-	pub fn text(&mut self, top_left: Vector2<f32>, text: &str) -> Result<(), StringParseError> {
+	pub fn text(&mut self, pos: Vector2<f32>, anchor: Vector2<f32>, text: &str) -> Result<(), StringParseError> {
 		let shape = TextShape::parse(&self.current.font, self.current.text_height, text)?;
+		let size = shape.size();
+		let top_left = vec2_sub(pos, vec2_mul(size, anchor));
+
 		shape.draw(&mut self.scene, self.current.color, top_left);
+
 		Ok(())
 	}
 
-	pub fn text_box(&mut self, top_left: Vector2<f32>, text: &str) -> Result<Vector4<f32>, StringParseError> {
+	pub fn text_box(&mut self, pos: Vector2<f32>, anchor: Vector2<f32>, text: &str) -> Result<Vector4<f32>, StringParseError> {
 		let shape = TextShape::parse(&self.current.font, self.current.text_height, text)?;
 		let size = shape.size();
 		let m = self.current.text_margin;
-		let bg_rect = [ top_left[0] - m, top_left[1] - m, size[0] + m * 2.0, size[1] + m * 2.0];
-		self.current.swap_colors();
-		self.solid_rect(bg_rect);
-		self.current.swap_colors();
-		shape.draw(&mut self.scene, self.current.color, top_left);
-		Ok(bg_rect)
+		let box_size = [ size[0] + m * 2.0, size[1] + m * 2.0 ];
+		let box_corner = vec2_sub(pos, vec2_mul(box_size, anchor));
+		let box_rect = [ box_corner[0], box_corner[1], box_size[0], box_size[1] ];
+		let text_corner = [ box_corner[0] + m, box_corner[1] + m ];
+
+		self.background_rect(box_rect);
+		shape.draw(&mut self.scene, self.current.color, text_corner);
+		self.outline_rect(box_rect);
+
+		Ok(box_rect)
 	}
 }
 
@@ -135,10 +151,10 @@ impl TextShape {
 	fn draw(&self, scene: &mut Vec<OverlayRect>, rgba: Vector4<f32>, top_left: Vector2<f32>) {
 		for char in &self.chars {
 			let src = [
-				char.page_rect.x as f32 * self.scale,
-				char.page_rect.y as f32 * self.scale,
-				char.page_rect.width as f32 * self.scale,
-				char.page_rect.height as f32 * self.scale,
+				char.page_rect.x,
+				char.page_rect.y,
+				char.page_rect.width as i32,
+				char.page_rect.height as i32,
 			];
 			let dest = [
 				char.screen_rect.x as f32 * self.scale + top_left[0],
