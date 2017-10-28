@@ -21,7 +21,10 @@ pub fn start(config: &SharedConfigFile, controller: &ControllerPort) {
 
     store_connect_string(&connect_string, &web_config.connection_file_path).expect("can't write to connection info file");
     show_connect_string(&connect_string);
-    drop(open::that(&http_uri));
+
+    if web_config.open_browser {
+        drop(open::that(&http_uri));
+    }
 }
 
 fn make_qr_code(url: &str) -> String {

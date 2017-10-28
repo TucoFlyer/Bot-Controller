@@ -98,6 +98,12 @@ impl ControllerState {
     }
 
     pub fn draw_camera_overlay(&self, config: &Config, draw: &mut DrawingContext) {
+
+        draw.current.color = config.overlay.debug_color;
+        draw.current.text_height = config.overlay.debug_text_height;
+        let debug = format!("{:?}\n{:?}\n{:?}", config.mode, self.winches, self.flyer_sensors);
+        draw.text([-1.0, -9.0/16.0], [0.0, 0.0], &debug).unwrap();
+
         draw.current.color = config.overlay.detector_default_color;
         draw.current.outline_color = config.overlay.detector_default_outline_color;
         draw.current.background_color = config.overlay.detector_default_background_color;
@@ -112,12 +118,12 @@ impl ControllerState {
                 draw.current.outline_thickness = 0.0;
 
                 let label = if config.overlay.detector_label_prob_values {
-                    format!("{} p={}", obj.label, obj.prob)
+                    format!("{} p={:.3}", obj.label, obj.prob)
                 } else {
                     obj.label.clone()
                 };
 
-                draw.text_box([ obj.rect[0], obj.rect[1] ], [0.0, 0.0], &label);
+                draw.text_box([ obj.rect[0], obj.rect[1] ], [0.0, 0.0], &label).unwrap();
             }
         }
 

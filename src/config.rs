@@ -124,6 +124,8 @@ pub struct LightAnimatorConfig {
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct OverlayConfig {
+    pub debug_color: Vector4<f32>,
+    pub debug_text_height: f32,
     pub detector_outline_min_prob: f32,
     pub detector_outline_max_thickness: f32,
     pub detector_label_min_prob: f32,
@@ -167,6 +169,7 @@ pub struct WebConfig {
     pub ws_addr: SocketAddr,
     pub web_root_path: String,
     pub connection_file_path: String,
+    pub open_browser: bool,
 }
 
 fn all_if_addr() -> IpAddr {

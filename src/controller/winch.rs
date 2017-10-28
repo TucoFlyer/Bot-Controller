@@ -3,6 +3,7 @@ use vecmath::*;
 use config::{Config, ControllerMode, WinchCalibration};
 use led::WinchLighting;
 
+#[derive(Debug)]
 pub struct WinchController {
     pub mech_status: MechStatus,
     id: usize,

@@ -19,7 +19,6 @@ pub struct DrawingState {
 	pub background_color: Vector4<f32>,
 	pub outline_color: Vector4<f32>,
 	pub font: BMFont,
-	pub pixel_unit_size: f32,
 	pub outline_thickness: f32,
 	pub text_height: f32,
 	pub text_margin: f32,
@@ -32,16 +31,14 @@ fn load_default_font() -> BMFont {
 
 impl DrawingState {
 	fn new(default_font: &BMFont) -> DrawingState {
-		let pix_1080p = 2.0 / 1920.0;
 		DrawingState {
 			color: [1.0, 1.0, 1.0, 1.0],
 			background_color: [0.0, 0.0, 0.0, 0.25],
 			outline_color: [1.0, 1.0, 1.0, 0.33],
 			font: default_font.clone(),
-			pixel_unit_size: pix_1080p,
-			outline_thickness: pix_1080p * 2.0,
-			text_height: pix_1080p * 24.0,
-			text_margin: pix_1080p * 6.0,
+			outline_thickness: 2.0/1920.0 * 2.0,
+			text_height: 2.0/1920.0 * 24.0,
+			text_margin: 2.0/1920.0 * 6.0,
 		}
 	}
 }
@@ -59,16 +56,8 @@ impl DrawingContext {
 		self.current = DrawingState::new(&self.default_font);
 	}
 
-	pub fn pixels(&self, pix: f32) -> f32 {
-		pix * self.current.pixel_unit_size
-	}
-
-	pub fn ems(&self, em: f32) -> f32 {
-		em * self.current.text_height
-	}
-
 	pub fn solid_rect(&mut self, rect: Vector4<f32>) {
-		if self.current.color[3] > 0.0 {
+		if self.current.color[3] > 0.0 && rect[2] > 0.0 && rect[3] > 0.0 {
 			self.scene.push(OverlayRect {
 				src: [ 511, 511, 1, 1 ],
 				dest: rect,
@@ -88,20 +77,22 @@ impl DrawingContext {
 		// ---
 		// | |
 		// ---
-	
-		let (x, y, w, h) = (rect[0], rect[1], rect[2], rect[3]);
-		let t = self.current.outline_thickness;
-		if t > 0.0 {
-			let t2 = t * 2.0;
 
-			mem::swap(&mut self.current.color, &mut self.current.outline_color);
+		if self.current.outline_color[3] > 0.0 && rect[2] > 0.0 && rect[3] > 0.0 {	
+			let (x, y, w, h) = (rect[0], rect[1], rect[2], rect[3]);
+			let t = self.current.outline_thickness;
+			if t > 0.0 {
+				let t2 = t * 2.0;
 
-			self.solid_rect([ x-t, y-t, w+t2, t ]);
-			self.solid_rect([ x-t, y+h, w+t2, t ]);
-			self.solid_rect([ x-t, y, t, h ]);
-			self.solid_rect([ x+w, y, t, h ]);
+				mem::swap(&mut self.current.color, &mut self.current.outline_color);
 
-			mem::swap(&mut self.current.color, &mut self.current.outline_color);
+				self.solid_rect([ x-t, y-t, w+t2, t ]);
+				self.solid_rect([ x-t, y+h, w+t2, t ]);
+				self.solid_rect([ x-t, y, t, h ]);
+				self.solid_rect([ x+w, y, t, h ]);
+
+				mem::swap(&mut self.current.color, &mut self.current.outline_color);
+			}
 		}
 	}
 
