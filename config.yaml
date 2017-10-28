@@ -26,15 +26,15 @@ params:
   pwm_gain_d: 0.22065
 overlay:
   detector_outline_min_prob: 0.2
-  detector_outline_max_thickness: 0.03
+  detector_outline_max_thickness: 0.02
   detector_label_min_prob: 0.4
   detector_label_size: 0.020
   detector_label_prob_values: true
-  detector_default_color: [1.0, 1.0, 1.0, 1.0]
-  detector_default_outline_color: [1.0, 1.0, 1.0, 0.5]
+  detector_default_color: [1.0, 1.0, 1.0, 0.4]
+  detector_default_outline_color: [1.0, 1.0, 1.0, 0.3]
   detector_default_background_color: [0.0, 0.0, 0.0, 0.8]
-  tracked_region_outline_color: [0.0, 1.0, 0.0, 0.4]
-  tracked_region_outline_thickness: 0.01
+  tracked_region_outline_color: [0.0, 1.0, 0.0, 0.6]
+  tracked_region_outline_thickness: 0.04
 vision:
   tracking_min_psr: 0.001
   snap_tracked_region_to:
