@@ -1,5 +1,6 @@
 //! Bot configuration
 
+use vecmath::*;
 use atomicwrites;
 use serde_json::{Value, from_value, to_value};
 use serde_json;
@@ -15,7 +16,6 @@ use std::sync::mpsc::{Sender, Receiver, channel};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
-use vecmath::Vector3;
 use chrono::NaiveTime;
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
@@ -26,6 +26,8 @@ pub struct Config {
     pub web: WebConfig,
     pub params: BotParams,
     pub lighting: LightingConfig,
+    pub overlay: OverlayConfig,
+    pub vision: VisionConfig,
     pub winches: Vec<WinchConfig>,
 }
 
@@ -118,6 +120,26 @@ pub struct LightingConfig {
 pub struct LightAnimatorConfig {
     pub frame_rate: f64,
     pub filter_param: f64,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+pub struct OverlayConfig {
+    pub detector_outline_min_prob: f32,
+    pub detector_outline_max_thickness: f32,
+    pub detector_label_min_prob: f32,
+    pub detector_label_size: f32,
+    pub detector_label_prob_values: bool,
+    pub detector_default_color: Vector4<f32>,
+    pub detector_default_outline_color: Vector4<f32>,
+    pub detector_default_background_color: Vector4<f32>,
+    pub tracked_region_outline_color: Vector4<f32>,
+    pub tracked_region_outline_thickness: f32,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+pub struct VisionConfig {
+    pub tracking_min_psr: f32,
+    pub snap_tracked_region_to: Vec<(String, f32)>,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]

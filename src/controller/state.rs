@@ -1,4 +1,5 @@
 use message::*;
+use vecmath::*;
 use config::{Config, ControllerMode};
 use controller::manual::ManualControls;
 use controller::winch::{WinchController, MechStatus};
@@ -10,6 +11,8 @@ pub struct ControllerState {
     lights: LightAnimator,
     winches: Vec<WinchController>,
     flyer_sensors: Option<FlyerSensors>,
+    detected_objects: Vec<CameraDetectedObject>,
+    tracked_region: Vector4<f32>,
     last_mode: ControllerMode,
 }
 
@@ -22,6 +25,8 @@ impl ControllerState {
                 WinchController::new(id)
             }).collect(),
             flyer_sensors: None,
+            detected_objects: Vec::new(),
+            tracked_region: [0.0, 0.0, 0.0, 0.0],
             last_mode: initial_config.mode.clone(),
         }
     }
@@ -51,9 +56,74 @@ impl ControllerState {
         self.lighting_tick(config);
     }
 
-    pub fn draw_camera_overlay(&self, _config: &Config, draw: &mut DrawingContext) {
-        let s = format!("flyer_sensors:\n{:#?}", self.flyer_sensors);
-        draw.text_box([0.0, -0.4], [0.5, 0.0], &s).unwrap();
+    fn find_best_snap_object(&self, config: &Config) -> Option<CameraDetectedObject> {
+        let mut result = None;
+        for obj in &self.detected_objects {
+            for rule in &config.vision.snap_tracked_region_to {
+                if obj.prob >= rule.1 && obj.label == rule.0 {
+                    result = match result {
+                        None => Some(obj),
+                        Some(prev) => if obj.prob > prev.prob { Some(obj) } else { Some(prev) }
+                    };
+                    break;
+                }
+            }
+        }
+        match result {
+            None => None,
+            Some(obj) => Some(obj.clone())
+        }
+    }
+
+    pub fn camera_object_detection_loop(&mut self, config: &Config, obj: Vec<CameraDetectedObject>) -> Option<Vector4<f32>> {
+        self.detected_objects = obj;
+
+        let best_snap = self.find_best_snap_object(config);
+        if let Some(obj) = best_snap {
+            self.tracked_region = obj.rect;
+            Some(obj.rect)
+        } else {
+            None
+        }
+    }
+
+    pub fn camera_region_tracking_update(&mut self, config: &Config, tr: CameraTrackedRegion) -> Option<Vector4<f32>> {
+        if tr.psr >= config.vision.tracking_min_psr {
+            self.tracked_region = tr.rect;
+            None
+        } else {
+            self.tracked_region = [0.0, 0.0, 0.0, 0.0];
+            Some(self.tracked_region)
+        }
+    }
+
+    pub fn draw_camera_overlay(&self, config: &Config, draw: &mut DrawingContext) {
+        draw.current.color = config.overlay.detector_default_color;
+        draw.current.outline_color = config.overlay.detector_default_outline_color;
+        draw.current.background_color = config.overlay.detector_default_background_color;
+        for obj in &self.detected_objects {
+            if obj.prob >= config.overlay.detector_outline_min_prob {
+                draw.current.outline_thickness = obj.prob * config.overlay.detector_outline_max_thickness;
+                draw.outline_rect(obj.rect);
+            }
+
+            if obj.prob >= config.overlay.detector_label_min_prob {
+                draw.current.text_height = config.overlay.detector_label_size;
+                draw.current.outline_thickness = 0.0;
+
+                let label = if config.overlay.detector_label_prob_values {
+                    format!("{} p={}", obj.label, obj.prob)
+                } else {
+                    obj.label.clone()
+                };
+
+                draw.text_box([ obj.rect[0], obj.rect[1] ], [0.0, 0.0], &label);
+            }
+        }
+
+        draw.current.outline_color = config.overlay.tracked_region_outline_color;
+        draw.current.outline_thickness = config.overlay.tracked_region_outline_thickness;
+        draw.outline_rect(self.tracked_region);
     }
 
     pub fn flyer_sensor_update(&mut self, sensors: FlyerSensors) {

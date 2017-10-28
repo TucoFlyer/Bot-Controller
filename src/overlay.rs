@@ -68,11 +68,13 @@ impl DrawingContext {
 	}
 
 	pub fn solid_rect(&mut self, rect: Vector4<f32>) {
-		self.scene.push(OverlayRect {
-			src: [ 511, 511, 1, 1 ],
-			dest: rect,
-			rgba: self.current.color
-		});
+		if self.current.color[3] > 0.0 {
+			self.scene.push(OverlayRect {
+				src: [ 511, 511, 1, 1 ],
+				dest: rect,
+				rgba: self.current.color
+			});
+		}
 	}
 
 	pub fn background_rect(&mut self, rect: Vector4<f32>) {
@@ -89,16 +91,18 @@ impl DrawingContext {
 	
 		let (x, y, w, h) = (rect[0], rect[1], rect[2], rect[3]);
 		let t = self.current.outline_thickness;
-		let t2 = t * 2.0;
+		if t > 0.0 {
+			let t2 = t * 2.0;
 
-		mem::swap(&mut self.current.color, &mut self.current.outline_color);
+			mem::swap(&mut self.current.color, &mut self.current.outline_color);
 
-		self.solid_rect([ x-t, y-t, w+t2, t ]);
-		self.solid_rect([ x-t, y+h, w+t2, t ]);
-		self.solid_rect([ x-t, y, t, h ]);
-		self.solid_rect([ x+w, y, t, h ]);
+			self.solid_rect([ x-t, y-t, w+t2, t ]);
+			self.solid_rect([ x-t, y+h, w+t2, t ]);
+			self.solid_rect([ x-t, y, t, h ]);
+			self.solid_rect([ x+w, y, t, h ]);
 
-		mem::swap(&mut self.current.color, &mut self.current.outline_color);
+			mem::swap(&mut self.current.color, &mut self.current.outline_color);
+		}
 	}
 
 	pub fn text(&mut self, pos: Vector2<f32>, anchor: Vector2<f32>, text: &str) -> Result<(), StringParseError> {
@@ -106,7 +110,9 @@ impl DrawingContext {
 		let size = shape.size();
 		let top_left = vec2_sub(pos, vec2_mul(size, anchor));
 
-		shape.draw(&mut self.scene, self.current.color, top_left);
+		if self.current.color[3] > 0.0 {
+			shape.draw(&mut self.scene, self.current.color, top_left);
+		}
 
 		Ok(())
 	}
@@ -121,7 +127,9 @@ impl DrawingContext {
 		let text_corner = [ box_corner[0] + m, box_corner[1] + m ];
 
 		self.background_rect(box_rect);
-		shape.draw(&mut self.scene, self.current.color, text_corner);
+		if self.current.color[3] > 0.0 {
+			shape.draw(&mut self.scene, self.current.color, text_corner);
+		}
 		self.outline_rect(box_rect);
 
 		Ok(box_rect)

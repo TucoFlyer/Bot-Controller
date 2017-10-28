@@ -158,6 +158,18 @@ impl Controller {
                 }
             }
 
+            Message::Command(Command::CameraObjectDetection(obj)) => {
+                if let Some(tracking_rect) = self.state.camera_object_detection_loop(&self.local_config, obj) {
+                    self.broadcast(Message::CameraInitTrackedRegion(tracking_rect).timestamp());
+                }
+            }
+
+            Message::Command(Command::CameraRegionTracking(tr)) => {
+                if let Some(tracking_rect) = self.state.camera_region_tracking_update(&self.local_config, tr) {
+                    self.broadcast(Message::CameraInitTrackedRegion(tracking_rect).timestamp());
+                }
+            }
+
             Message::Command(Command::SetMode(mode)) => {
                 // The controller mode is part of the config, so this could be changed via UpdateConfig as well, but this option is strongly typed
                 if self.local_config.mode != mode {
