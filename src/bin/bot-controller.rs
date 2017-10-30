@@ -7,8 +7,8 @@ fn main() {
 
     let controller = Controller::new(&config, &socket);
     let port = controller.port();
-    socket.start_receiver(&port);
-    controller.start();
+    let gimbal = socket.start_receiver(&port);
+    controller.start(gimbal);
 
     interface::web::start(&config, &port);
     interface::gamepad::start(&port);

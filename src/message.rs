@@ -1,8 +1,8 @@
 use serde_json::Value;
 use std::time::Instant;
 use config::{Config, ControllerMode};
-use vecmath::{Vector2, Vector3, Vector4};
-use fygimbal::GimbalPacket;
+use vecmath::{Vector3, Vector4};
+use fygimbal::{GimbalPacket, GimbalValueRequest, GimbalValueData};
 
 pub const TICK_HZ : u32 = 250;
 
@@ -12,8 +12,11 @@ pub enum Command {
     SetMode(ControllerMode),
     ManualControlReset,
     ManualControlValue(ManualControlAxis, f32),
-    CameraObjectDetection(Vec<CameraDetectedObject>),
+    CameraObjectDetection(CameraDetectedObjects),
     CameraRegionTracking(CameraTrackedRegion),
+    GimbalPacket(GimbalPacket),
+    GimbalValueWrite(GimbalValueData),
+    GimbalValueRequests(Vec<GimbalValueRequest>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -29,7 +32,7 @@ pub enum Message {
     WinchStatus(usize, WinchStatus),
     UpdateConfig(Value),
     ConfigIsCurrent(Config),
-    GimbalStatus(GimbalStatus),
+    GimbalValue(GimbalValueData),
     UnhandledGimbalPacket(GimbalPacket),
     CameraOverlayScene(Vec<OverlayRect>),
     CameraInitTrackedRegion(Vector4<f32>),
@@ -50,6 +53,37 @@ pub struct CameraTrackedRegion {
     pub rect: Vector4<f32>,
     /// Peak to side ratio (tracking quality)
     pub psr: f32,
+    /// Frame serial number associated with this tracking result
+    pub frame: u32,
+}
+
+impl CameraTrackedRegion {
+    pub fn new() -> CameraTrackedRegion {
+        CameraTrackedRegion {
+            rect: [0.0, 0.0, 0.0, 0.0],
+            psr: 0.0,
+            frame: 0,
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.rect[2] <= 0.0 || self.rect[3] <= 0.0
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct CameraDetectedObjects {
+    pub frame: u32,
+    pub objects: Vec<CameraDetectedObject>,
+}
+
+impl CameraDetectedObjects { 
+    pub fn new() -> CameraDetectedObjects {
+        CameraDetectedObjects {
+            frame: 0,
+            objects: Vec::new(),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -66,20 +100,6 @@ impl Message {
             message: self
         }
     }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct GimbalCommand {
-    pub motor_on: bool,
-    pub rates: Vector2<i16>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct GimbalStatus {
-    pub command: GimbalCommand,
-    pub counter: u32,
-    pub encoder_angles: Vector3<u16>,
-    pub center_calibration: Vector3<u16>
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]

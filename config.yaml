@@ -191,46 +191,58 @@ lighting:
     "17:00:00": evening
     "22:00:00": night
 overlay: 
-  debug_color: [1,1,1,0.8]
-  debug_text_height: 0.01
-  detector_outline_min_prob: 0.20000000298023224
-  detector_outline_max_thickness: 0.019999999552965164
-  detector_label_min_prob: 0.4000000059604645
-  detector_label_size: 0.019999999552965164
+  debug_color: 
+    - 0
+    - 0
+    - 0
+    - 0.699999988079071
+  debug_text_height: 0.019999999552965164
+  detector_outline_min_prob: 0
+  detector_outline_max_thickness: 0.009999999776482582
+  detector_label_min_prob: 0.25
   detector_label_prob_values: true
-  detector_default_color: 
-    - 1
-    - 1
-    - 1
-    - 0.4000000059604645
   detector_default_outline_color: 
     - 1
     - 1
     - 1
-    - 0.30000001192092896
-  detector_default_background_color: 
-    - 0
-    - 0
-    - 0
-    - 0.800000011920929
-  tracked_region_outline_color: 
-    - 0
+    - 0.20000000298023224
+  label_color: 
     - 1
-    - 0
+    - 1
+    - 1
     - 0.6000000238418579
+  label_text_size: 0.024000000208616257
+  label_background_color: 
+    - 0
+    - 0
+    - 0
+    - 0.4000000059604645
+  tracked_region_outline_color: 
+    - 1
+    - 1
+    - 0.20000000298023224
+    - 0.20000000298023224
   tracked_region_outline_thickness: 0.03999999910593033
 vision: 
-  tracking_min_psr: 0.0010000000474974513
+  tracking_min_area: 0.1
+  tracking_default_area: 0.3
+  tracking_min_psr: 4.0
   snap_tracked_region_to: 
     - 
       - cat
-      - 0.6000000238418579
+      - 0.5
+    - 
+      - bird
+      - 0.5
+    - 
+      - zebra
+      - 0.5
     - 
       - dog
-      - 0.6000000238418579
+      - 0.5
     - 
       - sheep
-      - 0.6000000238418579
+      - 0.5
 winches: 
   - 
     addr: "10.32.0.10:9024"

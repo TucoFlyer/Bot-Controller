@@ -16,3 +16,15 @@ pub fn rotation_matrix(normalized_axis: Vector3<f64>, angle: f64) -> Matrix3x4<f
 pub fn vec3_mix(a: Vector3<f64>, b: Vector3<f64>, scale: f64) -> Vector3<f64> {
 	vec3_add(a, vec3_scale(vec3_sub(b, a), scale))
 }
+
+pub fn rect_topleft(r: Vector4<f32>) -> Vector2<f32> {
+	[r[0], r[1]]
+}
+
+pub fn rect_topright(r: Vector4<f32>) -> Vector2<f32> {
+	[r[0] + r[2], r[1]]
+}
+
+pub fn rect_area(r: Vector4<f32>) -> f32 {
+	r[2] * r[3]
+}

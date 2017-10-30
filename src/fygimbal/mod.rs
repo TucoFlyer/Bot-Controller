@@ -1,5 +1,7 @@
 mod poller;
-mod framing;
+pub use self::poller::*;
 
-pub use self::poller::{GimbalPort, GimbalPoller};
+mod framing;
 pub use self::framing::{GimbalPacket, GimbalFraming};
+
+pub mod protocol;

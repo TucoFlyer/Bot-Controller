@@ -12,6 +12,7 @@ export class BotModel {
     constructor() {
         this.flyer = {};
         this.winches = [];
+        this.gimbal_values = [];
     }
 
     update(msg) {
@@ -24,8 +25,10 @@ export class BotModel {
         if (msg.message.ConfigIsCurrent) {
             this.config = msg;
         }
-        if (msg.message.GimbalStatus) {
-            this.gimbal = msg;
+        if (msg.message.GimbalValue) {
+            let addr = msg.message.GimbalValue.addr;
+            let index_list = this.gimbal_values[addr.index] || (this.gimbal_values[addr.index] = []);
+            index_list[addr.target] = msg;
         }
     }
 }

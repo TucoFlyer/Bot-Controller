@@ -10,7 +10,7 @@ use std::net::{SocketAddr, UdpSocket};
 use std::io;
 use std::io::Write;
 use serde::Serialize;
-use fygimbal::GimbalPoller;
+use fygimbal::{GimbalPoller, GimbalPort};
 
 const MSG_LOOPBACK          : u8 = 0x20;    // copy data
 const MSG_GIMBAL            : u8 = 0x01;    // fygimbal protocol data
@@ -38,8 +38,11 @@ impl BotSocket {
         Ok(BotSocket { udp, addrs })
     }
 
-    pub fn start_receiver(&self, controller: &ControllerPort) {
-        BotReceiver::new(self.try_clone().unwrap(), controller).start();
+    pub fn start_receiver(&self, controller: &ControllerPort) -> GimbalPort {
+        let br = BotReceiver::new(self.try_clone().unwrap(), controller);
+        let gimbal_port = br.gimbal.port();
+        br.start();
+        gimbal_port
     }
 
     fn send_bytes(&self, addr: &SocketAddr, header: u8, body: &[u8]) -> io::Result<()> {

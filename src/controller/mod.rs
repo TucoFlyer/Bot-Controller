@@ -12,6 +12,7 @@ use bus::{Bus, BusReader};
 use std::thread;
 use config::{SharedConfigFile, Config};
 use botcomm::BotSocket;
+use fygimbal::GimbalPort;
 use self::state::ControllerState;
 use self::timer::{ConfigScheduler, ControllerTimers};
 use led::LightAnimator;
@@ -90,10 +91,10 @@ impl Controller {
         self.port_prototype.clone()
     }
 
-    pub fn start(mut self) {
+    pub fn start(mut self, gimbal: GimbalPort) {
         thread::Builder::new().name("Controller".into()).spawn(move || {
             loop {
-                self.poll();
+                self.poll(&gimbal);
             }
         }).unwrap();
     }
@@ -111,7 +112,7 @@ impl Controller {
         self.state.config_changed(&self.local_config);
     }
 
-    fn poll(&mut self) {
+    fn poll(&mut self, gimbal: &GimbalPort) {
         match self.recv.recv().unwrap() {
 
             ControllerInput::ReaderRequest(result_channel) => {
@@ -122,12 +123,12 @@ impl Controller {
 
             ControllerInput::Message(ts_msg) => {
                 self.broadcast(ts_msg.clone());
-                self.handle_message(ts_msg);
+                self.handle_message(ts_msg, gimbal);
             }
         }
 
         if self.timers.tick.poll() {
-            self.state.every_tick(&self.local_config);
+            self.state.every_tick(&self.local_config, gimbal);
         }
 
         if self.timers.video_frame.poll() {
@@ -142,7 +143,7 @@ impl Controller {
         }
     }
 
-    fn handle_message(&mut self, ts_msg: TimestampedMessage) {
+    fn handle_message(&mut self, ts_msg: TimestampedMessage, gimbal: &GimbalPort) {
         match ts_msg.message {
 
             Message::UpdateConfig(updates) => {
@@ -158,26 +159,6 @@ impl Controller {
                 }
             }
 
-            Message::Command(Command::CameraObjectDetection(obj)) => {
-                if let Some(tracking_rect) = self.state.camera_object_detection_loop(&self.local_config, obj) {
-                    self.broadcast(Message::CameraInitTrackedRegion(tracking_rect).timestamp());
-                }
-            }
-
-            Message::Command(Command::CameraRegionTracking(tr)) => {
-                if let Some(tracking_rect) = self.state.camera_region_tracking_update(&self.local_config, tr) {
-                    self.broadcast(Message::CameraInitTrackedRegion(tracking_rect).timestamp());
-                }
-            }
-
-            Message::Command(Command::SetMode(mode)) => {
-                // The controller mode is part of the config, so this could be changed via UpdateConfig as well, but this option is strongly typed
-                if self.local_config.mode != mode {
-                    self.local_config.mode = mode;
-                    self.config_changed();
-                }
-            }
-
             Message::WinchStatus(id, status) => {
                 let command = self.state.winch_control_loop(&self.local_config, id, status);
                 drop(self.socket.winch_command(id, command));
@@ -185,6 +166,42 @@ impl Controller {
 
             Message::FlyerSensors(sensors) => {
                 self.state.flyer_sensor_update(sensors);
+            },
+
+            Message::GimbalValue(val) => {
+                self.state.gimbal_value_received(val, gimbal)
+            },
+
+            Message::Command(Command::CameraObjectDetection(obj)) => {
+                if let Some(tracking_rect) = self.state.camera_object_detection_loop(&self.local_config, obj) {
+                    self.broadcast(Message::CameraInitTrackedRegion(tracking_rect).timestamp());
+                }
+            },
+
+            Message::Command(Command::CameraRegionTracking(tr)) => {
+                if let Some(tracking_rect) = self.state.camera_region_tracking_update(&self.local_config, tr) {
+                    self.broadcast(Message::CameraInitTrackedRegion(tracking_rect).timestamp());
+                }
+            },
+
+            Message::Command(Command::SetMode(mode)) => {
+                // The controller mode is part of the config, so this could be changed via UpdateConfig as well, but this option is strongly typed
+                if self.local_config.mode != mode {
+                    self.local_config.mode = mode;
+                    self.config_changed();
+                }
+            },
+
+            Message::Command(Command::GimbalPacket(packet)) => {
+                gimbal.send_packet(packet);
+            },
+
+            Message::Command(Command::GimbalValueWrite(data)) => {
+                gimbal.write_value(data);
+            },
+
+            Message::Command(Command::GimbalValueRequests(reqs)) => {
+                gimbal.request_values(reqs);
             },
 
             Message::Command(Command::ManualControlValue(axis, value)) => {
