@@ -99,6 +99,9 @@ pub fn start(c: &ControllerPort) {
                     Event::ButtonPressed(Button::RightTrigger, _) => { state.right_enable = true; send_complete(&c, &state) },
                     Event::ButtonReleased(Button::RightTrigger, _) => { state.right_enable = false; send_complete(&c, &state) },
 
+                    Event::ButtonPressed(Button::Select, _) => send_command(&c, Command::GimbalMotorEnable(false)),
+                    Event::ButtonPressed(Button::Start, _) => send_command(&c, Command::GimbalMotorEnable(true)),
+
                     Event::ButtonPressed(Button::East, _) => send_command(&c, Command::SetMode(ControllerMode::Halted)),
                     Event::ButtonPressed(Button::South, _) => send_command(&c, Command::SetMode(ControllerMode::ManualFlyer)),
                     Event::ButtonPressed(Button::West, _) => send_command(&c, Command::SetMode(ControllerMode::ManualWinch(0))),

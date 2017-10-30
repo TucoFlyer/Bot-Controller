@@ -129,6 +129,10 @@ impl Controller {
 
         if self.timers.tick.poll() {
             self.state.every_tick(&self.local_config, gimbal);
+
+            if let Some(tracking_rect) = self.state.tracking_update_tick(&self.local_config) {
+                self.broadcast(Message::CameraInitTrackedRegion(tracking_rect).timestamp());
+            }
         }
 
         if self.timers.video_frame.poll() {
@@ -179,9 +183,7 @@ impl Controller {
             },
 
             Message::Command(Command::CameraRegionTracking(tr)) => {
-                if let Some(tracking_rect) = self.state.camera_region_tracking_update(&self.local_config, tr) {
-                    self.broadcast(Message::CameraInitTrackedRegion(tracking_rect).timestamp());
-                }
+                self.state.camera_region_tracking_update(tr);
             },
 
             Message::Command(Command::SetMode(mode)) => {
@@ -190,6 +192,10 @@ impl Controller {
                     self.local_config.mode = mode;
                     self.config_changed();
                 }
+            },
+
+            Message::Command(Command::GimbalMotorEnable(en)) => {
+                gimbal.set_motor_enable(en);
             },
 
             Message::Command(Command::GimbalPacket(packet)) => {

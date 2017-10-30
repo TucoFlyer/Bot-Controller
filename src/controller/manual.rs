@@ -25,6 +25,13 @@ impl ManualControls {
         self.axes.entry(axis).or_insert(0.0).min(1.0).max(-1.0)
     }
 
+    pub fn camera_vector(self: &mut ManualControls) -> Vector2<f64> {
+        [
+            self.lookup_axis(ManualControlAxis::CameraYaw),
+            self.lookup_axis(ManualControlAxis::CameraPitch),
+        ]
+    }
+
     fn lookup_relative_vec(self: &mut ManualControls) -> Vector3<f64> {
         [
             self.lookup_axis(ManualControlAxis::RelativeX),

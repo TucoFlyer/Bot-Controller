@@ -51,10 +51,33 @@ impl GimbalPort {
         }
     }
 
+    pub fn set_motor_enable(&self, enable: bool) {
+        for target in 0 .. protocol::NUM_AXES {
+            self.send_packet(protocol::pack::motor_power(target as u8, enable as u8));
+        }
+    }
+
     pub fn write_value(&self, val: GimbalValueData) {
         if self.writes.try_send(val).is_err() {
             println!("GimbalPort dropping outgoing write!");
         }
+    }
+
+    pub fn write_control_rates(&self, yaw: i16, pitch: i16) {
+        self.write_value(GimbalValueData {
+            addr: GimbalValueAddress {
+                target: protocol::target::YAW,
+                index: protocol::values::CONTROL_RATE
+            },
+            value: yaw
+        });
+        self.write_value(GimbalValueData {
+            addr: GimbalValueAddress {
+                target: protocol::target::PITCH,
+                index: protocol::values::CONTROL_RATE
+            },
+            value: pitch
+        });
     }
 
     pub fn request_values(&self, reqs: Vec<GimbalValueRequest>) {

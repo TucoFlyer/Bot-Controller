@@ -14,6 +14,7 @@ pub enum Command {
     ManualControlValue(ManualControlAxis, f32),
     CameraObjectDetection(CameraDetectedObjects),
     CameraRegionTracking(CameraTrackedRegion),
+    GimbalMotorEnable(bool),
     GimbalPacket(GimbalPacket),
     GimbalValueWrite(GimbalValueData),
     GimbalValueRequests(Vec<GimbalValueRequest>),
@@ -53,6 +54,8 @@ pub struct CameraTrackedRegion {
     pub rect: Vector4<f32>,
     /// Peak to side ratio (tracking quality)
     pub psr: f32,
+    /// Number of frames since last tracking reset
+    pub age: u32,
     /// Frame serial number associated with this tracking result
     pub frame: u32,
 }
@@ -62,6 +65,7 @@ impl CameraTrackedRegion {
         CameraTrackedRegion {
             rect: [0.0, 0.0, 0.0, 0.0],
             psr: 0.0,
+            age: 0,
             frame: 0,
         }
     }

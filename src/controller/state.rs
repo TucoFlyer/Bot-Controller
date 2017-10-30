@@ -15,7 +15,6 @@ pub struct ControllerState {
     flyer_sensors: Option<FlyerSensors>,
     detected: CameraDetectedObjects,
     tracked: CameraTrackedRegion,
-    tracking_since_frame: u32,
     last_mode: ControllerMode,
 }
 
@@ -30,7 +29,6 @@ impl ControllerState {
             flyer_sensors: None,
             detected: CameraDetectedObjects::new(),
             tracked: CameraTrackedRegion::new(),
-            tracking_since_frame: 0,
             last_mode: initial_config.mode.clone(),
         }
     }
@@ -55,10 +53,47 @@ impl ControllerState {
         self.lights.update(env);
     }
 
-    fn gimbal_tick(&mut self, _config: &Config, gimbal: &GimbalPort) {
+    fn gimbal_tick(&mut self, config: &Config, gimbal: &GimbalPort) {
         // We always want to keep the yaw and pitch angles updated
         gimbal.request_continuous(fygimbal::protocol::values::ENCODER_ANGLES, fygimbal::protocol::target::YAW);
         gimbal.request_continuous(fygimbal::protocol::values::ENCODER_ANGLES, fygimbal::protocol::target::PITCH);
+
+        // Outgoing control rates
+        let center = rect_center(self.tracked.rect);
+        gimbal.write_control_rates((config.vision.tracking_gains[0] * center[0]).round() as i16,
+                                   (config.vision.tracking_gains[1] * center[1]).round() as i16);
+    }
+
+    fn reset_tracking_rect(&mut self, config: &Config) {
+        let side_len = config.vision.tracking_default_area.sqrt();
+        self.tracked = CameraTrackedRegion::new();
+        self.tracked.rect = [side_len * -0.5, side_len * -0.5, side_len, side_len];
+    }
+
+    pub fn tracking_update_tick(&mut self, config: &Config) -> Option<Vector4<f32>> {
+        let vis = &config.vision;
+        let area = rect_area(self.tracked.rect);
+        let min_speed = vis.min_manual_control_speed / (TICK_HZ as f32);
+        let max_speed = vis.max_manual_control_speed / (TICK_HZ as f32);
+        let manual_control = self.manual.camera_vector();
+        let manual_control = [manual_control[0] as f32 * max_speed, manual_control[1] as f32 * max_speed];
+        let manual_control_active = manual_control[0].abs() > min_speed || manual_control[1].abs() > min_speed;
+        let tracking_is_bad = self.tracked.psr < vis.tracking_min_psr || area < vis.tracking_min_area;
+
+        if manual_control_active {
+            // Nudge the tracking rect
+            self.tracked.rect[0] += manual_control[0];
+            self.tracked.rect[1] -= manual_control[1];
+            Some(self.tracked.rect)
+        }
+        else if self.tracked.age > 0 && tracking_is_bad {
+            self.reset_tracking_rect(config);
+            Some(self.tracked.rect)
+        }
+        else {
+            // Let the automatic tracker run undisturbed
+            None
+        }
     }
 
     pub fn every_tick(&mut self, config: &Config, gimbal: &GimbalPort) {
@@ -93,30 +128,21 @@ impl ControllerState {
         if let Some(obj) = best_snap {
             self.tracked.rect = obj.rect;
             self.tracked.frame = self.detected.frame;
-            self.tracking_since_frame = self.detected.frame;
             Some(obj.rect)
         } else {
             None
         }
     }
 
-    pub fn camera_region_tracking_update(&mut self, config: &Config, tr: CameraTrackedRegion) -> Option<Vector4<f32>> {
+    pub fn camera_region_tracking_update(&mut self, tr: CameraTrackedRegion) {
         if (tr.frame.wrapping_sub(self.tracked.frame) as i32) <= 0 {
             // Already have a newer prediction or a prediction from the same frame (i.e. the object detector)
             // Just save the PSR
             self.tracked.psr = tr.psr;
+            self.tracked.age = 0;
         } else {
             self.tracked = tr;
-
-            // If our tracking quality is very bad, reset to the center of the screen
-            let area = rect_area(self.tracked.rect);
-            let vis = &config.vision;
-            if self.tracked.psr < vis.tracking_min_psr || area < vis.tracking_min_area {
-                let side_len = vis.tracking_default_area.sqrt();
-                return Some([side_len * -0.5, side_len * -0.5, side_len, side_len]);
-            }
         }
-        None
     }
 
     pub fn draw_camera_overlay(&self, config: &Config, draw: &mut DrawingContext) {
@@ -158,8 +184,7 @@ impl ControllerState {
             draw.outline_rect(self.tracked.rect);
 
             let tr_label = format!("psr={:.2} age={} area={:.3}",
-                self.tracked.psr, self.tracked.frame.wrapping_sub(self.tracking_since_frame),
-                rect_area(self.tracked.rect));
+                self.tracked.psr, self.tracked.age, rect_area(self.tracked.rect));
 
             draw.current.text_height = config.overlay.label_text_size;
             draw.current.color = config.overlay.label_color;

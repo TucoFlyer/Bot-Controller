@@ -62,6 +62,15 @@ pub mod pack {
             target, data,
         }
     }
+
+    pub fn motor_power(target: u8, value: u8) -> GimbalPacket {
+        GimbalPacket {
+            framing: GimbalFraming::Normal,
+            command: super::cmd::MOTOR_POWER,
+            target,
+            data: vec![value],
+        }
+    }
 }
 
 pub mod unpack {

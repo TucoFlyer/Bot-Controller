@@ -140,6 +140,9 @@ pub struct OverlayConfig {
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct VisionConfig {
+    pub tracking_gains: Vector2<f32>,
+    pub min_manual_control_speed: f32,
+    pub max_manual_control_speed: f32,
     pub tracking_min_psr: f32,
     pub tracking_min_area: f32,
     pub tracking_default_area: f32,

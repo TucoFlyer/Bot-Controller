@@ -25,6 +25,10 @@ pub fn rect_topright(r: Vector4<f32>) -> Vector2<f32> {
 	[r[0] + r[2], r[1]]
 }
 
+pub fn rect_center(r: Vector4<f32>) -> Vector2<f32> {
+	[r[0] + r[2]*0.5, r[1] + r[3]*0.5]
+}
+
 pub fn rect_area(r: Vector4<f32>) -> f32 {
 	r[2] * r[3]
 }
