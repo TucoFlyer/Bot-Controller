@@ -58,6 +58,8 @@ pub struct CameraTrackedRegion {
     pub age: u32,
     /// Frame serial number associated with this tracking result
     pub frame: u32,
+    /// Time spent running the tracker to get this result
+    pub tracker_nsec: u64,
 }
 
 impl CameraTrackedRegion {
@@ -67,6 +69,7 @@ impl CameraTrackedRegion {
             psr: 0.0,
             age: 0,
             frame: 0,
+            tracker_nsec: 0,
         }
     }
 
@@ -78,6 +81,7 @@ impl CameraTrackedRegion {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct CameraDetectedObjects {
     pub frame: u32,
+    pub detector_nsec: u64,
     pub objects: Vec<CameraDetectedObject>,
 }
 
@@ -85,6 +89,7 @@ impl CameraDetectedObjects {
     pub fn new() -> CameraDetectedObjects {
         CameraDetectedObjects {
             frame: 0,
+            detector_nsec: 0,
             objects: Vec::new(),
         }
     }
