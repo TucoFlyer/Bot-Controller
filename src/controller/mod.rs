@@ -130,7 +130,7 @@ impl Controller {
         if self.timers.tick.poll() {
             self.state.every_tick(&self.local_config, gimbal);
 
-            if let Some(tracking_rect) = self.state.tracking_update_tick(&self.local_config) {
+            if let Some(tracking_rect) = self.state.tracking_update(&self.local_config, 1.0 / TICK_HZ as f32) {
                 self.broadcast(Message::CameraInitTrackedRegion(tracking_rect).timestamp());
             }
         }
@@ -178,6 +178,9 @@ impl Controller {
 
             Message::Command(Command::CameraObjectDetection(obj)) => {
                 self.state.camera_object_detection_update(obj);
+                if let Some(tracking_rect) = self.state.tracking_update(&self.local_config, 0.0) {
+                    self.broadcast(Message::CameraInitTrackedRegion(tracking_rect).timestamp());
+                }
             },
 
             Message::Command(Command::CameraRegionTracking(tr)) => {

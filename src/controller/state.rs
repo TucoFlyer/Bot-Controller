@@ -15,7 +15,7 @@ pub struct ControllerState {
     winches: Vec<WinchController>,
     flyer_sensors: Option<FlyerSensors>,
     detected: (Instant, CameraDetectedObjects),
-    snap_flag: bool,
+    pending_snap: bool,
     tracked: CameraTrackedRegion,
     last_mode: ControllerMode,
     gimbal_values: Vec<Vec<Option<(Instant, GimbalValueData)>>>,
@@ -31,7 +31,7 @@ impl ControllerState {
             }).collect(),
             flyer_sensors: None,
             detected: (Instant::now(), CameraDetectedObjects::new()),
-            snap_flag: false,
+            pending_snap: false,
             tracked: CameraTrackedRegion::new(),
             last_mode: initial_config.mode.clone(),
             gimbal_values: (0 .. fygimbal::protocol::NUM_VALUES).map(|_| {
@@ -79,35 +79,37 @@ impl ControllerState {
         self.tracked.rect = [side_len * -0.5, side_len * -0.5, side_len, side_len];
     }
 
-    pub fn tracking_update_tick(&mut self, config: &Config) -> Option<Vector4<f32>> {
+    pub fn tracking_update(&mut self, config: &Config, time_step: f32) -> Option<Vector4<f32>> {
         let vis = &config.vision;
         let area = rect_area(self.tracked.rect);
-        let min_speed = vis.min_manual_control_speed / (TICK_HZ as f32);
-        let max_speed = vis.max_manual_control_speed / (TICK_HZ as f32);
+        let min_speed = vis.min_manual_control_speed;
+        let max_speed = vis.max_manual_control_speed;
         let manual_control = self.manual.camera_vector();
         let manual_control = [manual_control[0] as f32 * max_speed, manual_control[1] as f32 * max_speed];
         let manual_control_active = manual_control[0].abs() > min_speed || manual_control[1].abs() > min_speed;
         let tracking_is_bad = self.tracked.psr < vis.tracking_min_psr || area < vis.tracking_min_area;
-        let snap_obj = if self.snap_flag { None } else { self.find_best_snap_object(config) };
 
         if manual_control_active {
             // Nudge the tracking rect
-            self.tracked.rect[0] += manual_control[0];
-            self.tracked.rect[1] -= manual_control[1];
+            self.tracked.rect[0] += manual_control[0] * time_step;
+            self.tracked.rect[1] -= manual_control[1] * time_step;
             Some(self.tracked.rect)
         }
-        else if snap_obj.is_some() {
-            let obj = snap_obj.unwrap();
-            self.snap_flag = true;
+        else if let Some(obj) = self.find_best_snap_object(config) {
+            // Snap to a detected object
+            self.pending_snap = false;
             self.tracked.rect = obj.rect;
             self.tracked.frame = self.detected.1.frame;
             Some(self.tracked.rect)
         } 
         else if self.tracked.age > 0 && tracking_is_bad {
+            // Reset to the default tracking rectangle
             self.reset_tracking_rect(config);
             Some(self.tracked.rect)
         }
         else {
+            // Let the CV plugin keep tracking without being reset.
+            // It only tracks on frames that aren't processing a reset.
             None
         }
     }
@@ -120,15 +122,17 @@ impl ControllerState {
 
     fn find_best_snap_object(&self, config: &Config) -> Option<CameraDetectedObject> {
         let mut result = None;
-        if self.detected.0 + Duration::from_millis(500) > Instant::now() {
-            for obj in &self.detected.1.objects {
-                for rule in &config.vision.snap_tracked_region_to {
-                    if obj.prob >= rule.1 && obj.label == rule.0 {
-                        result = match result {
-                            None => Some(obj),
-                            Some(prev) => if obj.prob > prev.prob { Some(obj) } else { Some(prev) }
-                        };
-                        break;
+        if self.pending_snap {
+            if self.detected.0 + Duration::from_millis(500) > Instant::now() {
+                for obj in &self.detected.1.objects {
+                    for rule in &config.vision.snap_tracked_region_to {
+                        if obj.prob >= rule.1 && obj.label == rule.0 {
+                            result = match result {
+                                None => Some(obj),
+                                Some(prev) => if obj.prob > prev.prob { Some(obj) } else { Some(prev) }
+                            };
+                            break;
+                        }
                     }
                 }
             }
@@ -141,7 +145,7 @@ impl ControllerState {
 
     pub fn camera_object_detection_update(&mut self, det: CameraDetectedObjects) {
         self.detected = (Instant::now(), det);
-        self.snap_flag = false;
+        self.pending_snap = true;
     }
 
     pub fn camera_region_tracking_update(&mut self, tr: CameraTrackedRegion) {
