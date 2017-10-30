@@ -69,8 +69,16 @@ impl ControllerState {
 
         // Outgoing control rates
         let center = rect_center(self.tracked.rect);
-        gimbal.write_control_rates((config.vision.tracking_gains[0] * center[0]).round() as i16,
-                                   (config.vision.tracking_gains[1] * center[1]).round() as i16);
+        let rates = match config.mode {
+
+            ControllerMode::Halted => [0, 0],
+
+            _ => [
+                (config.vision.tracking_gains[0] * center[0]).round() as i16,
+                (config.vision.tracking_gains[1] * center[1]).round() as i16,
+            ]
+        };
+        gimbal.write_control_rates(rates);
     }
 
     fn reset_tracking_rect(&mut self, config: &Config) {
@@ -87,7 +95,8 @@ impl ControllerState {
         let manual_control = self.manual.camera_vector();
         let manual_control = [manual_control[0] as f32 * max_speed, manual_control[1] as f32 * max_speed];
         let manual_control_active = manual_control[0].abs() > min_speed || manual_control[1].abs() > min_speed;
-        let tracking_is_bad = self.tracked.psr < vis.tracking_min_psr || area < vis.tracking_min_area;
+        let tracking_is_bad = (self.tracked.age > 0 && self.tracked.psr < vis.tracking_min_psr)
+                || area < vis.tracking_min_area || area > vis.tracking_max_area;
 
         if manual_control_active {
             // Nudge the tracking rect
@@ -102,7 +111,7 @@ impl ControllerState {
             self.tracked.frame = self.detected.1.frame;
             Some(self.tracked.rect)
         } 
-        else if self.tracked.age > 0 && tracking_is_bad {
+        else if tracking_is_bad {
             // Reset to the default tracking rectangle
             self.reset_tracking_rect(config);
             Some(self.tracked.rect)
@@ -160,9 +169,15 @@ impl ControllerState {
     }
 
     pub fn draw_camera_overlay(&self, config: &Config, draw: &mut DrawingContext) {
+        if config.mode == ControllerMode::Halted {
+            draw.current.outline_color = config.overlay.halt_color;
+            draw.current.outline_thickness = config.overlay.border_thickness;
+            draw.outline_rect(rect_offset(config.overlay.border_rect, -config.overlay.border_thickness));
+        }
+
         draw.current.color = config.overlay.debug_color;
         draw.current.text_height = config.overlay.debug_text_height;
-        let debug = format!("{:?}\n{:?}\n{:?}\n{:?}", config.mode, self.gimbal_values, self.winches, self.flyer_sensors);
+        let debug = format!("{:?}", config.mode);
         draw.text([-1.0, -9.0/16.0], [0.0, 0.0], &debug).unwrap();
 
         draw.current.outline_color = config.overlay.detector_default_outline_color;
@@ -170,21 +185,22 @@ impl ControllerState {
             if obj.prob >= config.overlay.detector_outline_min_prob {
                 draw.current.outline_thickness = obj.prob * config.overlay.detector_outline_max_thickness;
                 draw.outline_rect(obj.rect);
-            }
+                let outer_rect = rect_offset(obj.rect, draw.current.outline_thickness);
 
-            if obj.prob >= config.overlay.detector_label_min_prob {
-                draw.current.text_height = config.overlay.label_text_size;
-                draw.current.color = config.overlay.label_color;
-                draw.current.background_color = config.overlay.label_background_color;
-                draw.current.outline_thickness = 0.0;
+                if obj.prob >= config.overlay.detector_label_min_prob {
+                    draw.current.text_height = config.overlay.label_text_size;
+                    draw.current.color = config.overlay.label_color;
+                    draw.current.background_color = config.overlay.label_background_color;
+                    draw.current.outline_thickness = 0.0;
 
-                let label = if config.overlay.detector_label_prob_values {
-                    format!("{} p={:.3}", obj.label, obj.prob)
-                } else {
-                    obj.label.clone()
-                };
+                    let label = if config.overlay.detector_label_prob_values {
+                        format!("{} p={:.3}", obj.label, obj.prob)
+                    } else {
+                        obj.label.clone()
+                    };
 
-                draw.text_box(rect_topleft(obj.rect), [0.0, 0.0], &label).unwrap();
+                    draw.text_box(rect_topleft(outer_rect), [0.0, 1.0], &label).unwrap();
+                }
             }
         }
 
@@ -195,6 +211,7 @@ impl ControllerState {
             draw.current.outline_color = config.overlay.tracked_region_outline_color;
             draw.current.outline_thickness = config.overlay.tracked_region_outline_thickness;
             draw.outline_rect(self.tracked.rect);
+            let outer_rect = rect_offset(self.tracked.rect, config.overlay.tracked_region_outline_thickness);
 
             let tr_label = format!("psr={:.2} age={} area={:.3}",
                 self.tracked.psr, self.tracked.age, rect_area(self.tracked.rect));
@@ -203,7 +220,7 @@ impl ControllerState {
             draw.current.color = config.overlay.label_color;
             draw.current.background_color = config.overlay.label_background_color;
             draw.current.outline_thickness = 0.0;
-            draw.text_box(rect_topright(self.tracked.rect), [1.0, 0.0], &tr_label).unwrap();
+            draw.text_box(rect_bottomleft(outer_rect), [0.0, 0.0], &tr_label).unwrap();
         }
     }
 

@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 pub use vecmath_lib::*;
 pub use std::f64::consts::PI;
 pub const TAU : f64 = PI * 2.0;
@@ -21,8 +23,16 @@ pub fn rect_topleft(r: Vector4<f32>) -> Vector2<f32> {
 	[r[0], r[1]]
 }
 
+pub fn rect_bottomleft(r: Vector4<f32>) -> Vector2<f32> {
+	[r[0], r[1] + r[3]]
+}
+
 pub fn rect_topright(r: Vector4<f32>) -> Vector2<f32> {
 	[r[0] + r[2], r[1]]
+}
+
+pub fn rect_bottomright(r: Vector4<f32>) -> Vector2<f32> {
+	[r[0] + r[2], r[1] + r[3]]
 }
 
 pub fn rect_center(r: Vector4<f32>) -> Vector2<f32> {
@@ -31,4 +41,8 @@ pub fn rect_center(r: Vector4<f32>) -> Vector2<f32> {
 
 pub fn rect_area(r: Vector4<f32>) -> f32 {
 	r[2] * r[3]
+}
+
+pub fn rect_offset(r: Vector4<f32>, o: f32) -> Vector4<f32> {
+	[r[0] - o, r[1] - o, r[2] + 2.0 * o, r[3] + 2.0 * o]
 }

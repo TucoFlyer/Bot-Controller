@@ -1,3 +1,4 @@
+use vecmath::Vector2;
 use std::time::{Instant, Duration};
 use std::io;
 use std::mem;
@@ -63,20 +64,20 @@ impl GimbalPort {
         }
     }
 
-    pub fn write_control_rates(&self, yaw: i16, pitch: i16) {
+    pub fn write_control_rates(&self, rates: Vector2<i16>) {
         self.write_value(GimbalValueData {
             addr: GimbalValueAddress {
                 target: protocol::target::YAW,
                 index: protocol::values::CONTROL_RATE
             },
-            value: yaw
+            value: rates[0]
         });
         self.write_value(GimbalValueData {
             addr: GimbalValueAddress {
                 target: protocol::target::PITCH,
                 index: protocol::values::CONTROL_RATE
             },
-            value: pitch
+            value: rates[1]
         });
     }
 
