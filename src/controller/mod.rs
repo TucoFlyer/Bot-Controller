@@ -173,13 +173,11 @@ impl Controller {
             },
 
             Message::GimbalValue(val) => {
-                self.state.gimbal_value_received(val, gimbal)
+                self.state.gimbal_value_received(val)
             },
 
             Message::Command(Command::CameraObjectDetection(obj)) => {
-                if let Some(tracking_rect) = self.state.camera_object_detection_loop(&self.local_config, obj) {
-                    self.broadcast(Message::CameraInitTrackedRegion(tracking_rect).timestamp());
-                }
+                self.state.camera_object_detection_update(obj);
             },
 
             Message::Command(Command::CameraRegionTracking(tr)) => {
