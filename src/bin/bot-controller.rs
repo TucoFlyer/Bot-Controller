@@ -11,7 +11,7 @@ fn main() {
     controller.start(gimbal);
 
     interface::web::start(&config, &port);
-    interface::gamepad::start(&port);
+    interface::gamepad::start(&config, &port);
 
     watchdog::run(&port);
 }

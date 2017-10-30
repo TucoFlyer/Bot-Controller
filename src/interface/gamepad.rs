@@ -2,7 +2,7 @@
 
 use message::{Command, Message, ManualControlAxis};
 use controller::ControllerPort;
-use config::ControllerMode;
+use config::{SharedConfigFile, ControllerMode};
 use gilrs::{Event, Button, Axis, Gilrs};
 use std::thread;
 use std::time::Duration;
@@ -81,7 +81,8 @@ fn send_complete(c: &ControllerPort, state: &State) {
     }
 }
 
-pub fn start(c: &ControllerPort) {
+pub fn start(config: &SharedConfigFile, c: &ControllerPort) {
+    let config = config.clone();
     let c = c.clone();
     thread::Builder::new().name("Gamepad".into()).spawn(move || {
         let mut gil = Gilrs::new();
@@ -104,7 +105,10 @@ pub fn start(c: &ControllerPort) {
 
                     Event::ButtonPressed(Button::East, _) => send_command(&c, Command::SetMode(ControllerMode::Halted)),
                     Event::ButtonPressed(Button::South, _) => send_command(&c, Command::SetMode(ControllerMode::ManualFlyer)),
-                    Event::ButtonPressed(Button::West, _) => send_command(&c, Command::SetMode(ControllerMode::ManualWinch(0))),
+                    Event::ButtonPressed(Button::West, _) => { send_command(&c, Command::SetMode( match config.get_latest().mode {
+                        ControllerMode::ManualWinch(n) => ControllerMode::ManualWinch((n + 1) % config.get_latest().winches.len()),
+                        _ => ControllerMode::ManualWinch(0),
+                    }))},
 
                     Event::AxisChanged(Axis::RightStickX, v, _) => { state.cam_x = v; if state.is_enabled() { send_command(&c, state.yaw_command()) }},
                     Event::AxisChanged(Axis::RightStickY, v, _) => { state.cam_y = v; if state.is_enabled() { send_command(&c, state.pitch_command()) }},
