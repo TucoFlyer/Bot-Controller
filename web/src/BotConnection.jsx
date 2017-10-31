@@ -30,6 +30,9 @@ export class BotModel {
             let index_list = this.gimbal_values[addr.index] || (this.gimbal_values[addr.index] = []);
             index_list[addr.target] = msg;
         }
+        if (msg.message.Command.)
+
+
     }
 }
 

@@ -6,7 +6,6 @@ use serde_json::{Value, from_value, to_value};
 use serde_json;
 use serde_yaml;
 use std::collections::BTreeMap;
-use std::env;
 use std::fmt::Display;
 use std::fs::File;
 use std::io::{Read, Write};
@@ -192,6 +191,7 @@ pub struct WebConfig {
     pub web_root_path: String,
     pub connection_file_path: String,
     pub open_browser: bool,
+    pub browser_port_override: Option<u16>,
 }
 
 fn all_if_addr() -> IpAddr {
@@ -208,12 +208,10 @@ impl WebConfig {
         SocketAddr::new(all_if_addr(), self.ws_addr.port())
     }
 
-    pub fn http_uri(self: &WebConfig, secret_key: &str) -> String {
-        // Allow overriding port by environment variable, handy for developing with port 3000.
-        // This doesn't affect the port we serve on, only the one we tell clients to connect to.
+    pub fn http_uri(self: &WebConfig, secret_key: &str, custom_port: Option<u16>) -> String {
         let mut http_addr = self.http_addr.clone();
-        if let Ok(port) = env::var("HTTP_URI_PORT") {
-            http_addr.set_port(port.parse::<u16>().expect("HTTP_URI_PORT override must be a port number"));
+        if let Some(port) = custom_port {
+            http_addr.set_port(port);
         }
         format!("http://{}/#?k={}", http_addr, secret_key)
     }

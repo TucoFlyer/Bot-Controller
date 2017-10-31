@@ -13,17 +13,16 @@ pub mod auth;
 pub fn start(config: &SharedConfigFile, controller: &ControllerPort) {
     let web_config = config.get_latest().web;
     let secret_key = auth::make_random_string();
-    let http_uri = web_config.http_uri(&secret_key);
-    let connect_string = make_connect_string(&http_uri);
+    let connect_string = make_connect_string(&web_config.http_uri(&secret_key, None));
 
     http::start(&web_config);
-    ws::start(controller, config, secret_key);
+    ws::start(controller, config, secret_key.clone());
 
     store_connect_string(&connect_string, &web_config.connection_file_path).expect("can't write to connection info file");
     show_connect_string(&connect_string);
 
     if web_config.open_browser {
-        drop(open::that(&http_uri));
+        drop(open::that(&web_config.http_uri(&secret_key, web_config.browser_port_override)));
     }
 }
 

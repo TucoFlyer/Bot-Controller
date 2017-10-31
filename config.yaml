@@ -7,7 +7,8 @@ web:
   ws_addr: "10.0.0.5:8081"
   web_root_path: web/build
   connection_file_path: connection.txt
-  open_browser: false
+  open_browser: true
+  browser_port_override: 3000
 params: 
   gimbal_max_control_rate: 10000
   manual_control_velocity_m_per_sec: 0.26
