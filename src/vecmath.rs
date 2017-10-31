@@ -1,48 +1,84 @@
 #![allow(dead_code)]
 
+use num::traits::{Float, zero, one};
+use num::FromPrimitive;
+
 pub use vecmath_lib::*;
 pub use std::f64::consts::PI;
 pub const TAU : f64 = PI * 2.0;
 
-pub fn rotation_matrix(normalized_axis: Vector3<f64>, angle: f64) -> Matrix3x4<f64> {
+pub fn rotation_matrix<T: Float>(normalized_axis: Vector3<T>, angle: T) -> Matrix3x4<T> {
 	let (x, y, z) = (normalized_axis[0], normalized_axis[1], normalized_axis[2]);
 	let (sin, cos) = angle.sin_cos();
-	let icos = 1.0 - cos;
+	let icos = one::<T>() - cos;
     [
-        [cos + x*x*icos, x*y*icos - z*sin, x*z*icos + y*sin, 0.0],
-        [y*x*icos + z*sin, cos + y*y*icos, y*z*icos - x*sin, 0.0],
-        [z*x*icos - y*sin, z*y*icos + x*sin, cos+z*z*icos, 0.0]
+        [cos + x*x*icos, x*y*icos - z*sin, x*z*icos + y*sin, zero()],
+        [y*x*icos + z*sin, cos + y*y*icos, y*z*icos - x*sin, zero()],
+        [z*x*icos - y*sin, z*y*icos + x*sin, cos+z*z*icos, zero()]
     ]
 }
 
-pub fn vec3_mix(a: Vector3<f64>, b: Vector3<f64>, scale: f64) -> Vector3<f64> {
+pub fn vec3_mix<T: Float>(a: Vector3<T>, b: Vector3<T>, scale: T) -> Vector3<T> {
 	vec3_add(a, vec3_scale(vec3_sub(b, a), scale))
 }
 
-pub fn rect_topleft(r: Vector4<f32>) -> Vector2<f32> {
-	[r[0], r[1]]
+pub fn rect_topleft<T: Float>(r: Vector4<T>) -> Vector2<T> {
+	[rect_left(r), rect_top(r)]
 }
 
-pub fn rect_bottomleft(r: Vector4<f32>) -> Vector2<f32> {
-	[r[0], r[1] + r[3]]
+pub fn rect_bottomleft<T: Float>(r: Vector4<T>) -> Vector2<T> {
+	[rect_left(r), rect_bottom(r)]
 }
 
-pub fn rect_topright(r: Vector4<f32>) -> Vector2<f32> {
-	[r[0] + r[2], r[1]]
+pub fn rect_topright<T: Float>(r: Vector4<T>) -> Vector2<T> {
+	[rect_right(r), rect_top(r)]
 }
 
-pub fn rect_bottomright(r: Vector4<f32>) -> Vector2<f32> {
-	[r[0] + r[2], r[1] + r[3]]
+pub fn rect_bottomright<T: Float>(r: Vector4<T>) -> Vector2<T> {
+	[rect_right(r), rect_bottom(r)]
 }
 
-pub fn rect_center(r: Vector4<f32>) -> Vector2<f32> {
-	[r[0] + r[2]*0.5, r[1] + r[3]*0.5]
+fn half<T: FromPrimitive>() -> T {
+	T::from_f32(0.5).unwrap()
 }
 
-pub fn rect_area(r: Vector4<f32>) -> f32 {
+pub fn rect_center<T: Float + FromPrimitive>(r: Vector4<T>) -> Vector2<T> {
+	[r[0] + r[2]*half(), r[1] + r[3]*half()]
+}
+
+pub fn rect_area<T: Float>(r: Vector4<T>) -> T {
 	r[2] * r[3]
 }
 
-pub fn rect_offset(r: Vector4<f32>, o: f32) -> Vector4<f32> {
-	[r[0] - o, r[1] - o, r[2] + 2.0 * o, r[3] + 2.0 * o]
+pub fn rect_top<T: Float>(r: Vector4<T>) -> T {
+	r[1]
+}
+
+pub fn rect_left<T: Float>(r: Vector4<T>) -> T {
+	r[0]
+}
+
+pub fn rect_right<T: Float>(r: Vector4<T>) -> T {
+	r[0] + r[2]
+}
+
+pub fn rect_bottom<T: Float>(r: Vector4<T>) -> T {
+	r[1] + r[3]
+}
+
+pub fn rect_offset<T: Float>(r: Vector4<T>, o: T) -> Vector4<T> {
+	[r[0] - o, r[1] - o, r[2] + o + o, r[3] + o + o]
+}
+
+pub fn rect_ltrb<T: Float>(left: T, top: T, right: T, bottom: T) -> Vector4<T> {
+	[ left, top, (right-left).max(zero()), (bottom-top).max(zero()) ]
+}
+
+pub fn rect_intersect<T: Float>(a: Vector4<T>, b: Vector4<T>) -> Vector4<T> {
+	rect_ltrb(
+		rect_left(a).max(rect_left(b)),
+		rect_top(a).max(rect_top(b)),
+		rect_right(a).min(rect_right(b)),
+		rect_bottom(a).min(rect_bottom(b))
+	)
 }

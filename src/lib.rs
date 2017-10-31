@@ -20,6 +20,8 @@ extern crate bus;
 // Gamepad input
 extern crate gilrs;
 
+extern crate num;
+
 // For fygimbal
 extern crate crc16;
 extern crate byteorder;

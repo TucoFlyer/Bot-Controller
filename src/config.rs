@@ -140,11 +140,12 @@ pub struct OverlayConfig {
     pub label_background_color: Vector4<f32>,
     pub tracked_region_outline_color: Vector4<f32>,
     pub tracked_region_outline_thickness: f32,
+    pub gimbal_tracking_rect_color: Vector4<f32>,
+    pub gimbal_tracking_rect_sensitivity: f32,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct VisionConfig {
-    pub tracking_gains: Vector2<f32>,
     pub min_manual_control_speed: f32,
     pub max_manual_control_speed: f32,
     pub tracking_min_psr: f32,
@@ -156,14 +157,17 @@ pub struct VisionConfig {
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct GimbalConfig {
+    pub max_rate: f32,
     pub yaw_limits: (i16, i16),
     pub pitch_limits: (i16, i16),
     pub limiter_gain: f32,
-    pub max_rate: f32,
+    pub tracking_gain: f32,
+    pub tracking_rects: Vec<( Vector4<f32>, Vector2<f32> )>,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct BotParams {
+    pub gimbal_max_control_rate: f32, 
     pub manual_control_velocity_m_per_sec: f64,
     pub accel_limit_m_per_sec2: f64,
     pub force_neg_motion_min_kg: f64,

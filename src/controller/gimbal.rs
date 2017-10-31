@@ -150,12 +150,13 @@ impl GimbalController {
     }
 
     fn control_rates_for_tracking(&self, config: &Config, tracked: &CameraTrackedRegion) -> Vector2<f32> {
-        // to do
-        let center = rect_center(tracked.rect);
-        [
-            config.vision.tracking_gains[0] * center[0],
-            config.vision.tracking_gains[1] * center[1]
-        ]
+        let mut rates = [0.0, 0.0];
+        for &(rect, gain_vec) in &config.gimbal.tracking_rects {
+            let overlap = rect_intersect(tracked.rect, rect);
+            let area = rect_area(overlap);
+            rates = vec2_add(rates, vec2_scale(gain_vec, area));
+        }
+        vec2_scale(rates, config.gimbal.tracking_gain)
     }
 
     pub fn value_received(&mut self, data: GimbalValueData) {

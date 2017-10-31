@@ -1,5 +1,6 @@
 use message::*;
 use vecmath::*;
+use num::clamp;
 use std::time::{Duration, Instant};
 use config::{Config, ControllerMode};
 use controller::manual::ManualControls;
@@ -198,6 +199,16 @@ impl ControllerState {
             draw.current.background_color = config.overlay.label_background_color;
             draw.current.outline_thickness = 0.0;
             draw.text_box(rect_bottomleft(outer_rect), [0.0, 0.0], &tr_label).unwrap();
+        }
+
+        if config.overlay.gimbal_tracking_rect_color[3] > 0.0 {
+            for &(rect, _gain_vec) in &config.gimbal.tracking_rects {
+                let overlap = rect_intersect(self.tracked.rect, rect);
+                let area = rect_area(overlap);
+                draw.current.color = config.overlay.gimbal_tracking_rect_color;
+                draw.current.color[3] *= clamp(area * config.overlay.gimbal_tracking_rect_sensitivity, 0.0, 1.0);
+                draw.solid_rect(rect);
+            }
         }
     }
 

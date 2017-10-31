@@ -27,7 +27,7 @@ bus = "1.3.2"
 
 vecmath = "0.3.0"
 gilrs = "0.4.4"
-num-traits = "0.1.40"
+num = "0.1.40"
 
 bmfont = "0.2.1"
 

@@ -22,6 +22,9 @@ export default (props) => {
 
         <h4>Tracking</h4>
 
+        <h6>Tracking gain</h6>
+        <ConfigSlider item="gimbal.tracking_gain" min="0" max="5000" step="1e-4" />
+
         <h6>Yaw limits, min/max</h6>
         <ConfigSlider item="gimbal.yaw_limits.0" min="-2048" max="2048" step="1" />
         <ConfigSlider item="gimbal.yaw_limits.1" min="-2048" max="2048" step="1" />
@@ -31,7 +34,7 @@ export default (props) => {
         <ConfigSlider item="gimbal.pitch_limits.1" min="-1024" max="1024" step="1" />
 
         <h6>Limiter gain</h6>
-        <ConfigSlider item="gimbal.limiter_gain" min="0" max="500" step="1e-4" />
+        <ConfigSlider item="gimbal.limiter_gain" min="0" max="20" step="1e-4" />
 
         <h6>Max gimbal control rate</h6>
         <ConfigSlider item="gimbal.max_rate" min="0" max="20000" step="1" />
