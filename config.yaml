@@ -24,6 +24,15 @@ params:
   pwm_gain_p: 1.33
   pwm_gain_i: 3.346
   pwm_gain_d: 0.22065
+gimbal: 
+  yaw_limits: 
+    - -1720
+    - 1780
+  pitch_limits: 
+    - -400
+    - 350
+  limiter_gain: 4
+  max_rate: 16000
 overlay: 
   halt_color: 
     - 1
@@ -37,11 +46,11 @@ overlay:
     - 1.125
   border_thickness: 0.10000000149011612
   debug_color: 
-    - 0
-    - 0
-    - 0
-    - 0.30000001192092896
-  debug_text_height: 0.03999999910593033
+    - 1
+    - 1
+    - 1
+    - 0.9000000357627869
+  debug_text_height: 0.029999999329447746
   detector_outline_min_prob: 0
   detector_outline_max_thickness: 0.03999999910593033
   detector_label_min_prob: 0.5

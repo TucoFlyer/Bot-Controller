@@ -25,6 +25,7 @@ pub struct Config {
     pub flyer_addr: SocketAddr,
     pub web: WebConfig,
     pub params: BotParams,
+    pub gimbal: GimbalConfig,
     pub overlay: OverlayConfig,
     pub vision: VisionConfig,
     pub winches: Vec<WinchConfig>,
@@ -151,6 +152,14 @@ pub struct VisionConfig {
     pub tracking_max_area: f32,
     pub tracking_default_area: f32,
     pub snap_tracked_region_to: Vec<(String, f32)>,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+pub struct GimbalConfig {
+    pub yaw_limits: (i16, i16),
+    pub pitch_limits: (i16, i16),
+    pub limiter_gain: f32,
+    pub max_rate: f32,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
