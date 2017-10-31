@@ -1,0 +1,17 @@
+.Gimbal .index {
+	margin: 0 0.5em;
+	font-weight: bold;
+	display: inline-block;
+	width: 2em;
+	text-align: right;
+}
+
+.GimbalParam {
+	min-width: 5em;
+	display: inline-block;
+	border: 1px solid rgba(0,0,0,0.1);
+	margin: -0.5px;
+	width: 2.5em;
+	text-align: right;
+}
+
