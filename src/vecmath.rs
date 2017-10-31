@@ -94,3 +94,7 @@ pub fn rect_constrain<T: Float>(input: Vector4<T>, container: Vector4<T>) -> Vec
 		input[3],
 	]
 }
+
+pub fn rect_translate<T: Float>(rect: Vector4<T>, tr: Vector2<T>) -> Vector4<T> {
+	[ rect[0] + tr[0], rect[1] + tr[1], rect[2], rect[3] ]
+}

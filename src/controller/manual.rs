@@ -71,8 +71,7 @@ impl ManualControls {
     }
 
     pub fn camera_control_tick(&mut self, config: &Config) {
-        let speed = vec2_len(self.camera_vector()) * config.vision.max_manual_control_speed;
-        if speed > config.vision.min_manual_control_speed {
+        if vec2_square_len(self.camera_vector()) > config.vision.manual_control_deadzone.powi(2) {
             let timeout = Duration::from_millis((1000.0 * config.vision.manual_control_timeout_sec) as u64);
             self.camera_control_active_until_timestamp = Some(Instant::now() + timeout);
         }

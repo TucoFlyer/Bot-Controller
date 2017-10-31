@@ -21,11 +21,14 @@ export default (props) => {
                 timestamp={ (model) => model.camera.region_tracking.local_timestamp } />
         </Chart>
 
-        <h6>Manual control speeds, minimum (dead zone)</h6>
-        <ConfigSlider item="vision.min_manual_control_speed" min="0.0" max="1.0" step="1e-4" />
+        <h6>Manual control deadzone size</h6>
+        <ConfigSlider item="vision.manual_control_deadzone" min="0.0" max="0.5" step="1e-4" />
 
-        <h6>Manual control speeds, maximum</h6>
-        <ConfigSlider item="vision.max_manual_control_speed" min="0.0" max="2.0" step="1e-4" />
+        <h6>Manual control speed multiplier</h6>
+        <ConfigSlider item="vision.manual_control_speed" min="0.0" max="6.0" step="1e-4" />
+
+        <h6>Manual control restoring force</h6>
+        <ConfigSlider item="vision.manual_control_restoring_force" min="0.0" max="10.0" step="1e-4" />
 
         <h6>Manual control timeout (seconds)</h6>
         <ConfigSlider item="vision.manual_control_timeout_sec" min="0.0" max="2.0" step="1e-4" />

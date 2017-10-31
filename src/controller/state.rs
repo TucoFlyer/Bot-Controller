@@ -68,14 +68,14 @@ impl ControllerState {
     pub fn tracking_update(&mut self, config: &Config, time_step: f32) -> Option<Vector4<f32>> {
         let vis = &config.vision;
         let area = rect_area(self.tracked.rect);
-        let manual_control =  vec2_scale(self.manual.camera_vector(), vis.max_manual_control_speed);
         let tracking_is_bad = (self.tracked.age > 0 && self.tracked.psr < vis.tracking_min_psr)
                 || area < vis.tracking_min_area || area > vis.tracking_max_area;
 
         if self.manual.camera_control_active() {
-            // Nudge the tracking rect
-            self.tracked.rect[0] += manual_control[0] * time_step;
-            self.tracked.rect[1] -= manual_control[1] * time_step;
+            let velocity =  vec2_mul(self.manual.camera_vector(), vec2_scale([1.0, -1.0], vis.manual_control_speed));
+            let restoring_force = vec2_scale([-1.0, -1.0], config.vision.manual_control_restoring_force);
+            let velocity = vec2_add(velocity, vec2_mul(rect_center(self.tracked.rect), restoring_force));
+            self.tracked.rect = rect_translate(self.tracked.rect, vec2_scale(velocity, time_step));
             self.tracked.rect = rect_constrain(self.tracked.rect, config.vision.tracking_bounds);
             Some(self.tracked.rect)
         }
@@ -92,8 +92,6 @@ impl ControllerState {
             Some(self.tracked.rect)
         }
         else {
-            // Let the CV plugin keep tracking without being reset.
-            // It only tracks on frames that aren't processing a reset.
             None
         }
     }
@@ -144,13 +142,15 @@ impl ControllerState {
     }
 
     pub fn camera_region_tracking_update(&mut self, tr: CameraTrackedRegion) {
-        if (tr.frame.wrapping_sub(self.tracked.frame) as i32) <= 0 {
-            // Already have a newer prediction or a prediction from the same frame (i.e. the object detector)
-            // Just save the PSR
-            self.tracked.psr = tr.psr;
-            self.tracked.age = 0;
-        } else {
-            self.tracked = tr;
+        if !self.manual.camera_control_active() {
+            if (tr.frame.wrapping_sub(self.tracked.frame) as i32) <= 0 {
+                // Already have a newer prediction or a prediction from the same frame (i.e. the object detector)
+                // Just save the PSR
+                self.tracked.psr = tr.psr;
+                self.tracked.age = 0;
+            } else {
+                self.tracked = tr;
+            }
         }
     }
 
@@ -192,22 +192,26 @@ impl ControllerState {
 
         if !self.tracked.is_empty() {
             draw.current.outline_thickness = config.overlay.tracked_region_outline_thickness;
-            draw.current.outline_color = if self.manual.camera_control_active() {
-                config.overlay.tracked_region_manual_color
+
+            if self.manual.camera_control_active() {
+                draw.current.outline_color = config.overlay.tracked_region_manual_color;
+                draw.outline_rect(self.tracked.rect);
+    
             } else {
-                config.overlay.tracked_region_default_color
-            };
-            draw.outline_rect(self.tracked.rect);
-            let outer_rect = rect_offset(self.tracked.rect, config.overlay.tracked_region_outline_thickness);
+                draw.current.outline_color = config.overlay.tracked_region_default_color;
+                draw.outline_rect(self.tracked.rect);
 
-            let tr_label = format!("psr={:.2} age={} area={:.3}",
-                self.tracked.psr, self.tracked.age, rect_area(self.tracked.rect));
+                let outer_rect = rect_offset(self.tracked.rect, config.overlay.tracked_region_outline_thickness);
 
-            draw.current.text_height = config.overlay.label_text_size;
-            draw.current.color = config.overlay.label_color;
-            draw.current.background_color = config.overlay.label_background_color;
-            draw.current.outline_thickness = 0.0;
-            draw.text_box(rect_bottomleft(outer_rect), [0.0, 0.0], &tr_label).unwrap();
+                let tr_label = format!("psr={:.2} age={} area={:.3}",
+                    self.tracked.psr, self.tracked.age, rect_area(self.tracked.rect));
+
+                draw.current.text_height = config.overlay.label_text_size;
+                draw.current.color = config.overlay.label_color;
+                draw.current.background_color = config.overlay.label_background_color;
+                draw.current.outline_thickness = 0.0;
+                draw.text_box(rect_bottomleft(outer_rect), [0.0, 0.0], &tr_label).unwrap();
+            }
         }
 
         if config.overlay.gimbal_tracking_rect_color[3] > 0.0 {
