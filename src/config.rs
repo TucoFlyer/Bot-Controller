@@ -137,7 +137,8 @@ pub struct OverlayConfig {
     pub label_color: Vector4<f32>,
     pub label_text_size: f32,
     pub label_background_color: Vector4<f32>,
-    pub tracked_region_outline_color: Vector4<f32>,
+    pub tracked_region_default_color: Vector4<f32>,
+    pub tracked_region_manual_color: Vector4<f32>,
     pub tracked_region_outline_thickness: f32,
     pub gimbal_tracking_rect_color: Vector4<f32>,
     pub gimbal_tracking_rect_sensitivity: f32,
@@ -147,10 +148,12 @@ pub struct OverlayConfig {
 pub struct VisionConfig {
     pub min_manual_control_speed: f32,
     pub max_manual_control_speed: f32,
+    pub manual_control_timeout_sec: f32,
     pub tracking_min_psr: f32,
     pub tracking_min_area: f32,
     pub tracking_max_area: f32,
     pub tracking_default_area: f32,
+    pub tracking_bounds: Vector4<f32>,
     pub snap_tracked_region_to: Vec<(String, f32)>,
 }
 

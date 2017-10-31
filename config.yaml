@@ -147,11 +147,16 @@ overlay:
     - 0
     - 0
     - 0.38999998569488525
-  tracked_region_outline_color: 
+  tracked_region_default_color: 
     - 0.30588236451148987
     - 0.843137264251709
     - 0.3450980484485626
     - 0.3499999940395355
+  tracked_region_manual_color: 
+    - 0.843137264251709
+    - 0.5333333611488342
+    - 0.30588236451148987
+    - 0.9100000262260437
   tracked_region_outline_thickness: 0.027499999850988388
   gimbal_tracking_rect_color: 
     - 0.027450980618596077
@@ -162,10 +167,16 @@ overlay:
 vision: 
   min_manual_control_speed: 0.21870000660419464
   max_manual_control_speed: 1.8413000106811523
+  manual_control_timeout_sec: 1.1962000131607056
   tracking_min_psr: 4.5
   tracking_min_area: 0.014999999664723873
   tracking_max_area: 2.200000047683716
   tracking_default_area: 0.07479999959468842
+  tracking_bounds: 
+    - -1
+    - -0.5625
+    - 2
+    - 1.125
   snap_tracked_region_to: 
     - 
       - cat

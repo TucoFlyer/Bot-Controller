@@ -3,7 +3,6 @@ import { Nav, NavItem, NavLink } from 'reactstrap';
 import { NavLink as RRNavLink } from 'react-router-dom';
 import { Route, Switch } from 'react-router';
 import { ConfigTextBlock } from '../Config';
-import { IfAuthenticated } from '../BotConnection';
 
 import FlyerSensors from './FlyerSensors';
 import Lighting from './Lighting';

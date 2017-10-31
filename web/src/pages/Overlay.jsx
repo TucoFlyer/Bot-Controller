@@ -9,8 +9,11 @@ export default (props) => {
         <h6>Thickness of outline</h6>
         <ConfigSlider item="overlay.tracked_region_outline_thickness" min="0.0" max="1.0" step="1e-4" />
 
-        <h6>Color of outline</h6>
-        <ConfigColorAlpha item="overlay.tracked_region_outline_color" />
+        <h6>Color of outline in normal operation</h6>
+        <ConfigColorAlpha item="overlay.tracked_region_default_color" />
+
+        <h6>Color of outline during a manual movement</h6>
+        <ConfigColorAlpha item="overlay.tracked_region_manual_color" />
 
         <h4>Object Detection</h4>
 

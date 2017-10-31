@@ -82,3 +82,15 @@ pub fn rect_intersect<T: Float>(a: Vector4<T>, b: Vector4<T>) -> Vector4<T> {
 		rect_bottom(a).min(rect_bottom(b))
 	)
 }
+
+pub fn rect_constrain<T: Float>(input: Vector4<T>, container: Vector4<T>) -> Vector4<T> {
+	// Keep the input within the container, avoiding resizing
+	// Shrink the input only if it's larger than the container:
+	let input = [ input[0], input[1], input[2].min(container[2]), input[3].min(container[3]) ];
+	[
+		input[0].max(rect_left(container)).min(rect_right(container) - input[2]),
+		input[1].max(rect_top(container)).min(rect_bottom(container) - input[3]),
+		input[2],
+		input[3],
+	]
+}

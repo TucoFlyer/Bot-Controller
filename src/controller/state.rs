@@ -68,24 +68,21 @@ impl ControllerState {
     pub fn tracking_update(&mut self, config: &Config, time_step: f32) -> Option<Vector4<f32>> {
         let vis = &config.vision;
         let area = rect_area(self.tracked.rect);
-        let min_speed = vis.min_manual_control_speed;
-        let max_speed = vis.max_manual_control_speed;
-        let manual_control = self.manual.camera_vector();
-        let manual_control = [manual_control[0] as f32 * max_speed, manual_control[1] as f32 * max_speed];
-        let manual_control_active = manual_control[0].abs() > min_speed || manual_control[1].abs() > min_speed;
+        let manual_control =  vec2_scale(self.manual.camera_vector(), vis.max_manual_control_speed);
         let tracking_is_bad = (self.tracked.age > 0 && self.tracked.psr < vis.tracking_min_psr)
                 || area < vis.tracking_min_area || area > vis.tracking_max_area;
 
-        if manual_control_active {
+        if self.manual.camera_control_active() {
             // Nudge the tracking rect
             self.tracked.rect[0] += manual_control[0] * time_step;
             self.tracked.rect[1] -= manual_control[1] * time_step;
+            self.tracked.rect = rect_constrain(self.tracked.rect, config.vision.tracking_bounds);
             Some(self.tracked.rect)
         }
         else if let Some(obj) = self.find_best_snap_object(config) {
             // Snap to a detected object
             self.pending_snap = false;
-            self.tracked.rect = obj.rect;
+            self.tracked.rect = rect_constrain(obj.rect, config.vision.tracking_bounds);
             self.tracked.frame = self.detected.1.frame;
             Some(self.tracked.rect)
         } 
@@ -108,19 +105,30 @@ impl ControllerState {
     }
 
     fn find_best_snap_object(&self, config: &Config) -> Option<CameraDetectedObject> {
+        if !self.pending_snap {
+            // No data from the CV subsystem yet or we've already processed the latest frame
+            return None;
+        }
+
+        if self.detected.0 + Duration::from_millis(500) < Instant::now() {
+            // Latest data from CV is too old to bother with
+            return None;
+        }
+
+        if config.mode == ControllerMode::Halted {
+            // No automatic CV activity during halt
+            return None;
+        }
+
         let mut result = None;
-        if self.pending_snap {
-            if self.detected.0 + Duration::from_millis(500) > Instant::now() {
-                for obj in &self.detected.1.objects {
-                    for rule in &config.vision.snap_tracked_region_to {
-                        if obj.prob >= rule.1 && obj.label == rule.0 {
-                            result = match result {
-                                None => Some(obj),
-                                Some(prev) => if obj.prob > prev.prob { Some(obj) } else { Some(prev) }
-                            };
-                            break;
-                        }
-                    }
+        for obj in &self.detected.1.objects {
+            for rule in &config.vision.snap_tracked_region_to {
+                if obj.prob >= rule.1 && obj.label == rule.0 {
+                    result = match result {
+                        None => Some(obj),
+                        Some(prev) => if obj.prob > prev.prob { Some(obj) } else { Some(prev) }
+                    };
+                    break;
                 }
             }
         }
@@ -182,12 +190,13 @@ impl ControllerState {
             }
         }
 
-        if !self.tracked.is_empty()
-            && config.overlay.tracked_region_outline_color[3] > 0.0
-            && config.overlay.tracked_region_outline_thickness > 0.0 {
-
-            draw.current.outline_color = config.overlay.tracked_region_outline_color;
+        if !self.tracked.is_empty() {
             draw.current.outline_thickness = config.overlay.tracked_region_outline_thickness;
+            draw.current.outline_color = if self.manual.camera_control_active() {
+                config.overlay.tracked_region_manual_color
+            } else {
+                config.overlay.tracked_region_default_color
+            };
             draw.outline_rect(self.tracked.rect);
             let outer_rect = rect_offset(self.tracked.rect, config.overlay.tracked_region_outline_thickness);
 
