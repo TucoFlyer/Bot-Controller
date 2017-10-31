@@ -37,3 +37,40 @@
 	right: 0;
 	border: 2px solid #444;
 }
+
+.ConfigColorPickerAlpha {
+	position: relative;
+	width: 100%;
+	max-width: 600px;
+	height: 200px;
+	background: #444;
+	margin: 0 0 0.5em 0;
+}
+
+.ConfigColorPickerAlpha .saturation {
+	position: absolute;
+	top: 50px;
+	width: 80%;
+	height: 150px;
+}
+
+.ConfigColorPickerAlpha .hue {
+	position: absolute;
+	width: 80%;
+	height: 24px;
+}
+
+.ConfigColorPickerAlpha .alpha {
+	position: absolute;
+	width: 80%;
+	height: 24px;
+	top: 24px;
+}
+
+.ConfigColorPickerAlpha .preview {
+	position: absolute;
+	width: 20%;
+	height: 100%;
+	right: 0;
+	border: 2px solid #444;
+}

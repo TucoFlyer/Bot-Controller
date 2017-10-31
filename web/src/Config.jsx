@@ -3,7 +3,7 @@ import JSONPretty from 'react-json-pretty';
 import PropTypes from 'prop-types';
 import { Button } from 'reactstrap';
 import { CustomPicker } from 'react-color';
-import { Saturation, Hue } from 'react-color/lib/components/common'
+import { Saturation, Hue, Alpha } from 'react-color/lib/components/common'
 import { BotConnection } from './BotConnection';
 import reactCSS from 'reactcss';
 import './Config.css';
@@ -177,6 +177,37 @@ export const ConfigColor = withConfig(class extends Component {
     }
 });
 
+export const ConfigColorAlpha = withConfig(class extends Component {
+    render() {
+        let { config, item } = this.props;
+        const value = getByPath(config, item);
+        return <ConfigColorPickerAlpha
+            color={{
+                r: value[0] * 255,
+                g: value[1] * 255,
+                b: value[2] * 255,
+                a: value[3]
+            }}
+            onChange={this.handleChange.bind(this)}
+        />
+    }
+
+    static contextTypes = {
+        botConnection: PropTypes.instanceOf(BotConnection),
+    }
+
+    handleChange(color, event) {
+        console.log(this, color);
+        this.context.botConnection.socket.send(JSON.stringify({
+            UpdateConfig: setByPath({}, this.props.item, [
+                color.rgb.r / 255.0,
+                color.rgb.g / 255.0,
+                color.rgb.b / 255.0,
+                color.rgb.a,
+            ])
+        }));
+    }
+});
 
 const ConfigColorPicker = CustomPicker(function(props) {
     let styles = reactCSS({
@@ -196,6 +227,39 @@ const ConfigColorPicker = CustomPicker(function(props) {
         </div>
         <div className="hue">
             <Hue
+                hsl={ props.hsl }
+                onChange={ props.onChange }
+            />
+        </div>
+        <div className="preview" style={styles.preview} ></div>
+    </div>;
+});
+
+const ConfigColorPickerAlpha = CustomPicker(function(props) {
+    let styles = reactCSS({
+        'default': {
+            preview: {
+                background: props.hex
+            }
+        }
+    });
+    return <div className="ConfigColorPickerAlpha">
+        <div className="saturation">
+            <Saturation
+                hsl={ props.hsl }
+                hsv={ props.hsv }
+                onChange={ props.onChange }
+            />
+        </div>
+        <div className="hue">
+            <Hue
+                hsl={ props.hsl }
+                onChange={ props.onChange }
+            />
+        </div>
+            <div className="alpha">
+            <Alpha
+                rgb={ props.rgb }
                 hsl={ props.hsl }
                 onChange={ props.onChange }
             />

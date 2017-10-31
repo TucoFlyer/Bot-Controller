@@ -1,5 +1,6 @@
 ---
-mode: ManualFlyer
+mode: 
+  ManualWinch: 0
 controller_addr: "10.32.0.1:9024"
 flyer_addr: "10.32.0.8:9024"
 web: 
@@ -36,57 +37,57 @@ gimbal:
 overlay: 
   halt_color: 
     - 1
+    - 0.0235294122248888
     - 0
-    - 0
-    - 0.20000000298023224
+    - 0.4300000071525574
   border_rect: 
     - -1
     - -0.5625
     - 2
     - 1.125
-  border_thickness: 0.10000000149011612
+  border_thickness: 0.1160999983549118
   debug_color: 
     - 1
     - 1
     - 1
-    - 0.9000000357627869
-  debug_text_height: 0.029999999329447746
-  detector_outline_min_prob: 0
-  detector_outline_max_thickness: 0.03999999910593033
-  detector_label_min_prob: 0.5
+    - 0.7900000214576721
+  debug_text_height: 0.02500000037252903
+  detector_outline_min_prob: 0.20589999854564667
+  detector_outline_max_thickness: 0.03229999914765358
+  detector_label_min_prob: 0.44179999828338623
   detector_label_prob_values: true
   detector_default_outline_color: 
-    - 1
-    - 1
-    - 1
-    - 0.08000000566244125
+    - 0.34117648005485535
+    - 0.34117648005485535
+    - 0.5372549295425415
+    - 0.15000000596046448
   label_color: 
-    - 1
-    - 1
-    - 1
-    - 0.7000000476837158
-  label_text_size: 0.024000000208616257
+    - 0.8549019694328308
+    - 0.8549019694328308
+    - 0.8470588326454163
+    - 0.7300000190734863
+  label_text_size: 0.022099999710917473
   label_background_color: 
     - 0
     - 0
     - 0
-    - 0.30000001192092896
+    - 0.38999998569488525
   tracked_region_outline_color: 
-    - 1
-    - 1
-    - 0.20000000298023224
-    - 0.15000000596046448
-  tracked_region_outline_thickness: 0.05000000074505806
+    - 0.7921568751335144
+    - 0.5960784554481506
+    - 0.09019608050584793
+    - 0.2800000011920929
+  tracked_region_outline_thickness: 0.021900000050663948
 vision: 
   tracking_gains: 
     - -200
     - -200
-  min_manual_control_speed: 0.10000000149011612
-  max_manual_control_speed: 1.5
+  min_manual_control_speed: 0.051500000059604645
+  max_manual_control_speed: 0.6633999943733215
   tracking_min_psr: 4.5
   tracking_min_area: 0.014999999664723873
   tracking_max_area: 2.200000047683716
-  tracking_default_area: 0.10000000149011612
+  tracking_default_area: 0.07479999959468842
   snap_tracked_region_to: 
     - 
       - cat

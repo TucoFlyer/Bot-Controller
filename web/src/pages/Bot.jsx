@@ -7,20 +7,30 @@ import { IfAuthenticated } from '../BotConnection';
 
 import FlyerSensors from './FlyerSensors';
 import Lighting from './Lighting';
+import Camera from './Camera';
+import Gimbal from './Gimbal';
 
 export default (props) => (
     <div>
         <Nav pills>
-            <IfAuthenticated><NavItem>
-                <NavLink to="/lighting" activeClassName="active" tag={RRNavLink}> Lighting </NavLink>
-            </NavItem></IfAuthenticated>
             <NavItem>
                 <NavLink to="/flyer/sensors" activeClassName="active" tag={RRNavLink}> Sensors </NavLink>
             </NavItem>
+            <NavItem>
+                <NavLink to="/gimbal" activeClassName="active" tag={RRNavLink}> Gimbal </NavLink>
+            </NavItem>
+            <IfAuthenticated><NavItem>
+                <NavLink to="/camera" activeClassName="active" tag={RRNavLink}> Camera </NavLink>
+            </NavItem></IfAuthenticated>
+            <IfAuthenticated><NavItem>
+                <NavLink to="/lighting" activeClassName="active" tag={RRNavLink}> Lighting </NavLink>
+            </NavItem></IfAuthenticated>
         </Nav>
 
         <Switch>
             <Route path="/lighting" component={Lighting} />
+            <Route path="/camera" component={Camera} />
+            <Route path="/gimbal" component={Gimbal} />
             <Route path="/flyer/sensors" component={FlyerSensors} />
             <Route path="*" component={FlyerHome} />
         </Switch>
