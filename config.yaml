@@ -165,10 +165,10 @@ overlay:
     - 0.7200000286102295
   gimbal_tracking_rect_sensitivity: 31.881200790405273
 vision: 
-  manual_control_deadzone: 0.08879999816417694
-  manual_control_speed: 4.713500022888184
-  manual_control_restoring_force: 1.2646000385284424
-  manual_control_timeout_sec: 0.6541000008583069
+  manual_control_deadzone: 0.1395999938249588
+  manual_control_speed: 3.0887999534606934
+  manual_control_restoring_force: 0.9634000062942505
+  manual_control_timeout_sec: 0.40290001034736633
   tracking_min_psr: 4.5
   tracking_min_area: 0.014999999664723873
   tracking_max_area: 2.200000047683716

@@ -35,6 +35,11 @@ impl ManualControls {
         ])
     }
 
+    pub fn camera_vector_in_deadzone(cam_vec: Vector2<f32>, config: &Config) -> bool {
+        let z = config.vision.manual_control_deadzone;
+        vec2_square_len(cam_vec) <= z*z
+    }
+
     pub fn camera_control_active(&self) -> bool {
         match self.camera_control_active_until_timestamp {
             None => false,
@@ -71,7 +76,7 @@ impl ManualControls {
     }
 
     pub fn camera_control_tick(&mut self, config: &Config) {
-        if vec2_square_len(self.camera_vector()) > config.vision.manual_control_deadzone.powi(2) {
+        if !ManualControls::camera_vector_in_deadzone(self.camera_vector(), config) {
             let timeout = Duration::from_millis((1000.0 * config.vision.manual_control_timeout_sec) as u64);
             self.camera_control_active_until_timestamp = Some(Instant::now() + timeout);
         }

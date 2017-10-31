@@ -72,7 +72,10 @@ impl ControllerState {
                 || area < vis.tracking_min_area || area > vis.tracking_max_area;
 
         if self.manual.camera_control_active() {
-            let velocity =  vec2_mul(self.manual.camera_vector(), vec2_scale([1.0, -1.0], vis.manual_control_speed));
+            let camera_vec = self.manual.camera_vector();
+            let deadzone = ManualControls::camera_vector_in_deadzone(camera_vec, config);
+            let camera_vec = if deadzone { [0.0, 0.0] } else { camera_vec };
+            let velocity = vec2_mul(camera_vec, vec2_scale([1.0, -1.0], vis.manual_control_speed));
             let restoring_force = vec2_scale([-1.0, -1.0], config.vision.manual_control_restoring_force);
             let velocity = vec2_add(velocity, vec2_mul(rect_center(self.tracked.rect), restoring_force));
             self.tracked.rect = rect_translate(self.tracked.rect, vec2_scale(velocity, time_step));
