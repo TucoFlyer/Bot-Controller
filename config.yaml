@@ -126,9 +126,9 @@ overlay:
     - 1
     - 1
     - 0.7900000214576721
-  debug_text_height: 0.030799999833106995
-  detector_outline_min_prob: 0
-  detector_outline_max_thickness: 0.02539999969303608
+  debug_text_height: 0.031199999153614044
+  detector_outline_min_prob: 1
+  detector_outline_max_thickness: 0.027000000700354576
   detector_label_min_prob: 0.38609999418258667
   detector_label_prob_values: true
   detector_default_outline_color: 
@@ -148,10 +148,10 @@ overlay:
     - 0
     - 0.38999998569488525
   tracked_region_outline_color: 
-    - 1
-    - 0.6901960968971252
-    - 0.4901960790157318
-    - 0.3400000035762787
+    - 0.30588236451148987
+    - 0.843137264251709
+    - 0.3450980484485626
+    - 0.3499999940395355
   tracked_region_outline_thickness: 0.027499999850988388
   gimbal_tracking_rect_color: 
     - 0.027450980618596077
