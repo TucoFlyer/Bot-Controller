@@ -202,10 +202,11 @@ impl ControllerState {
         }
 
         if config.overlay.gimbal_tracking_rect_color[3] > 0.0 {
-            for &(rect, _gain_vec) in &config.gimbal.tracking_rects {
+            for &(rect, gain_vec) in &config.gimbal.tracking_rects {
                 let overlap = rect_intersect(self.tracked.rect, rect);
                 let area = rect_area(overlap);
                 draw.current.color = config.overlay.gimbal_tracking_rect_color;
+                draw.current.color[3] *= vec2_len(gain_vec);
                 draw.current.color[3] *= clamp(area * config.overlay.gimbal_tracking_rect_sensitivity, 0.0, 1.0);
                 draw.solid_rect(rect);
             }

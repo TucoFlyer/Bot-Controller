@@ -157,10 +157,10 @@ overlay:
     - 0.027450980618596077
     - 0.7921568751335144
     - 1
-    - 0.10000000149011612
-  gimbal_tracking_rect_sensitivity: 39.16460037231445
+    - 0.7200000286102295
+  gimbal_tracking_rect_sensitivity: 31.881200790405273
 vision: 
-  min_manual_control_speed: 0.051500000059604645
+  min_manual_control_speed: 0.21870000660419464
   max_manual_control_speed: 1.8413000106811523
   tracking_min_psr: 4.5
   tracking_min_area: 0.014999999664723873

@@ -13,6 +13,7 @@ export class BotModel {
         this.flyer = {};
         this.winches = [];
         this.gimbal_values = [];
+        this.camera = {};
     }
 
     update(msg) {
@@ -30,9 +31,15 @@ export class BotModel {
             let index_list = this.gimbal_values[addr.index] || (this.gimbal_values[addr.index] = []);
             index_list[addr.target] = msg;
         }
-        if (msg.message.Command.)
-
-
+        if (msg.message.Command) {
+            let cmd = msg.message.Command;
+            if (cmd.CameraObjectDetection) {
+                this.camera.object_detection = msg;
+            }
+            if (cmd.CameraRegionTracking) {
+                this.camera.region_tracking = msg;
+            }
+        }
     }
 }
 
