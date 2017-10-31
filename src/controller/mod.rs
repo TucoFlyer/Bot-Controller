@@ -5,6 +5,7 @@ mod velocity;
 mod winch;
 mod state;
 mod timer;
+mod gimbal;
 
 use message::*;
 use std::sync::mpsc::{SyncSender, Receiver, sync_channel};

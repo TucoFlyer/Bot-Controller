@@ -4,9 +4,9 @@ use std::time::{Duration, Instant};
 use config::{Config, ControllerMode};
 use controller::manual::ManualControls;
 use controller::winch::{WinchController, MechStatus};
+use controller::gimbal::GimbalController;
 use led::{LightAnimator, LightEnvironment};
 use overlay::DrawingContext;
-use fygimbal;
 use fygimbal::{GimbalPort, GimbalValueData};
 
 pub struct ControllerState {
@@ -18,7 +18,7 @@ pub struct ControllerState {
     pending_snap: bool,
     tracked: CameraTrackedRegion,
     last_mode: ControllerMode,
-    gimbal_values: Vec<Vec<Option<(Instant, GimbalValueData)>>>,
+    gimbal: GimbalController,
 }
 
 impl ControllerState {
@@ -34,11 +34,7 @@ impl ControllerState {
             pending_snap: false,
             tracked: CameraTrackedRegion::new(),
             last_mode: initial_config.mode.clone(),
-            gimbal_values: (0 .. fygimbal::protocol::NUM_VALUES).map(|_| {
-                (0 .. fygimbal::protocol::NUM_AXES).map(|_| {
-                    None
-                }).collect()
-            }).collect()
+            gimbal: GimbalController::new(),
         }
     }
 
@@ -60,25 +56,6 @@ impl ControllerState {
     fn lighting_tick(&mut self, config: &Config) {
         let env = self.light_environment(config);
         self.lights.update(env);
-    }
-
-    fn gimbal_tick(&mut self, config: &Config, gimbal: &GimbalPort) {
-        // We always want to keep the yaw and pitch angles updated
-        gimbal.request_continuous(fygimbal::protocol::values::ENCODER_ANGLES, fygimbal::protocol::target::YAW);
-        gimbal.request_continuous(fygimbal::protocol::values::ENCODER_ANGLES, fygimbal::protocol::target::PITCH);
-
-        // Outgoing control rates
-        let center = rect_center(self.tracked.rect);
-        let rates = match config.mode {
-
-            ControllerMode::Halted => [0, 0],
-
-            _ => [
-                (config.vision.tracking_gains[0] * center[0]).round() as i16,
-                (config.vision.tracking_gains[1] * center[1]).round() as i16,
-            ]
-        };
-        gimbal.write_control_rates(rates);
     }
 
     fn reset_tracking_rect(&mut self, config: &Config) {
@@ -126,7 +103,7 @@ impl ControllerState {
     pub fn every_tick(&mut self, config: &Config, gimbal: &GimbalPort) {
         self.manual.control_tick(config);
         self.lighting_tick(config);
-        self.gimbal_tick(config, gimbal);
+        self.gimbal.tick(config, gimbal, &self.tracked);
     }
 
     fn find_best_snap_object(&self, config: &Config) -> Option<CameraDetectedObject> {
@@ -177,7 +154,7 @@ impl ControllerState {
 
         draw.current.color = config.overlay.debug_color;
         draw.current.text_height = config.overlay.debug_text_height;
-        let debug = format!("{:?}", config.mode);
+        let debug = format!("{:?}\n{}", config.mode, self.gimbal.debug_str);
         draw.text([-1.0, -9.0/16.0], [0.0, 0.0], &debug).unwrap();
 
         draw.current.outline_color = config.overlay.detector_default_outline_color;
@@ -225,11 +202,7 @@ impl ControllerState {
     }
 
     pub fn gimbal_value_received(&mut self, data: GimbalValueData) {
-        let index = data.addr.index as usize;
-        let target = data.addr.target as usize;
-        if index < fygimbal::protocol::NUM_VALUES && target < fygimbal::protocol::NUM_AXES {
-            self.gimbal_values[index][target] = Some((Instant::now(), data));
-        }
+        self.gimbal.value_received(data);
     }
 
     pub fn flyer_sensor_update(&mut self, sensors: FlyerSensors) {
