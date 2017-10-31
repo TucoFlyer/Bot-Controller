@@ -31,8 +31,8 @@ gimbal:
   pitch_limits: 
     - -400
     - 350
-  limiter_gain: 4
-  max_rate: 16000
+  limiter_gain: 12.289999961853027
+  max_rate: 12322
 overlay: 
   halt_color: 
     - 1
@@ -44,22 +44,22 @@ overlay:
     - -0.5625
     - 2
     - 1.125
-  border_thickness: 0.1160999983549118
+  border_thickness: 0.11180000007152557
   debug_color: 
     - 1
     - 1
     - 1
     - 0.7900000214576721
-  debug_text_height: 0.02500000037252903
-  detector_outline_min_prob: 0.20589999854564667
-  detector_outline_max_thickness: 0.03229999914765358
-  detector_label_min_prob: 0.44179999828338623
+  debug_text_height: 0.030799999833106995
+  detector_outline_min_prob: 0
+  detector_outline_max_thickness: 0.07460000365972519
+  detector_label_min_prob: 0.38609999418258667
   detector_label_prob_values: true
   detector_default_outline_color: 
     - 0.34117648005485535
     - 0.34117648005485535
     - 0.5372549295425415
-    - 0.15000000596046448
+    - 0.18000000715255737
   label_color: 
     - 0.8549019694328308
     - 0.8549019694328308
@@ -72,11 +72,11 @@ overlay:
     - 0
     - 0.38999998569488525
   tracked_region_outline_color: 
-    - 0.7921568751335144
-    - 0.5960784554481506
-    - 0.09019608050584793
-    - 0.2800000011920929
-  tracked_region_outline_thickness: 0.021900000050663948
+    - 1
+    - 0.6901960968971252
+    - 0.4901960790157318
+    - 0.3400000035762787
+  tracked_region_outline_thickness: 0.02930000051856041
 vision: 
   tracking_gains: 
     - -200
@@ -149,7 +149,7 @@ lighting:
     frame_rate: 160
     filter_param: 0.15
   current: 
-    brightness: 0.2
+    brightness: 1.37
     flash_rate_hz: 1.92
     flash_exponent: 3.18
     winch: 

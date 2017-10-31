@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { BotConnection } from '../BotConnection';
 import reactCSS from 'reactcss';
+import { ConfigSlider } from '../Config';
 import './Gimbal.css';
 
 export default (props) => {
@@ -19,7 +20,23 @@ export default (props) => {
 
     return <div>
 
-        <h6>Parameter Space</h6>
+        <h4>Tracking</h4>
+
+        <h6>Yaw limits, min/max</h6>
+        <ConfigSlider item="gimbal.yaw_limits.0" min="-2048" max="2048" step="1" />
+        <ConfigSlider item="gimbal.yaw_limits.1" min="-2048" max="2048" step="1" />
+
+        <h6>Pitch limits, min/max</h6>
+        <ConfigSlider item="gimbal.pitch_limits.0" min="-1024" max="1024" step="1" />
+        <ConfigSlider item="gimbal.pitch_limits.1" min="-1024" max="1024" step="1" />
+
+        <h6>Limiter gain</h6>
+        <ConfigSlider item="gimbal.limiter_gain" min="0" max="500" step="1e-4" />
+
+        <h6>Max gimbal control rate</h6>
+        <ConfigSlider item="gimbal.max_rate" min="0" max="20000" step="1" />
+
+        <h4>Firmware parameters</h4>
         <div> { params } </div>
 
     </div>;
