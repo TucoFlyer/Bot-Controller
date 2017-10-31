@@ -63,9 +63,9 @@ class GimbalParam extends Component {
     handleFrame = (model) => {
     	const tsm = (model.gimbal_values[this.props.index] || [])[this.props.target];
     	if (tsm) {
-    		const fade_duration = 4000;
+    		const fade_duration = 500;
     		const age = ((new Date()).getTime() - tsm.local_timestamp);
-    		const opacity = Math.max(0.1, 1.0 - age / fade_duration);
+    		const opacity = Math.max(0.4, 1.0 - age / fade_duration);
     		const current = tsm.message.GimbalValue.value;
     		this.setState({ opacity, current });
     	}
