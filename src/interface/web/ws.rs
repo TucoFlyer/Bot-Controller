@@ -380,7 +380,7 @@ impl MessageHandler {
             Ok(message) => self.handle_message(message),
             Err(err) => Err(ClientError {
                 code: ErrorCode::ParseFailed,
-                message: Some(format!("{}", err)),
+                message: Some(format!("{} in message \"{}\"", err, message)),
             })
         }
     }
