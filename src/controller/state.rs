@@ -146,14 +146,7 @@ impl ControllerState {
 
     pub fn camera_region_tracking_update(&mut self, tr: CameraTrackedRegion) {
         if !self.manual.camera_control_active() {
-            if (tr.frame.wrapping_sub(self.tracked.frame) as i32) <= 0 {
-                // Already have a newer prediction or a prediction from the same frame (i.e. the object detector)
-                // Just save the PSR
-                self.tracked.psr = tr.psr;
-                self.tracked.age = 0;
-            } else {
-                self.tracked = tr;
-            }
+            self.tracked = tr;
         }
     }
 

@@ -169,7 +169,7 @@ vision:
   manual_control_speed: 1.6441999673843384
   manual_control_restoring_force: 0.9634000062942505
   manual_control_timeout_sec: 0.40290001034736633
-  tracking_min_psr: 4.5
+  tracking_min_psr: 3.5727999210357666
   tracking_min_area: 0.014999999664723873
   tracking_max_area: 2.200000047683716
   tracking_default_area: 0.07479999959468842
@@ -240,7 +240,7 @@ lighting:
     frame_rate: 160
     filter_param: 0.15
   current: 
-    brightness: 1
+    brightness: 0.2
     flash_rate_hz: 1.92
     flash_exponent: 3.18
     winch: 
