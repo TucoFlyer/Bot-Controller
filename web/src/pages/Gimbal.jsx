@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import { Button } from 'reactstrap';
 import PropTypes from 'prop-types';
 import { BotConnection } from '../BotConnection';
 import reactCSS from 'reactcss';
@@ -19,6 +20,16 @@ export default (props) => {
 	}
 
     return <div>
+
+        <h4>Motor Control</h4>
+
+        <GimbalMotorButton block color="warning" enable={true}>
+            Stabilization motors ON
+        </GimbalMotorButton>
+
+        <GimbalMotorButton block color="secondary" enable={false}>
+            Stabilization motors OFF
+        </GimbalMotorButton>
 
         <h4>Tracking</h4>
 
@@ -43,6 +54,22 @@ export default (props) => {
         <div> { params } </div>
 
     </div>;
+}
+
+class GimbalMotorButton extends Component {
+    static contextTypes = {
+        botConnection: PropTypes.instanceOf(BotConnection),
+    }
+
+    render() {
+        const { enable, children, ...props } = this.props;
+        return <Button {...props} onClick={() => {
+            this.context.botConnection.socket.send(JSON.stringify({
+                Command: { GimbalMotorEnable: enable }
+            }));
+            }}> { children }
+        </Button>;
+    }
 }
 
 class GimbalParam extends Component {

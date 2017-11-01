@@ -35,7 +35,7 @@ gimbal:
     - -400
     - 350
   limiter_gain: 6.095099925994873
-  tracking_gain: 1887.9527587890625
+  tracking_gain: 536.9910888671875
   tracking_rects: 
     - 
       - 
@@ -81,7 +81,7 @@ gimbal:
         - 0.3799999952316284
       - 
         - 0
-        - 0.10000000149011612
+        - 0.30000001192092896
     - 
       - 
         - -1
@@ -90,7 +90,7 @@ gimbal:
         - 0.3799999952316284
       - 
         - 0
-        - -0.10000000149011612
+        - -0.30000001192092896
     - 
       - 
         - -1
@@ -98,7 +98,7 @@ gimbal:
         - 0.6000000238418579
         - 2
       - 
-        - 0.10000000149011612
+        - 0.30000001192092896
         - 0
     - 
       - 
@@ -107,7 +107,7 @@ gimbal:
         - 0.6000000238418579
         - 2
       - 
-        - -0.10000000149011612
+        - -0.30000001192092896
         - 0
 overlay: 
   halt_color: 
@@ -127,9 +127,9 @@ overlay:
     - 1
     - 0.7900000214576721
   debug_text_height: 0.031199999153614044
-  detector_outline_min_prob: 1
+  detector_outline_min_prob: 0.2363000065088272
   detector_outline_max_thickness: 0.027000000700354576
-  detector_label_min_prob: 0.38609999418258667
+  detector_label_min_prob: 0.36890000104904175
   detector_label_prob_values: true
   detector_default_outline_color: 
     - 0.34117648005485535
@@ -240,7 +240,7 @@ lighting:
     frame_rate: 160
     filter_param: 0.15
   current: 
-    brightness: 1.37
+    brightness: 1
     flash_rate_hz: 1.92
     flash_exponent: 3.18
     winch: 
