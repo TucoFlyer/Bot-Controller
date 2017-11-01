@@ -35,7 +35,7 @@ gimbal:
     - -400
     - 350
   limiter_gain: 6.095099925994873
-  tracking_gain: 536.9910888671875
+  tracking_gain: 135.61700439453125
   tracking_rects: 
     - 
       - 
@@ -115,11 +115,6 @@ overlay:
     - 0.0235294122248888
     - 0
     - 0.4300000071525574
-  border_rect: 
-    - -1
-    - -0.5625
-    - 2
-    - 1.125
   border_thickness: 0.11180000007152557
   debug_color: 
     - 1
@@ -164,7 +159,12 @@ overlay:
     - 1
     - 0.7200000286102295
   gimbal_tracking_rect_sensitivity: 31.881200790405273
-vision: 
+vision:
+  border_rect: 
+    - -1
+    - -0.5625
+    - 2
+    - 1.125
   manual_control_deadzone: 0.07900000363588333
   manual_control_speed: 1.6441999673843384
   manual_control_restoring_force: 0.9634000062942505
@@ -173,11 +173,6 @@ vision:
   tracking_min_area: 0.014999999664723873
   tracking_max_area: 2.200000047683716
   tracking_default_area: 0.07479999959468842
-  tracking_bounds: 
-    - -1
-    - -0.5625
-    - 2
-    - 1.125
   snap_tracked_region_to: 
     - 
       - cat
@@ -240,7 +235,7 @@ lighting:
     frame_rate: 160
     filter_param: 0.15
   current: 
-    brightness: 0.2
+    brightness: 1.37
     flash_rate_hz: 1.92
     flash_exponent: 3.18
     winch: 

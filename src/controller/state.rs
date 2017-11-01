@@ -79,13 +79,13 @@ impl ControllerState {
             let restoring_force = vec2_scale([-1.0, -1.0], config.vision.manual_control_restoring_force);
             let velocity = vec2_add(velocity, vec2_mul(rect_center(self.tracked.rect), restoring_force));
             self.tracked.rect = rect_translate(self.tracked.rect, vec2_scale(velocity, time_step));
-            self.tracked.rect = rect_constrain(self.tracked.rect, config.vision.tracking_bounds);
+            self.tracked.rect = rect_constrain(self.tracked.rect, config.vision.border_rect);
             Some(self.tracked.rect)
         }
         else if let Some(obj) = self.find_best_snap_object(config) {
             // Snap to a detected object
             self.pending_snap = false;
-            self.tracked.rect = rect_constrain(obj.rect, config.vision.tracking_bounds);
+            self.tracked.rect = rect_constrain(obj.rect, config.vision.border_rect);
             self.tracked.frame = self.detected.1.frame;
             Some(self.tracked.rect)
         } 
@@ -154,7 +154,7 @@ impl ControllerState {
         if config.mode == ControllerMode::Halted {
             draw.current.outline_color = config.overlay.halt_color;
             draw.current.outline_thickness = config.overlay.border_thickness;
-            draw.outline_rect(rect_offset(config.overlay.border_rect, -config.overlay.border_thickness));
+            draw.outline_rect(rect_offset(config.vision.border_rect, -config.overlay.border_thickness));
         }
 
         draw.current.color = config.overlay.debug_color;

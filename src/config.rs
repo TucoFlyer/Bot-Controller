@@ -125,7 +125,6 @@ pub struct LightAnimatorConfig {
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct OverlayConfig {
     pub halt_color: Vector4<f32>,
-    pub border_rect: Vector4<f32>,
     pub border_thickness: f32,
     pub debug_color: Vector4<f32>,
     pub debug_text_height: f32,
@@ -146,6 +145,7 @@ pub struct OverlayConfig {
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct VisionConfig {
+    pub border_rect: Vector4<f32>,
     pub manual_control_deadzone: f32,
     pub manual_control_speed: f32,
     pub manual_control_restoring_force: f32,
@@ -154,7 +154,6 @@ pub struct VisionConfig {
     pub tracking_min_area: f32,
     pub tracking_max_area: f32,
     pub tracking_default_area: f32,
-    pub tracking_bounds: Vector4<f32>,
     pub snap_tracked_region_to: Vec<(String, f32)>,
 }
 
