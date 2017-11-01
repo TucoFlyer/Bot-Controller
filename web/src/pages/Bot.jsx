@@ -1,4 +1,7 @@
-import React from 'react';
+import React, { Component } from 'react';
+import PropTypes from 'prop-types';
+import { BotConnection } from '../BotConnection';
+import Joystick from '../Joystick';
 import { Nav, NavItem, NavLink } from 'reactstrap';
 import { NavLink as RRNavLink } from 'react-router-dom';
 import { Route, Switch } from 'react-router';
@@ -41,11 +44,25 @@ export default (props) => (
     </div>
 );
 
-const FlyerHome = (props) => (
-    <div>
+class FlyerHome extends Component {
+    static contextTypes = {
+        botConnection: PropTypes.instanceOf(BotConnection),
+    }
 
-        <h5>Flyer Mode:</h5>
-        <ConfigTextBlock item="mode" />
+    render() {
+        return <div>     
 
-    </div>
-);
+            <h6>Flyer Mode:</h6>
+            <ConfigTextBlock item="mode" />
+
+            <h6>Manual tracking control</h6>
+            <Joystick
+                onXY={ (x, y) => {
+                    this.context.botConnection.send({ Command: { ManualControlValue: [ "CameraYaw", x ] }});
+                    this.context.botConnection.send({ Command: { ManualControlValue: [ "CameraPitch", y ] }});
+                }}
+            />
+        </div>;
+    }
+}
+
