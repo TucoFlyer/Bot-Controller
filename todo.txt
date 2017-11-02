@@ -1,0 +1,17 @@
+notes
+-----
+
+- drift compensation
+
+Fix endstop algo
+  bounce
+  stuck past edges with low gain, very bounce at high gain
+  try softer edges
+
+UI for gimbal debug
+  - some graphs, with refresh re-request hook
+
+Gimbal tuning
+  - Parameter tuning tool
+  - Zero out roll axis
+
