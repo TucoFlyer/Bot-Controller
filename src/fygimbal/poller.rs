@@ -9,7 +9,7 @@ use controller::ControllerPort;
 use message::Message;
 use fygimbal::protocol;
 
-const MAX_PACKETS_PER_READ_BATCH : usize = 4;
+const MAX_PACKETS_PER_READ_BATCH : usize = 2;
 const MAX_PACKET_LENGTH : usize = 16;
 const MAX_CONTINUOUS_POLL_MILLIS : u64 = 500;
 
