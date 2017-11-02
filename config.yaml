@@ -35,7 +35,7 @@ gimbal:
     - -400
     - 350
   limiter_gain: 6.095099925994873
-  tracking_gain: 251.61709594726563
+  tracking_gain: 214.65480041503906
   tracking_rects: 
     - 
       - 
@@ -165,14 +165,14 @@ vision:
     - -0.5625
     - 2
     - 1.125
-  manual_control_deadzone: 0.07900000363588333
-  manual_control_speed: 1.6441999673843384
+  manual_control_deadzone: 0.04569999873638153
+  manual_control_speed: 2.5485000610351563
   manual_control_restoring_force: 0.9634000062942505
   manual_control_timeout_sec: 0.40290001034736633
   tracking_min_psr: 3.5727999210357666
   tracking_min_area: 0.014999999664723873
   tracking_max_area: 2.200000047683716
-  tracking_default_area: 0.07479999959468842
+  tracking_default_area: 0.13529999554157257
   snap_tracked_region_to: 
     - 
       - cat

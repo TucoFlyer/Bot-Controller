@@ -59,10 +59,14 @@ impl ControllerState {
         self.lights.update(env);
     }
 
-    fn reset_tracking_rect(&mut self, config: &Config) {
+    fn default_tracking_rect(config: &Config) -> Vector4<f32> {
         let side_len = config.vision.tracking_default_area.sqrt();
+        [side_len * -0.5, side_len * -0.5, side_len, side_len]
+    }
+
+    fn reset_tracking_rect(&mut self, config: &Config) {
         self.tracked = CameraTrackedRegion::new();
-        self.tracked.rect = [side_len * -0.5, side_len * -0.5, side_len, side_len];
+        self.tracked.rect = ControllerState::default_tracking_rect(config);
     }
 
     pub fn tracking_update(&mut self, config: &Config, time_step: f32) -> Option<Vector4<f32>> {
@@ -78,7 +82,8 @@ impl ControllerState {
             let velocity = vec2_mul(camera_vec, vec2_scale([1.0, -1.0], vis.manual_control_speed));
             let restoring_force = vec2_scale([-1.0, -1.0], config.vision.manual_control_restoring_force);
             let velocity = vec2_add(velocity, vec2_mul(rect_center(self.tracked.rect), restoring_force));
-            self.tracked.rect = rect_translate(self.tracked.rect, vec2_scale(velocity, time_step));
+            let center = vec2_add(rect_center(self.tracked.rect), vec2_scale(velocity, time_step));
+            self.tracked.rect = rect_translate(ControllerState::default_tracking_rect(config), center);
             self.tracked.rect = rect_constrain(self.tracked.rect, config.vision.border_rect);
             Some(self.tracked.rect)
         }
