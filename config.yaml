@@ -174,7 +174,7 @@ vision:
   manual_control_speed: 2.5485000610351563
   manual_control_restoring_force: 0.9634000062942505
   manual_control_timeout_sec: 0.40290001034736633
-  tracking_min_psr: 3.5727999210357666
+  tracking_min_psr: 0.1662999987602234
   tracking_min_area: 0.014999999664723873
   tracking_max_area: 2.200000047683716
   tracking_default_area: 0.13529999554157257
