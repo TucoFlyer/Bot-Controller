@@ -127,6 +127,7 @@ pub struct OverlayConfig {
     pub halt_color: Vector4<f32>,
     pub border_thickness: f32,
     pub debug_color: Vector4<f32>,
+    pub debug_background_color: Vector4<f32>,
     pub debug_text_height: f32,
     pub detector_outline_min_prob: f32,
     pub detector_outline_max_thickness: f32,

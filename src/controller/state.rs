@@ -164,8 +164,10 @@ impl ControllerState {
 
         draw.current.color = config.overlay.debug_color;
         draw.current.text_height = config.overlay.debug_text_height;
+        draw.current.background_color = config.overlay.debug_background_color;
+        draw.current.outline_thickness = 0.0;
         let debug = format!("{:?}\n{}", config.mode, self.gimbal.debug_str);
-        draw.text([-1.0, -9.0/16.0], [0.0, 0.0], &debug).unwrap();
+        draw.text(rect_topleft(config.vision.border_rect), [0.0, 0.0], &debug).unwrap();
 
         draw.current.outline_color = config.overlay.detector_default_outline_color;
         for obj in &self.detected.1.objects {
@@ -186,7 +188,7 @@ impl ControllerState {
                         obj.label.clone()
                     };
 
-                    draw.text_box(rect_topleft(outer_rect), [0.0, 1.0], &label).unwrap();
+                    draw.text(rect_topleft(outer_rect), [0.0, 1.0], &label).unwrap();
                 }
             }
         }
@@ -211,7 +213,7 @@ impl ControllerState {
                 draw.current.color = config.overlay.label_color;
                 draw.current.background_color = config.overlay.label_background_color;
                 draw.current.outline_thickness = 0.0;
-                draw.text_box(rect_bottomleft(outer_rect), [0.0, 0.0], &tr_label).unwrap();
+                draw.text(rect_bottomleft(outer_rect), [0.0, 0.0], &tr_label).unwrap();
             }
         }
 

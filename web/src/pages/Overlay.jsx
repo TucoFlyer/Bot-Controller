@@ -41,10 +41,13 @@ export default (props) => {
         <h4>Debug Text</h4>
 
         <h6>Debug text height</h6>
-        <ConfigSlider item="overlay.debug_text_height" min="0.0" max="0.1" step="1e-4" />
+        <ConfigSlider item="overlay.debug_text_height" min="0.0" max="0.2" step="1e-4" />
 
         <h6>Debug text color</h6>
         <ConfigColorAlpha item="overlay.debug_color" />
+
+        <h6>Debug text background color</h6>
+        <ConfigColorAlpha item="overlay.debug_background_color" />
 
         <h4>Status Rectangles</h4>
 

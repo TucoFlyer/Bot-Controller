@@ -96,19 +96,7 @@ impl DrawingContext {
 		}
 	}
 
-	pub fn text(&mut self, pos: Vector2<f32>, anchor: Vector2<f32>, text: &str) -> Result<(), StringParseError> {
-		let shape = TextShape::parse(&self.current.font, self.current.text_height, text)?;
-		let size = shape.size();
-		let top_left = vec2_sub(pos, vec2_mul(size, anchor));
-
-		if self.current.color[3] > 0.0 {
-			shape.draw(&mut self.scene, self.current.color, top_left);
-		}
-
-		Ok(())
-	}
-
-	pub fn text_box(&mut self, pos: Vector2<f32>, anchor: Vector2<f32>, text: &str) -> Result<Vector4<f32>, StringParseError> {
+	pub fn text(&mut self, pos: Vector2<f32>, anchor: Vector2<f32>, text: &str) -> Result<Vector4<f32>, StringParseError> {
 		let shape = TextShape::parse(&self.current.font, self.current.text_height, text)?;
 		let size = shape.size();
 		let m = self.current.text_margin;
