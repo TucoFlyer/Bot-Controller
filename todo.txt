@@ -1,12 +1,20 @@
 notes
 -----
 
-- drift compensation
+gimbal controller
+  status reporting
+  gimbal state graphs
 
-Fix endstop algo
-  bounce
-  stuck past edges with low gain, very bounce at high gain
-  try softer edges
+  rates / integrated-rates
+  width+proportional+integral control list for pitch/yaw
+  PI controls for endstop algo?
+  final rates are prop + integral + drift
+  manual drift at first, then auto?
+
+  Fix endstop algo
+    bounce
+    stuck past edges with low gain, very bounce at high gain
+    try softer edges
 
 UI for gimbal debug
   - some graphs, with refresh re-request hook

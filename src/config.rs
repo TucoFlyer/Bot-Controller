@@ -151,9 +151,6 @@ pub struct VisionConfig {
     pub manual_control_speed: f32,
     pub manual_control_restoring_force: f32,
     pub manual_control_timeout_sec: f32,
-    pub tracking_min_psr: f32,
-    pub tracking_min_area: f32,
-    pub tracking_max_area: f32,
     pub tracking_default_area: f32,
     pub snap_tracked_region_to: Vec<(String, f32)>,
 }

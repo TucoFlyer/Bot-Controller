@@ -64,22 +64,13 @@ impl ControllerState {
         [side_len * -0.5, side_len * -0.5, side_len, side_len]
     }
 
-    fn reset_tracking_rect(&mut self, config: &Config) {
-        self.tracked = CameraTrackedRegion::new();
-        self.tracked.rect = ControllerState::default_tracking_rect(config);
-    }
-
     pub fn tracking_update(&mut self, config: &Config, time_step: f32) -> Option<Vector4<f32>> {
-        let vis = &config.vision;
-        let area = rect_area(self.tracked.rect);
-        let tracking_is_bad = (self.tracked.age > 0 && self.tracked.psr < vis.tracking_min_psr)
-                || area < vis.tracking_min_area || area > vis.tracking_max_area;
-
         if self.manual.camera_control_active() {
+            // Manual tracking control temporarily overrides other sources
             let camera_vec = self.manual.camera_vector();
             let deadzone = ManualControls::camera_vector_in_deadzone(camera_vec, config);
             let camera_vec = if deadzone { [0.0, 0.0] } else { camera_vec };
-            let velocity = vec2_mul(camera_vec, vec2_scale([1.0, -1.0], vis.manual_control_speed));
+            let velocity = vec2_mul(camera_vec, vec2_scale([1.0, -1.0], config.vision.manual_control_speed));
             let restoring_force = vec2_scale([-1.0, -1.0], config.vision.manual_control_restoring_force);
             let velocity = vec2_add(velocity, vec2_mul(rect_center(self.tracked.rect), restoring_force));
             let center = vec2_add(rect_center(self.tracked.rect), vec2_scale(velocity, time_step));
@@ -94,11 +85,6 @@ impl ControllerState {
             self.tracked.frame = self.detected.1.frame;
             Some(self.tracked.rect)
         } 
-        else if tracking_is_bad {
-            // Reset to the default tracking rectangle
-            self.reset_tracking_rect(config);
-            Some(self.tracked.rect)
-        }
         else {
             None
         }
