@@ -140,6 +140,15 @@ pub struct OverlayConfig {
     pub tracked_region_default_color: Vector4<f32>,
     pub tracked_region_manual_color: Vector4<f32>,
     pub tracked_region_outline_thickness: f32,
+    pub particle_color: Vector4<f32>,
+    pub particle_size: f32,
+    pub particle_sprite: Vector4<i32>,
+    pub particle_count: usize,
+    pub particle_damping: f32,
+    pub particle_edge_gain: f32,
+    pub particle_perpendicular_gain: f32,
+    pub particle_min_distance: f32,
+    pub particle_min_distance_gain: f32,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]

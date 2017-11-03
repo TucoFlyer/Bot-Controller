@@ -5,7 +5,7 @@ use config::{Config, ControllerMode};
 use controller::manual::ManualControls;
 use controller::winch::{WinchController, MechStatus};
 use led::{LightAnimator, LightEnvironment};
-use overlay::DrawingContext;
+use overlay::{DrawingContext, ParticleDrawing};
 
 pub struct ControllerState {
     pub manual: ManualControls,
@@ -15,6 +15,7 @@ pub struct ControllerState {
     flyer_sensors: Option<FlyerSensors>,
     detected: (Instant, CameraDetectedObjects),
     pending_snap: bool,
+    tracking_particles: ParticleDrawing,
     last_mode: ControllerMode,
 }
 
@@ -30,6 +31,7 @@ impl ControllerState {
             detected: (Instant::now(), CameraDetectedObjects::new()),
             pending_snap: false,
             tracked: CameraTrackedRegion::new(),
+            tracking_particles: ParticleDrawing::new(),
             last_mode: initial_config.mode.clone(),
         }
     }
@@ -56,7 +58,7 @@ impl ControllerState {
 
     fn default_tracking_rect(config: &Config) -> Vector4<f32> {
         let side_len = config.vision.tracking_default_area.sqrt();
-        [side_len * -0.5, side_len * -0.5, side_len, side_len]
+        rect_centered_on_origin(side_len, side_len)
     }
 
     pub fn tracking_update(&mut self, config: &Config, time_step: f32) -> Option<Vector4<f32>> {
@@ -88,6 +90,7 @@ impl ControllerState {
     pub fn every_tick(&mut self, config: &Config) {
         self.manual.control_tick(config);
         self.lighting_tick(config);
+        self.tracking_particles.follow_rect(config, self.tracked.rect);
     }
 
     fn find_best_snap_object(&self, config: &Config) -> Option<CameraDetectedObject> {
@@ -182,6 +185,8 @@ impl ControllerState {
                 draw.current.outline_thickness = 0.0;
                 draw.text(rect_bottomleft(outer_rect), [0.0, 0.0], &tr_label).unwrap();
             }
+
+            self.tracking_particles.render(config, draw);
         }
     }
 

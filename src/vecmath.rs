@@ -74,6 +74,10 @@ pub fn rect_ltrb<T: Float>(left: T, top: T, right: T, bottom: T) -> Vector4<T> {
 	[ left, top, (right-left).max(zero()), (bottom-top).max(zero()) ]
 }
 
+pub fn rect_centered_on_origin<T: Float + FromPrimitive>(width: T, height: T) -> Vector4<T> {
+	[ width * -half::<T>(), height * -half::<T>(), width, height ]
+}
+
 pub fn rect_intersect<T: Float>(a: Vector4<T>, b: Vector4<T>) -> Vector4<T> {
 	rect_ltrb(
 		rect_left(a).max(rect_left(b)),
@@ -97,4 +101,25 @@ pub fn rect_constrain<T: Float>(input: Vector4<T>, container: Vector4<T>) -> Vec
 
 pub fn rect_translate<T: Float>(rect: Vector4<T>, tr: Vector2<T>) -> Vector4<T> {
 	[ rect[0] + tr[0], rect[1] + tr[1], rect[2], rect[3] ]
+}
+
+pub fn rect_nearest_perimeter_point<T: Float + FromPrimitive>(rect: Vector4<T>, p: Vector2<T>) -> Vector2<T> {
+	if rect[2] <= zero() || rect[3] <= zero() {
+		rect_topleft(rect)
+	} else {
+		let rel = vec2_sub(p, rect_center(rect));
+		if rel[1].abs() / rel[0].abs() > rect[3] / rect[2] {
+			// Top/bottom edge
+			[
+				p[0],
+				if rel[1] > zero() { rect_bottom(rect) } else { rect_top(rect) }
+			]
+		} else {
+			// Left/right edge
+			[
+				if rel[0] > zero() { rect_right(rect) } else { rect_left(rect) },
+				p[1]
+			]
+		}
+	}
 }

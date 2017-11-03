@@ -37,8 +37,8 @@ gimbal:
   limiter_gain: 6.095099925994873
   tracking_gain: 214.65480041503906
   drift_compensation: 
-    - -1.4508999586105347
-    - 0.6610000133514404
+    - -0.8824999928474426
+    - 1.7587000131607056
   tracking_rects: 
     - 
       - 
@@ -123,14 +123,14 @@ overlay:
     - 1
     - 1
     - 1
-    - 0.9100000262260437
+    - 0.7699999809265137
   debug_background_color: 
     - 0
     - 0
     - 0
-    - 0.3799999952316284
+    - 0.20000000298023224
   debug_text_height: 0.027300000190734863
-  detector_outline_min_prob: 0.11680000275373459
+  detector_outline_min_prob: 1
   detector_outline_max_thickness: 0.027000000700354576
   detector_label_min_prob: 0.36890000104904175
   detector_label_prob_values: true
@@ -143,24 +143,41 @@ overlay:
     - 0.9803921580314636
     - 0.9529411792755127
     - 0.9529411792755127
-    - 0.8100000023841858
+    - 0
   label_text_size: 0.021400000900030136
   label_background_color: 
     - 0
     - 0
     - 0
-    - 0.46000000834465027
+    - 0
   tracked_region_default_color: 
     - 0.4627451002597809
     - 0.9098039269447327
     - 0.615686297416687
-    - 0.41999998688697815
+    - 0
   tracked_region_manual_color: 
     - 0.843137264251709
     - 0.5333333611488342
     - 0.30588236451148987
-    - 0.8399999737739563
+    - 0.5
   tracked_region_outline_thickness: 0.027499999850988388
+  particle_color: 
+    - 0.9254902005195618
+    - 0.9647058844566345
+    - 0.14509804546833038
+    - 0.47999998927116394
+  particle_size: 0.04820000007748604
+  particle_sprite: 
+    - 146
+    - 413
+    - 74
+    - 74
+  particle_count: 10
+  particle_damping: 0.02399599924683571
+  particle_edge_gain: 0.6951969861984253
+  particle_perpendicular_gain: 0.04010099917650223
+  particle_min_distance: 0.16990700364112854
+  particle_min_distance_gain: 0.02845199964940548
 vision: 
   border_rect: 
     - -1
@@ -234,7 +251,7 @@ lighting:
     frame_rate: 160
     filter_param: 0.15
   current: 
-    brightness: 0.2
+    brightness: 1.37
     flash_rate_hz: 1.92
     flash_exponent: 3.18
     winch: 

@@ -4,6 +4,32 @@ import { ConfigSlider, ConfigColorAlpha } from '../Config';
 export default (props) => {
     return <div>
 
+        <h4>Particle swarm</h4>
+
+        <h6>Particle color and opacity</h6>
+        <ConfigColorAlpha item="overlay.particle_color" />
+
+        <h6>Size of each particle edge</h6>
+        <ConfigSlider item="overlay.particle_size" min="0.0" max="0.2" step="1e-4" />
+
+        <h6>Number of particles</h6>
+        <ConfigSlider item="overlay.particle_count" min="0.0" max="200" step="1" />
+
+        <h6>Damping</h6>
+        <ConfigSlider item="overlay.particle_damping" min="0.0" max="0.1" step="1e-6" />
+
+        <h6>Gain for snapping to tracking rectangle edge</h6>
+        <ConfigSlider item="overlay.particle_edge_gain" min="0.0" max="1.0" step="1e-6" />
+
+        <h6>Gain for perpendicular motion</h6>
+        <ConfigSlider item="overlay.particle_perpendicular_gain" min="0.0" max="0.1" step="1e-6" />
+
+        <h6>Minimum separation distance</h6>
+        <ConfigSlider item="overlay.particle_min_distance" min="0.0" max="0.5" step="1e-6" />
+
+        <h6>Gain for minimum distance</h6>
+        <ConfigSlider item="overlay.particle_min_distance_gain" min="0.0" max="0.1" step="1e-6" />
+
         <h4>Tracking Region</h4>
 
         <h6>Thickness of outline</h6>

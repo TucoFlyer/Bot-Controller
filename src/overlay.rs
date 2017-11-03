@@ -1,7 +1,10 @@
 use vecmath::*;
+use message::TICK_HZ;
 use message::OverlayRect;
 use std::io::Cursor;
 use std::mem;
+use config::Config;
+use rand::{thread_rng, Rng};
 use bmfont::{BMFont, OrdinateOrientation, CharPosition, StringParseError};
 
 pub const OVERLAY_HZ : u32 = 60;
@@ -57,9 +60,13 @@ impl DrawingContext {
 	}
 
 	pub fn solid_rect(&mut self, rect: Vector4<f32>) {
+		self.sprite_rect(rect, [ 511, 511, 1, 1 ]);
+	}
+
+	pub fn sprite_rect(&mut self, rect: Vector4<f32>, src: Vector4<i32>) {
 		if self.current.color[3] > 0.0 && rect[2] > 0.0 && rect[3] > 0.0 {
 			self.scene.push(OverlayRect {
-				src: [ 511, 511, 1, 1 ],
+				src,
 				dest: rect,
 				rgba: self.current.color
 			});
@@ -150,6 +157,72 @@ impl TextShape {
 				char.screen_rect.height as f32 * self.scale,
 			];
 			scene.push(OverlayRect { src, dest, rgba });
+		}
+	}
+}
+
+pub struct ParticleDrawing {
+	particles: Vec<Particle>,
+}
+
+struct Particle {
+	position: Vector2<f32>,
+	velocity: Vector2<f32>,
+}
+
+impl ParticleDrawing {
+	pub fn new() -> ParticleDrawing {
+		ParticleDrawing {
+			particles: Vec::new(),
+		}
+	}
+
+	pub fn follow_rect(&mut self, config: &Config, rect: Vector4<f32>) {
+		self.particles.truncate(config.overlay.particle_count);
+
+		while self.particles.len() < config.overlay.particle_count{
+			self.particles.push(Particle {
+				position: [ thread_rng().next_f32() - 0.5, thread_rng().next_f32() - 0.5 ],
+				velocity: [ 0.0, 0.0 ]
+			});
+		}
+
+		for p in 0 .. self.particles.len() {
+			let pos = self.particles[p].position;
+
+			let mut v_repel = [0.0, 0.0];
+			for q in 0 .. self.particles.len() {
+				let diff = vec2_sub(self.particles[p].position, self.particles[q].position);
+				let l = vec2_len(diff);
+				if l > 0.0 {
+					if l < config.overlay.particle_min_distance {
+						let scalar = (config.overlay.particle_min_distance - l) * config.overlay.particle_min_distance_gain;
+						v_repel = vec2_add(v_repel, vec2_scale(diff, scalar / l));
+					}
+				} else {
+					let random_push = [ thread_rng().next_f32() - 0.5, thread_rng().next_f32() - 0.5 ];
+					v_repel = vec2_add(v_repel, vec2_scale(random_push, config.overlay.particle_min_distance_gain));
+				}
+			}
+
+			let edge_diff = vec2_sub(rect_nearest_perimeter_point(rect, pos), pos);
+			let center_diff = vec2_sub(rect_center(rect), pos);
+			let perpendicular = [ center_diff[1], -center_diff[0] ];
+
+			let v_edge = vec2_scale(edge_diff, config.overlay.particle_edge_gain);
+			let v_perp = vec2_scale(perpendicular, config.overlay.particle_perpendicular_gain);
+
+			let damped_v = vec2_scale(self.particles[p].velocity, 1.0 - config.overlay.particle_damping);
+			self.particles[p].velocity = vec2_add(damped_v, vec2_add(v_edge, vec2_add(v_perp, v_repel)));
+			self.particles[p].position = vec2_add(pos, vec2_scale(self.particles[p].velocity, 1.0 / TICK_HZ as f32));
+		}
+	}
+
+	pub fn render(&self, config: &Config, draw: &mut DrawingContext) {
+		let rect = rect_centered_on_origin(config.overlay.particle_size, config.overlay.particle_size);
+		draw.current.color = config.overlay.particle_color;
+		for particle in &self.particles {
+			draw.sprite_rect(rect_translate(rect, particle.position), config.overlay.particle_sprite);
 		}
 	}
 }
