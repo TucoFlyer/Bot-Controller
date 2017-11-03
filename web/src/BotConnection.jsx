@@ -13,6 +13,7 @@ export class BotModel {
         this.flyer = {};
         this.winches = [];
         this.gimbal_values = [];
+        this.gimbal_status = {};
         this.camera = {};
     }
 
@@ -27,9 +28,12 @@ export class BotModel {
             this.config = msg;
         }
         if (msg.message.GimbalValue) {
-            let addr = msg.message.GimbalValue.addr;
+            let addr = msg.message.GimbalValue[0].addr;
             let index_list = this.gimbal_values[addr.index] || (this.gimbal_values[addr.index] = []);
             index_list[addr.target] = msg;
+        }
+        if (msg.message.GimbalControlStatus) {
+            this.gimbal_status = msg;
         }
         if (msg.message.Command) {
             let cmd = msg.message.Command;

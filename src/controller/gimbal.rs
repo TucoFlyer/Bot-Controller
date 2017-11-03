@@ -1,9 +1,9 @@
 use vecmath::*;
-use message::CameraTrackedRegion;
+use message::*;
 use config::{ControllerMode, Config};
 use fygimbal;
 use fygimbal::protocol::{target, values};
-use fygimbal::{GimbalPort, GimbalValueData};
+use fygimbal::GimbalPort;
 use std::time::{Duration, Instant};
 
 struct GimbalValueState {
@@ -53,7 +53,6 @@ impl GimbalValueState {
 
 pub struct GimbalController {
     values: Vec<Vec<GimbalValueState>>,
-    pub debug_str: String,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -99,7 +98,6 @@ fn single_endstop_limit(config: &Config, angle: i16, rate: f32, limits: (i16, i1
 impl GimbalController {
     pub fn new() -> GimbalController {
         GimbalController {
-            debug_str: "".to_owned(),
             values: (0 .. fygimbal::protocol::NUM_VALUES).map(|_| {
                 (0 .. fygimbal::protocol::NUM_AXES).map(|_| {
                     GimbalValueState::new()
@@ -131,7 +129,7 @@ impl GimbalController {
         ]
     }
 
-    pub fn tick(&mut self, config: &Config, gimbal: &GimbalPort, tracked: &CameraTrackedRegion) {
+    pub fn tick(&mut self, config: &Config, gimbal: &GimbalPort, tracked: &CameraTrackedRegion) -> GimbalControlStatus {
         let mut stale_flag = false;
 
         let center_cal = self.request_vec2(gimbal, &mut stale_flag, RequestType::Infrequent, values::CENTER_CALIBRATION);
@@ -144,9 +142,8 @@ impl GimbalController {
             endstop_rate_limiter(config, angles, self.control_rates_for_tracking(config, tracked))
         };
 
-        self.debug_str = format!("angles: {:?}\nrates: {:?}", angles, rates);
-
-        gimbal.write_control_rates(rates); 
+        gimbal.write_control_rates(rates);
+        GimbalControlStatus { angles, rates }
     }
 
     fn control_rates_for_tracking(&self, config: &Config, tracked: &CameraTrackedRegion) -> Vector2<f32> {

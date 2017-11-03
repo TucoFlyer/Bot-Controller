@@ -1,4 +1,5 @@
-use vecmath::Vector2;
+use message::*;
+use vecmath::*;
 use std::time::{Instant, Duration};
 use std::io;
 use std::mem;
@@ -6,37 +7,11 @@ use std::io::Write;
 use std::sync::mpsc;
 use fygimbal::framing::{GimbalPacket, GimbalFraming, PacketReceiver};
 use controller::ControllerPort;
-use message::Message;
 use fygimbal::protocol;
 
 const MAX_PACKETS_PER_READ_BATCH : usize = 2;
 const MAX_PACKET_LENGTH : usize = 16;
 const MAX_CONTINUOUS_POLL_MILLIS : u64 = 500;
-
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct GimbalValueAddress {
-    pub target: u8,
-    pub index: u8,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct GimbalValueData {
-    pub addr: GimbalValueAddress,
-    pub value: i16,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct GimbalValueRequest {
-    pub addr: GimbalValueAddress,
-    pub scope: GimbalRequestScope,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub enum GimbalRequestScope {
-    Once,
-    Continuous,
-}
 
 #[derive(Debug, Clone)]
 pub struct GimbalPort {
@@ -264,7 +239,7 @@ impl GimbalPoller {
             received_anything = true;
         }
         if received_anything {
-            self.send_next_batch(writer);
+            self.send_next_batch(writer, controller);
         }
     }
 
@@ -276,8 +251,9 @@ impl GimbalPoller {
                         if let Ok(value) = protocol::unpack::get_value(&packet) {
 
                             let data = GimbalValueData { addr, value };
-                            let tsm = Message::GimbalValue(data.clone()).timestamp();
-    
+                            let msg = Message::GimbalValue(data.clone(), GimbalValueOp::ReadComplete);
+                            let tsm = msg.timestamp();
+
                             self.value_tracker.store_value(tsm.timestamp, data);
                             controller.send(tsm);
                             return;
@@ -289,16 +265,16 @@ impl GimbalPoller {
         controller.send(Message::UnhandledGimbalPacket(packet).timestamp());
     }
 
-    pub fn check_for_timeout(&mut self, writer: &mut io::Write) {
+    pub fn check_for_timeout(&mut self, writer: &mut io::Write, controller: &ControllerPort) {
         if self.batch_timestamp + GimbalPoller::read_timeout() < Instant::now() {
-            self.send_next_batch(writer);
+            self.send_next_batch(writer, controller);
         }
     }
 
-    fn send_next_batch(&mut self, writer: &mut io::Write) {
+    fn send_next_batch(&mut self, writer: &mut io::Write, controller: &ControllerPort) {
         self.drain_command_queues();
         self.batch_timestamp = Instant::now();
-        self.write_next_batch(&mut io::BufWriter::new(writer)).expect("Failed writing to gimbal");
+        self.write_next_batch(&mut io::BufWriter::new(writer), controller).expect("Failed writing to gimbal");
     }
 
     fn drain_command_queues(&mut self) {
@@ -313,7 +289,7 @@ impl GimbalPoller {
         }
     }
 
-    fn write_next_batch(&mut self, writer: &mut io::Write) -> io::Result<()> {
+    fn write_next_batch(&mut self, writer: &mut io::Write, controller: &ControllerPort) -> io::Result<()> {
         let mut remaining = MAX_PACKETS_PER_READ_BATCH;
 
         // Spend all packets except the last one on a mix of writes
@@ -325,8 +301,10 @@ impl GimbalPoller {
                 }
             }
             else if let Some(data) = self.value_tracker.next_write() {
+                let msg = Message::GimbalValue(data.clone(), GimbalValueOp::WriteComplete);
                 let packet = protocol::pack::set_value(data.addr.target, data.addr.index, data.value);
                 packet.write_to(writer)?;
+                controller.send(msg.timestamp());
                 remaining -= 1;
             }
             else {

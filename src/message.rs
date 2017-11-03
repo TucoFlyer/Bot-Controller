@@ -1,8 +1,8 @@
+use vecmath::*;
 use serde_json::Value;
 use std::time::Instant;
 use config::{Config, ControllerMode};
-use vecmath::{Vector3, Vector4};
-use fygimbal::{GimbalPacket, GimbalValueRequest, GimbalValueData};
+use fygimbal::GimbalPacket;
 
 pub const TICK_HZ : u32 = 250;
 
@@ -33,10 +33,47 @@ pub enum Message {
     WinchStatus(usize, WinchStatus),
     UpdateConfig(Value),
     ConfigIsCurrent(Config),
-    GimbalValue(GimbalValueData),
+    GimbalControlStatus(GimbalControlStatus),
+    GimbalValue(GimbalValueData, GimbalValueOp),
     UnhandledGimbalPacket(GimbalPacket),
     CameraOverlayScene(Vec<OverlayRect>),
     CameraInitTrackedRegion(Vector4<f32>),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct GimbalValueAddress {
+    pub target: u8,
+    pub index: u8,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct GimbalValueData {
+    pub addr: GimbalValueAddress,
+    pub value: i16,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct GimbalValueRequest {
+    pub addr: GimbalValueAddress,
+    pub scope: GimbalRequestScope,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub enum GimbalRequestScope {
+    Once,
+    Continuous,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub enum GimbalValueOp {
+    ReadComplete,
+    WriteComplete,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct GimbalControlStatus {
+    pub angles: Vector2<i16>,
+    pub rates: Vector2<i16>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]

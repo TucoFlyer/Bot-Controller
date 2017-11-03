@@ -168,7 +168,7 @@ impl BotReceiver {
                         }
                     }
                 }
-                self.gimbal.check_for_timeout(&mut self.socket.gimbal());
+                self.gimbal.check_for_timeout(&mut self.socket.gimbal(), &self.controller);
             }
         }).unwrap();
     }

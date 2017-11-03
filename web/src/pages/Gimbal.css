@@ -15,3 +15,10 @@
 	text-align: right;
 }
 
+.Gimbal .op-ReadComplete {
+	background-color: rgba(0,0,255,0.1);
+}
+
+.Gimbal .op-WriteComplete {
+	background-color: rgba(255,96,0,0.4);
+}

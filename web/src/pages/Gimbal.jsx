@@ -3,6 +3,7 @@ import { Button } from 'reactstrap';
 import PropTypes from 'prop-types';
 import { BotConnection } from '../BotConnection';
 import reactCSS from 'reactcss';
+import { Chart, Series } from '../BotChart';
 import { ConfigSlider } from '../Config';
 import './Gimbal.css';
 
@@ -11,15 +12,46 @@ export default (props) => {
 	for (let i = 0; i < 128; i++) {
 		let row = [];
 		for (let t = 0; t < 3; t++) {
-			row.push(<GimbalParam index={i} target={t} key={"gimbal-param-" + i + '-' + t} />);
+			row.push(<GimbalParam index={i} target={t} key={`gimbal-param-${i}-${t}`} />);
 		}
-		params.push(<div className="Gimbal">
+		params.push(<div className="Gimbal" key={`gimbal-param-${i}`} >
 			<span className="index">{ ("00" + i.toString(16)).slice(-2) }</span>
 			{row}
 		</div>);
 	}
 
+    const gimbal_status_timestamp = (model) => model.gimbal_status.local_timestamp;
+
     return <div>
+
+        <h4>Gimbal controller status</h4>
+
+        <h6>Yaw angle</h6>
+        <Chart>
+            <Series
+                value={ (model) => model.gimbal_status.message.GimbalControlStatus.angles[0] }
+                trigger={gimbal_status_timestamp} timestamp={gimbal_status_timestamp} />
+        </Chart>
+
+        <h6>Pitch angle</h6>
+        <Chart>
+            <Series
+                value={ (model) => model.gimbal_status.message.GimbalControlStatus.angles[1] }
+                trigger={gimbal_status_timestamp} timestamp={gimbal_status_timestamp} />
+        </Chart>
+
+        <h6>Yaw/Pitch rate control</h6>
+        <Chart>
+            <Series
+                strokeStyle='#a22'
+                value={ (model) => model.gimbal_status.message.GimbalControlStatus.rates[0] }
+                trigger={gimbal_status_timestamp} timestamp={gimbal_status_timestamp} />
+            <Series
+                strokeStyle='#22a'
+                value={ (model) => model.gimbal_status.message.GimbalControlStatus.rates[1] }
+                trigger={gimbal_status_timestamp} timestamp={gimbal_status_timestamp} />
+        </Chart>
+
 
         <h4>Motor Control</h4>
 
@@ -82,7 +114,8 @@ class GimbalParam extends Component {
         super();
         this.state = {
         	opacity: 0.0,
-            current: 0,
+            op: "unread",
+            value: 0,
         };
  	}
 
@@ -94,8 +127,8 @@ class GimbalParam extends Component {
 	            }
 	        }
 	    });
-        return <span className="GimbalParam">
-        	<span style={styles.current}> {this.state.current} </span>
+        return <span className={`GimbalParam op-${this.state.op}`}>
+        	<span style={styles.current}>{this.state.value}</span>
         </span>;
     }
 
@@ -113,8 +146,9 @@ class GimbalParam extends Component {
     		const fade_duration = 500;
     		const age = ((new Date()).getTime() - tsm.local_timestamp);
     		const opacity = Math.max(0.4, 1.0 - age / fade_duration);
-    		const current = tsm.message.GimbalValue.value;
-    		this.setState({ opacity, current });
+    		const value = tsm.message.GimbalValue[0].value;
+            const op = tsm.message.GimbalValue[1];
+    		this.setState({ opacity, op, value });
     	}
     }
 }

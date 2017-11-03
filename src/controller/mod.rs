@@ -16,6 +16,7 @@ use botcomm::BotSocket;
 use fygimbal::GimbalPort;
 use self::state::ControllerState;
 use self::timer::{ConfigScheduler, ControllerTimers};
+use self::gimbal::GimbalController;
 use led::LightAnimator;
 use overlay::DrawingContext;
 
@@ -30,6 +31,8 @@ pub struct Controller {
     config_scheduler: ConfigScheduler,
     timers: ControllerTimers,
     draw: DrawingContext,
+    gimbal_ctrl: GimbalController,
+    gimbal_status: Option<GimbalControlStatus>,
 }
 
 enum ControllerInput {
@@ -65,26 +68,23 @@ impl Controller {
         let bus = Bus::new(DEPTH);
         let port_prototype = ControllerPort { sender };
 
-        let shared_config = config.clone();
         let local_config = config.get_latest();
         let lights = LightAnimator::start(&local_config.lighting.animation, &socket);
-        let socket = socket.try_clone().unwrap();
         let state = ControllerState::new(&local_config, lights);
-        let config_scheduler = ConfigScheduler::new();
-        let timers = ControllerTimers::new();
-        let draw = DrawingContext::new();
 
         Controller {
             recv,
             bus,
             port_prototype,
-            socket,
-            shared_config,
-            local_config,
             state,
-            config_scheduler,
-            timers,
-            draw,
+            local_config,
+            socket: socket.try_clone().unwrap(),
+            shared_config: config.clone(),
+            config_scheduler: ConfigScheduler::new(),
+            timers: ControllerTimers::new(),
+            draw: DrawingContext::new(),
+            gimbal_ctrl: GimbalController::new(),
+            gimbal_status: None
         }
     }
 
@@ -92,10 +92,10 @@ impl Controller {
         self.port_prototype.clone()
     }
 
-    pub fn start(mut self, gimbal: GimbalPort) {
+    pub fn start(mut self, gimbal_port: GimbalPort) {
         thread::Builder::new().name("Controller".into()).spawn(move || {
             loop {
-                self.poll(&gimbal);
+                self.poll(&gimbal_port);
             }
         }).unwrap();
     }
@@ -113,7 +113,7 @@ impl Controller {
         self.state.config_changed(&self.local_config);
     }
 
-    fn poll(&mut self, gimbal: &GimbalPort) {
+    fn poll(&mut self, gimbal_port: &GimbalPort) {
         match self.recv.recv().unwrap() {
 
             ControllerInput::ReaderRequest(result_channel) => {
@@ -124,12 +124,15 @@ impl Controller {
 
             ControllerInput::Message(ts_msg) => {
                 self.broadcast(ts_msg.clone());
-                self.handle_message(ts_msg, gimbal);
+                self.handle_message(ts_msg, gimbal_port);
             }
         }
 
         if self.timers.tick.poll() {
-            self.state.every_tick(&self.local_config, gimbal);
+            self.state.every_tick(&self.local_config);
+
+            let gimbal_status = self.gimbal_ctrl.tick(&self.local_config, gimbal_port, &self.state.tracked);
+            self.broadcast(Message::GimbalControlStatus(gimbal_status).timestamp());
 
             if let Some(tracking_rect) = self.state.tracking_update(&self.local_config, 1.0 / TICK_HZ as f32) {
                 self.broadcast(Message::CameraInitTrackedRegion(tracking_rect).timestamp());
@@ -148,7 +151,7 @@ impl Controller {
         }
     }
 
-    fn handle_message(&mut self, ts_msg: TimestampedMessage, gimbal: &GimbalPort) {
+    fn handle_message(&mut self, ts_msg: TimestampedMessage, gimbal_port: &GimbalPort) {
         match ts_msg.message {
 
             Message::UpdateConfig(updates) => {
@@ -173,8 +176,8 @@ impl Controller {
                 self.state.flyer_sensor_update(sensors);
             },
 
-            Message::GimbalValue(val) => {
-                self.state.gimbal_value_received(val)
+            Message::GimbalValue(val, _) => {
+                self.gimbal_ctrl.value_received(val)
             },
 
             Message::Command(Command::CameraObjectDetection(obj)) => {
@@ -197,19 +200,19 @@ impl Controller {
             },
 
             Message::Command(Command::GimbalMotorEnable(en)) => {
-                gimbal.set_motor_enable(en);
+                gimbal_port.set_motor_enable(en);
             },
 
             Message::Command(Command::GimbalPacket(packet)) => {
-                gimbal.send_packet(packet);
+                gimbal_port.send_packet(packet);
             },
 
             Message::Command(Command::GimbalValueWrite(data)) => {
-                gimbal.write_value(data);
+                gimbal_port.write_value(data);
             },
 
             Message::Command(Command::GimbalValueRequests(reqs)) => {
-                gimbal.request_values(reqs);
+                gimbal_port.request_values(reqs);
             },
 
             Message::Command(Command::ManualControlValue(axis, value)) => {

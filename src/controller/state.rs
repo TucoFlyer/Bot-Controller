@@ -1,25 +1,21 @@
 use message::*;
 use vecmath::*;
-use num::clamp;
 use std::time::{Duration, Instant};
 use config::{Config, ControllerMode};
 use controller::manual::ManualControls;
 use controller::winch::{WinchController, MechStatus};
-use controller::gimbal::GimbalController;
 use led::{LightAnimator, LightEnvironment};
 use overlay::DrawingContext;
-use fygimbal::{GimbalPort, GimbalValueData};
 
 pub struct ControllerState {
     pub manual: ManualControls,
+    pub tracked: CameraTrackedRegion,
     lights: LightAnimator,
     winches: Vec<WinchController>,
     flyer_sensors: Option<FlyerSensors>,
     detected: (Instant, CameraDetectedObjects),
     pending_snap: bool,
-    tracked: CameraTrackedRegion,
     last_mode: ControllerMode,
-    gimbal: GimbalController,
 }
 
 impl ControllerState {
@@ -35,7 +31,6 @@ impl ControllerState {
             pending_snap: false,
             tracked: CameraTrackedRegion::new(),
             last_mode: initial_config.mode.clone(),
-            gimbal: GimbalController::new(),
         }
     }
 
@@ -90,10 +85,9 @@ impl ControllerState {
         }
     }
 
-    pub fn every_tick(&mut self, config: &Config, gimbal: &GimbalPort) {
+    pub fn every_tick(&mut self, config: &Config) {
         self.manual.control_tick(config);
         self.lighting_tick(config);
-        self.gimbal.tick(config, gimbal, &self.tracked);
     }
 
     fn find_best_snap_object(&self, config: &Config) -> Option<CameraDetectedObject> {
@@ -152,7 +146,7 @@ impl ControllerState {
         draw.current.text_height = config.overlay.debug_text_height;
         draw.current.background_color = config.overlay.debug_background_color;
         draw.current.outline_thickness = 0.0;
-        let debug = format!("{:?}\n{}", config.mode, self.gimbal.debug_str);
+        let debug = format!("{:?}", config.mode);
         draw.text(rect_topleft(config.vision.border_rect), [0.0, 0.0], &debug).unwrap();
 
         draw.current.outline_color = config.overlay.detector_default_outline_color;
@@ -202,21 +196,6 @@ impl ControllerState {
                 draw.text(rect_bottomleft(outer_rect), [0.0, 0.0], &tr_label).unwrap();
             }
         }
-
-        if config.overlay.gimbal_tracking_rect_color[3] > 0.0 {
-            for &(rect, gain_vec) in &config.gimbal.tracking_rects {
-                let overlap = rect_intersect(self.tracked.rect, rect);
-                let area = rect_area(overlap);
-                draw.current.color = config.overlay.gimbal_tracking_rect_color;
-                draw.current.color[3] *= vec2_len(gain_vec);
-                draw.current.color[3] *= clamp(area * config.overlay.gimbal_tracking_rect_sensitivity, 0.0, 1.0);
-                draw.solid_rect(rect);
-            }
-        }
-    }
-
-    pub fn gimbal_value_received(&mut self, data: GimbalValueData) {
-        self.gimbal.value_received(data);
     }
 
     pub fn flyer_sensor_update(&mut self, sensors: FlyerSensors) {
