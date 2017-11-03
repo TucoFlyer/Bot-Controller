@@ -8,6 +8,8 @@ mod timer;
 mod gimbal;
 
 use message::*;
+use vecmath::*;
+use config::ControllerMode;
 use std::sync::mpsc::{SyncSender, Receiver, sync_channel};
 use bus::{Bus, BusReader};
 use std::thread;
@@ -132,6 +134,7 @@ impl Controller {
             self.state.every_tick(&self.local_config);
 
             let gimbal_status = self.gimbal_ctrl.tick(&self.local_config, gimbal_port, &self.state.tracked);
+            self.gimbal_status = Some(gimbal_status.clone());
             self.broadcast(Message::GimbalControlStatus(gimbal_status).timestamp());
 
             if let Some(tracking_rect) = self.state.tracking_update(&self.local_config, 1.0 / TICK_HZ as f32) {
@@ -141,7 +144,10 @@ impl Controller {
 
         if self.timers.video_frame.poll() {
             self.draw.clear();
-            self.state.draw_camera_overlay(&self.local_config, &mut self.draw);
+            self.draw_mode_overlay();
+            self.state.draw_tracking_overlay(&self.local_config, &mut self.draw);
+            self.draw_debug_overlay();
+
             let scene = self.draw.scene.drain(..).collect();
             self.broadcast(Message::CameraOverlayScene(scene).timestamp());
         }
@@ -149,6 +155,30 @@ impl Controller {
         if self.config_scheduler.poll(&mut self.local_config) {
             self.config_changed();
         }
+    }
+
+    fn draw_mode_overlay(&mut self) {
+        let config = &self.local_config;
+        let draw = &mut self.draw;
+
+        if config.mode == ControllerMode::Halted {
+            draw.current.outline_color = config.overlay.halt_color;
+            draw.current.outline_thickness = config.overlay.border_thickness;
+            draw.outline_rect(rect_offset(config.vision.border_rect, -config.overlay.border_thickness));
+        }
+    }
+
+    fn draw_debug_overlay(&mut self) {
+        let config = &self.local_config;
+        let draw = &mut self.draw;
+
+        let debug = format!("{:?}, {:?}", config.mode, self.gimbal_status);
+
+        draw.current.color = config.overlay.debug_color;
+        draw.current.text_height = config.overlay.debug_text_height;
+        draw.current.background_color = config.overlay.debug_background_color;
+        draw.current.outline_thickness = 0.0;
+        draw.text(rect_topleft(config.vision.border_rect), [0.0, 0.0], &debug).unwrap();
     }
 
     fn handle_message(&mut self, ts_msg: TimestampedMessage, gimbal_port: &GimbalPort) {

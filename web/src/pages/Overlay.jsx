@@ -57,11 +57,5 @@ export default (props) => {
         <h6>Halt border color</h6>
         <ConfigColorAlpha item="overlay.halt_color" />
 
-        <h6>Gimbal tracking (gain) rectangle color</h6>
-        <ConfigColorAlpha item="overlay.gimbal_tracking_rect_color" />
-
-        <h6>Gimbal tracking (gain) rectangle display sensitivity</h6>
-        <ConfigSlider item="overlay.gimbal_tracking_rect_sensitivity" min="0.0" max="100.0" step="1e-4" />
-
     </div>;
 }

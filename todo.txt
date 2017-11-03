@@ -2,8 +2,6 @@ notes
 -----
 
 gimbal controller
-  status reporting
-  gimbal state graphs
 
   rates / integrated-rates
   width+proportional+integral control list for pitch/yaw

@@ -135,20 +135,7 @@ impl ControllerState {
         }
     }
 
-    pub fn draw_camera_overlay(&self, config: &Config, draw: &mut DrawingContext) {
-        if config.mode == ControllerMode::Halted {
-            draw.current.outline_color = config.overlay.halt_color;
-            draw.current.outline_thickness = config.overlay.border_thickness;
-            draw.outline_rect(rect_offset(config.vision.border_rect, -config.overlay.border_thickness));
-        }
-
-        draw.current.color = config.overlay.debug_color;
-        draw.current.text_height = config.overlay.debug_text_height;
-        draw.current.background_color = config.overlay.debug_background_color;
-        draw.current.outline_thickness = 0.0;
-        let debug = format!("{:?}", config.mode);
-        draw.text(rect_topleft(config.vision.border_rect), [0.0, 0.0], &debug).unwrap();
-
+    pub fn draw_tracking_overlay(&self, config: &Config, draw: &mut DrawingContext) {
         draw.current.outline_color = config.overlay.detector_default_outline_color;
         for obj in &self.detected.1.objects {
             if obj.prob >= config.overlay.detector_outline_min_prob {

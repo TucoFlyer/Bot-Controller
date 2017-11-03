@@ -140,8 +140,6 @@ pub struct OverlayConfig {
     pub tracked_region_default_color: Vector4<f32>,
     pub tracked_region_manual_color: Vector4<f32>,
     pub tracked_region_outline_thickness: f32,
-    pub gimbal_tracking_rect_color: Vector4<f32>,
-    pub gimbal_tracking_rect_sensitivity: f32,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]

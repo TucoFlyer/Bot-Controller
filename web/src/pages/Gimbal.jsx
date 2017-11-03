@@ -24,6 +24,16 @@ export default (props) => {
 
     return <div>
 
+        <h4>Motor Control</h4>
+
+        <GimbalMotorButton block color="warning" enable={true}>
+            Stabilization motors ON
+        </GimbalMotorButton>
+
+        <GimbalMotorButton block color="secondary" enable={false}>
+            Stabilization motors OFF
+        </GimbalMotorButton>
+
         <h4>Gimbal controller status</h4>
 
         <h6>Yaw angle</h6>
@@ -51,17 +61,6 @@ export default (props) => {
                 value={ (model) => model.gimbal_status.message.GimbalControlStatus.rates[1] }
                 trigger={gimbal_status_timestamp} timestamp={gimbal_status_timestamp} />
         </Chart>
-
-
-        <h4>Motor Control</h4>
-
-        <GimbalMotorButton block color="warning" enable={true}>
-            Stabilization motors ON
-        </GimbalMotorButton>
-
-        <GimbalMotorButton block color="secondary" enable={false}>
-            Stabilization motors OFF
-        </GimbalMotorButton>
 
         <h4>Tracking</h4>
 

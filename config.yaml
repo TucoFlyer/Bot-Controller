@@ -117,10 +117,10 @@ overlay:
     - 0.3400000035762787
   border_thickness: 0.10159999877214432
   debug_color: 
-    - 0.8313725590705872
-    - 0.8313725590705872
     - 1
-    - 0.8299999833106995
+    - 1
+    - 1
+    - 0.9100000262260437
   debug_background_color: 
     - 0
     - 0
@@ -158,12 +158,6 @@ overlay:
     - 0.30588236451148987
     - 0.8399999737739563
   tracked_region_outline_thickness: 0.027499999850988388
-  gimbal_tracking_rect_color: 
-    - 0.027450980618596077
-    - 0.7921568751335144
-    - 1
-    - 0
-  gimbal_tracking_rect_sensitivity: 8.450499534606934
 vision: 
   border_rect: 
     - -1
