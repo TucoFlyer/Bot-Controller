@@ -36,6 +36,9 @@ gimbal:
     - 350
   limiter_gain: 6.095099925994873
   tracking_gain: 214.65480041503906
+  drift_compensation: 
+    - -1.4508999586105347
+    - 0.6610000133514404
   tracking_rects: 
     - 
       - 
@@ -126,7 +129,7 @@ overlay:
     - 0
     - 0
     - 0.3799999952316284
-  debug_text_height: 0.02850000001490116
+  debug_text_height: 0.027300000190734863
   detector_outline_min_prob: 0.11680000275373459
   detector_outline_max_thickness: 0.027000000700354576
   detector_label_min_prob: 0.36890000104904175
@@ -231,7 +234,7 @@ lighting:
     frame_rate: 160
     filter_param: 0.15
   current: 
-    brightness: 1
+    brightness: 0.2
     flash_rate_hz: 1.92
     flash_exponent: 3.18
     winch: 

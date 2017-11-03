@@ -5,6 +5,7 @@ use fygimbal;
 use fygimbal::protocol::{target, values};
 use fygimbal::GimbalPort;
 use std::time::{Duration, Instant};
+use rand::{thread_rng, Rng};
 
 struct GimbalValueState {
     last_requested: Option<Instant>,
@@ -79,8 +80,8 @@ fn vec2_encoder_sub(a: Vector2<i16>, b: Vector2<i16>) -> Vector2<i16> {
 
 fn endstop_rate_limiter(config: &Config, angles: Vector2<i16>, rates: Vector2<f32>) -> Vector2<i16> {
     [
-        single_endstop_limit(config, angles[0], rates[0], config.gimbal.yaw_limits),
-        single_endstop_limit(config, angles[1], rates[1], config.gimbal.pitch_limits),
+        single_endstop_limit(config, angles[0], rates[0] + config.gimbal.drift_compensation[0], config.gimbal.yaw_limits),
+        single_endstop_limit(config, angles[1], rates[1] + config.gimbal.drift_compensation[1], config.gimbal.pitch_limits),
     ]
 }
 
@@ -92,6 +93,7 @@ fn single_endstop_limit(config: &Config, angle: i16, rate: f32, limits: (i16, i1
     } else {
         rate
     };
+    let rate = rate + thread_rng().next_f32() - 0.5;
     rate.min(config.gimbal.max_rate).max(-config.gimbal.max_rate).round() as i16
 }
 

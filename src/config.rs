@@ -160,6 +160,7 @@ pub struct GimbalConfig {
     pub pitch_limits: (i16, i16),
     pub limiter_gain: f32,
     pub tracking_gain: f32,
+    pub drift_compensation: Vector2<f32>,
     pub tracking_rects: Vec<( Vector4<f32>, Vector2<f32> )>,
 }
 

@@ -64,6 +64,10 @@ export default (props) => {
 
         <h4>Tracking</h4>
 
+        <h6>Drift compensation</h6>
+        <ConfigSlider item="gimbal.drift_compensation.0" min="-5" max="5" step="1e-4" />
+        <ConfigSlider item="gimbal.drift_compensation.1" min="-5" max="5" step="1e-4" />
+
         <h6>Tracking gain</h6>
         <ConfigSlider item="gimbal.tracking_gain" min="0" max="5000" step="1e-4" />
 
