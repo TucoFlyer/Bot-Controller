@@ -149,6 +149,7 @@ pub struct OverlayConfig {
     pub particle_perpendicular_gain: f32,
     pub particle_min_distance: f32,
     pub particle_min_distance_gain: f32,
+    pub particle_random_gain: f32,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]

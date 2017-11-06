@@ -173,11 +173,12 @@ overlay:
     - 74
     - 74
   particle_count: 10
-  particle_damping: 0.02399599924683571
+  particle_damping: 0.049837999045848846
   particle_edge_gain: 0.6951969861984253
   particle_perpendicular_gain: 0.04010099917650223
-  particle_min_distance: 0.16990700364112854
-  particle_min_distance_gain: 0.02845199964940548
+  particle_min_distance: 0.27917298674583435
+  particle_min_distance_gain: 0.008185000158846378
+  particle_random_gain: 0.286871999502182
 vision: 
   border_rect: 
     - -1

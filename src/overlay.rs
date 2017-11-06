@@ -170,6 +170,10 @@ struct Particle {
 	velocity: Vector2<f32>,
 }
 
+fn rand_vec2_from_centered_unit_square() -> Vector2<f32> {
+	[ thread_rng().next_f32() - 0.5, thread_rng().next_f32() - 0.5 ]
+}
+
 impl ParticleDrawing {
 	pub fn new() -> ParticleDrawing {
 		ParticleDrawing {
@@ -177,33 +181,54 @@ impl ParticleDrawing {
 		}
 	}
 
-	pub fn follow_rect(&mut self, config: &Config, rect: Vector4<f32>) {
+	fn update_particle_count(&mut self, config: &Config) {
 		self.particles.truncate(config.overlay.particle_count);
 
-		while self.particles.len() < config.overlay.particle_count{
+		while self.particles.len() < config.overlay.particle_count {
 			self.particles.push(Particle {
-				position: [ thread_rng().next_f32() - 0.5, thread_rng().next_f32() - 0.5 ],
+				position: rand_vec2_from_centered_unit_square(),
 				velocity: [ 0.0, 0.0 ]
 			});
 		}
+	}
+
+	fn update_collisions(&mut self, config: &Config) {
+		let mdist = config.overlay.particle_min_distance;
+		let mdist2 = mdist * mdist;
+
+		for p in 0 .. self.particles.len() {
+			for q in p+1 .. self.particles.len() {
+				let diff = vec2_sub(self.particles[p].position, self.particles[q].position);
+				let l2 = vec2_square_len(diff);
+
+				if l2 > 0.0 {
+					if l2 < mdist2 {
+						let l = l2.sqrt();
+						let scalar = (mdist - l) * config.overlay.particle_min_distance_gain;
+						let v_repel = vec2_scale(diff, scalar / l);
+
+						self.particles[p].velocity = vec2_add(self.particles[p].velocity, v_repel);
+						self.particles[q].velocity = vec2_sub(self.particles[q].velocity, v_repel);
+					}
+				}
+			}
+		}		
+	}
+
+	fn update_dynamics(&mut self, config: &Config) {
+		for p in 0 .. self.particles.len() {
+			let dt = 1.0 / TICK_HZ as f32;
+			let v = vec2_scale(self.particles[p].velocity, 1.0 - config.overlay.particle_damping);
+			self.particles[p].velocity = v;
+			self.particles[p].position = vec2_add(self.particles[p].position, vec2_scale(v, dt));
+		}		
+	}
+
+	pub fn follow_rect(&mut self, config: &Config, rect: Vector4<f32>) {
+		self.update_particle_count(config);
 
 		for p in 0 .. self.particles.len() {
 			let pos = self.particles[p].position;
-
-			let mut v_repel = [0.0, 0.0];
-			for q in 0 .. self.particles.len() {
-				let diff = vec2_sub(self.particles[p].position, self.particles[q].position);
-				let l = vec2_len(diff);
-				if l > 0.0 {
-					if l < config.overlay.particle_min_distance {
-						let scalar = (config.overlay.particle_min_distance - l) * config.overlay.particle_min_distance_gain;
-						v_repel = vec2_add(v_repel, vec2_scale(diff, scalar / l));
-					}
-				} else {
-					let random_push = [ thread_rng().next_f32() - 0.5, thread_rng().next_f32() - 0.5 ];
-					v_repel = vec2_add(v_repel, vec2_scale(random_push, config.overlay.particle_min_distance_gain));
-				}
-			}
 
 			let edge_diff = vec2_sub(rect_nearest_perimeter_point(rect, pos), pos);
 			let center_diff = vec2_sub(rect_center(rect), pos);
@@ -211,11 +236,13 @@ impl ParticleDrawing {
 
 			let v_edge = vec2_scale(edge_diff, config.overlay.particle_edge_gain);
 			let v_perp = vec2_scale(perpendicular, config.overlay.particle_perpendicular_gain);
-
-			let damped_v = vec2_scale(self.particles[p].velocity, 1.0 - config.overlay.particle_damping);
-			self.particles[p].velocity = vec2_add(damped_v, vec2_add(v_edge, vec2_add(v_perp, v_repel)));
-			self.particles[p].position = vec2_add(pos, vec2_scale(self.particles[p].velocity, 1.0 / TICK_HZ as f32));
+			let v = vec2_add(v_edge, v_perp);
+			
+			self.particles[p].velocity = vec2_add(self.particles[p].velocity, v);
 		}
+
+		self.update_collisions(config);
+		self.update_dynamics(config);
 	}
 
 	pub fn render(&self, config: &Config, draw: &mut DrawingContext) {

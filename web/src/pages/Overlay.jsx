@@ -22,7 +22,10 @@ export default (props) => {
         <ConfigSlider item="overlay.particle_edge_gain" min="0.0" max="1.0" step="1e-6" />
 
         <h6>Gain for perpendicular motion</h6>
-        <ConfigSlider item="overlay.particle_perpendicular_gain" min="0.0" max="0.1" step="1e-6" />
+        <ConfigSlider item="overlay.particle_perpendicular_gain" min="-0.3" max="0.3" step="1e-6" />
+
+        <h6>Gain for random motion</h6>
+        <ConfigSlider item="overlay.particle_random_gain" min="0" max="2" step="1e-6" />
 
         <h6>Minimum separation distance</h6>
         <ConfigSlider item="overlay.particle_min_distance" min="0.0" max="0.5" step="1e-6" />
