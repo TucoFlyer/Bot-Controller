@@ -171,7 +171,7 @@ pub struct GimbalConfig {
     pub yaw_limits: (i16, i16),
     pub pitch_limits: (i16, i16),
     pub limiter_gain: f32,
-    pub limiter_slowdown_extent: f32,
+    pub limiter_slowdown_extent: Vector2<f32>,
     pub drift_compensation: Vector2<f32>,
 }
 

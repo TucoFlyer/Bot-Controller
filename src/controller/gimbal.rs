@@ -134,7 +134,7 @@ impl GimbalController {
             let mut i = 0.0;
             for index in 0 .. gains.len() {
                 let gain = &gains[index];
-                let err = (gain.width - upper_dist).max(0.0) - (gain.width - lower_dist).max(0.0);
+                let err = (gain.width - lower_dist).max(0.0) - (gain.width - upper_dist).max(0.0);
                 if i_state[index] * err <= 0.0 {
                     // Halt or change directions; clear integral gain accumulator
                     i_state[index] = 0.0;
@@ -156,27 +156,35 @@ impl GimbalController {
     }
 
     fn limiter(&self, config: &Config, angles: Vector2<i16>, rates: Vector2<f32>) -> Vector2<f32> {
-        [
-            self.limiter_single_edge(config, self.limiter_single_edge(config, rates[0],
-                angles[0] - config.gimbal.yaw_limits.0, -1),
-                angles[0] - config.gimbal.yaw_limits.1, 1),
-            self.limiter_single_edge(config, self.limiter_single_edge(config, rates[1],
-                angles[1] - config.gimbal.pitch_limits.0, -1),
-                angles[1] - config.gimbal.pitch_limits.1, 1)
-        ]
-    }
 
-    fn limiter_single_edge(&self, config: &Config, rate: f32, distance: i16, out_dir: i16) -> f32 {
-        let outside_distance = distance * out_dir;
-        if outside_distance > 0 {
-            // Past the limit; push back inward
-            rate - (distance as f32) * config.gimbal.limiter_gain
-        } else {
-            // Inside the limit; if we are close enough, limit the rate
-            let limit = 1.0 + (outside_distance as f32) / config.gimbal.limiter_slowdown_extent;
-            let limit = limit.max(0.0) * config.gimbal.max_rate;
-            if out_dir > 0 { rate.min(limit) } else { rate.max(-limit) }
-        }
+        let single_edge = |rate: f32, distance: i16, out_dir: i16, slowdown_extent: f32| {
+            let outside_distance = distance * out_dir;
+            let rate = rate + if outside_distance > 0 {
+                // Past the limit; push back inward
+                (-distance as f32) * config.gimbal.limiter_gain
+            } else {
+                0.0
+            };
+
+            let outward_limit = if outside_distance >= 0 {
+                0.0
+            } else {
+                (-outside_distance as f32) / slowdown_extent
+            };
+            let outward_limit = outward_limit.max(0.0).min(1.0) * config.gimbal.max_rate;
+
+            if out_dir > 0 { rate.min(outward_limit) } else { rate.max(-outward_limit) }
+        };
+
+        [
+            single_edge(single_edge(rates[0],
+                angles[0] - config.gimbal.yaw_limits.0, -1, config.gimbal.limiter_slowdown_extent[0]),
+                angles[0] - config.gimbal.yaw_limits.1, 1, config.gimbal.limiter_slowdown_extent[0]),
+
+            single_edge(single_edge(rates[1],
+                angles[1] - config.gimbal.pitch_limits.0, -1, config.gimbal.limiter_slowdown_extent[1]),
+                angles[1] - config.gimbal.pitch_limits.1, 1, config.gimbal.limiter_slowdown_extent[1])
+        ]
     }
 
     fn dither_rates(&self, rates: Vector2<f32>) -> Vector2<i16> {
