@@ -48,35 +48,35 @@ pub enum ControllerMode {
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct WinchConfig {
     pub addr: SocketAddr,
-    pub loc: Vector3<f64>,
+    pub loc: Vector3<f32>,
     pub calibration: WinchCalibration,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct WinchCalibration {
-    pub force_zero_count: f64,
-    pub kg_force_per_count: f64,
-    pub m_dist_per_count: f64,
+    pub force_zero_count: f32,
+    pub kg_force_per_count: f32,
+    pub m_dist_per_count: f32,
 }
 
 impl WinchCalibration {
-    pub fn force_to_kg(self: &WinchCalibration, counts: f64) -> f64 {
+    pub fn force_to_kg(self: &WinchCalibration, counts: f32) -> f32 {
         self.kg_force_per_count * (counts - self.force_zero_count)
     }
 
-    pub fn force_from_kg(self: &WinchCalibration, kg: f64) -> f64 {
+    pub fn force_from_kg(self: &WinchCalibration, kg: f32) -> f32 {
         (kg / self.kg_force_per_count) + self.force_zero_count
     }
 
-    pub fn dist_to_m(self: &WinchCalibration, counts: f64) -> f64 {
+    pub fn dist_to_m(self: &WinchCalibration, counts: f32) -> f32 {
         self.m_dist_per_count * counts
     }
 
-    pub fn dist_from_m(self: &WinchCalibration, m: f64) -> f64 {
+    pub fn dist_from_m(self: &WinchCalibration, m: f32) -> f32 {
         m / self.m_dist_per_count
     }
 
-    pub fn pwm_gain_from_m(self: &WinchCalibration, gain: f64) -> f64 {
+    pub fn pwm_gain_from_m(self: &WinchCalibration, gain: f32) -> f32 {
         // PWM gains are motor power difference per distance/acceleration/speed.
         // Since we have meters in the denominator, it's the inverse of dist_from_m.
         gain * self.m_dist_per_count
@@ -85,26 +85,26 @@ impl WinchCalibration {
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct WinchLightingScheme {
-    pub normal_color: Vector3<f64>,
-    pub manual_color: Vector3<f64>,
-    pub halt_color: Vector3<f64>,
-    pub error_color: Vector3<f64>,
-    pub stuck_color: Vector3<f64>,
-    pub command_color: Vector3<f64>,
-    pub motion_color: Vector3<f64>,
-    pub wavelength_m: f64,
-    pub wave_window_length_m: f64,
-    pub wave_amplitude: f64,
-    pub wave_exponent: f64,
-    pub speed_for_full_wave_amplitude_m_per_sec: f64,
-    pub velocity_filter_param: f64,
+    pub normal_color: Vector3<f32>,
+    pub manual_color: Vector3<f32>,
+    pub halt_color: Vector3<f32>,
+    pub error_color: Vector3<f32>,
+    pub stuck_color: Vector3<f32>,
+    pub command_color: Vector3<f32>,
+    pub motion_color: Vector3<f32>,
+    pub wavelength_m: f32,
+    pub wave_window_length_m: f32,
+    pub wave_amplitude: f32,
+    pub wave_exponent: f32,
+    pub speed_for_full_wave_amplitude_m_per_sec: f32,
+    pub velocity_filter_param: f32,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct LightingScheme {
-    pub brightness: f64,
-    pub flash_rate_hz: f64,
-    pub flash_exponent: f64,
+    pub brightness: f32,
+    pub flash_rate_hz: f32,
+    pub flash_exponent: f32,
     pub winch: WinchLightingScheme,
 }
 
@@ -118,8 +118,8 @@ pub struct LightingConfig {
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct LightAnimatorConfig {
-    pub frame_rate: f64,
-    pub filter_param: f64,
+    pub frame_rate: f32,
+    pub filter_param: f32,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
@@ -166,32 +166,40 @@ pub struct VisionConfig {
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct GimbalConfig {
     pub max_rate: f32,
+    pub yaw_gains: Vec<GimbalTrackingGain>,
+    pub pitch_gains: Vec<GimbalTrackingGain>,
     pub yaw_limits: (i16, i16),
     pub pitch_limits: (i16, i16),
     pub limiter_gain: f32,
-    pub tracking_gain: f32,
+    pub limiter_slowdown_extent: f32,
     pub drift_compensation: Vector2<f32>,
-    pub tracking_rects: Vec<( Vector4<f32>, Vector2<f32> )>,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+pub struct GimbalTrackingGain {
+    pub width: f32,
+    pub p_gain: f32,
+    pub i_gain: f32,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct BotParams {
     pub gimbal_max_control_rate: f32, 
-    pub manual_control_velocity_m_per_sec: f64,
-    pub accel_limit_m_per_sec2: f64,
-    pub force_neg_motion_min_kg: f64,
-    pub force_pos_motion_max_kg: f64,
-    pub force_lockout_below_kg: f64,
-    pub force_lockout_above_kg: f64,
-    pub force_filter_param: f64,
-    pub deadband_position_err_m: f64,
-    pub deadband_velocity_limit_m_per_sec: f64,
-    pub pos_err_filter_param: f64,
-    pub vel_err_filter_param: f64,
-    pub integral_err_decay_param: f64,
-    pub pwm_gain_p: f64,
-    pub pwm_gain_i: f64,
-    pub pwm_gain_d: f64,
+    pub manual_control_velocity_m_per_sec: f32,
+    pub accel_limit_m_per_sec2: f32,
+    pub force_neg_motion_min_kg: f32,
+    pub force_pos_motion_max_kg: f32,
+    pub force_lockout_below_kg: f32,
+    pub force_lockout_above_kg: f32,
+    pub force_filter_param: f32,
+    pub deadband_position_err_m: f32,
+    pub deadband_velocity_limit_m_per_sec: f32,
+    pub pos_err_filter_param: f32,
+    pub vel_err_filter_param: f32,
+    pub integral_err_decay_param: f32,
+    pub pwm_gain_p: f32,
+    pub pwm_gain_i: f32,
+    pub pwm_gain_d: f32,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]

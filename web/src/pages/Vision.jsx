@@ -1,40 +1,20 @@
 import React from 'react';
-import { Chart, Series } from '../BotChart';
-import { ConfigSlider } from '../Config';
+import { Nav, NavItem, NavLink } from 'reactstrap';
+import { NavLink as RRNavLink } from 'react-router-dom';
+import { Route, Switch, Redirect } from 'react-router';
+import VisionStatus from './VisionStatus';
+import VisionSetup from './VisionSetup';
 
 export default (props) => {
     return <div>
-
-        <h6>Object detector runtime (milliseconds) </h6>
-        <Chart>
-            <Series
-                value={ (model) => model.camera.object_detection.message.Command.CameraObjectDetection.detector_nsec * 1e-6 }
-                trigger={ (model) => model.camera.object_detection.message.Command.CameraObjectDetection.frame }
-                timestamp={ (model) => model.camera.object_detection.local_timestamp } />
-        </Chart>
-
-        <h6>Correlation tracker runtime (milliseconds) </h6>
-        <Chart>
-            <Series
-                value={ (model) => model.camera.region_tracking.message.Command.CameraRegionTracking.tracker_nsec * 1e-6 }
-                trigger={ (model) => model.camera.region_tracking.message.Command.CameraRegionTracking.frame }
-                timestamp={ (model) => model.camera.region_tracking.local_timestamp } />
-        </Chart>
-
-        <h6>Manual control deadzone size</h6>
-        <ConfigSlider item="vision.manual_control_deadzone" min="0.0" max="0.5" step="1e-4" />
-
-        <h6>Manual control speed multiplier</h6>
-        <ConfigSlider item="vision.manual_control_speed" min="0.0" max="6.0" step="1e-4" />
-
-        <h6>Manual control restoring force</h6>
-        <ConfigSlider item="vision.manual_control_restoring_force" min="0.0" max="10.0" step="1e-4" />
-
-        <h6>Manual control timeout (seconds)</h6>
-        <ConfigSlider item="vision.manual_control_timeout_sec" min="0.0" max="2.0" step="1e-4" />
-
-        <h6>Tracked region, default area for manual control</h6>
-        <ConfigSlider item="vision.tracking_default_area" min="0.0" max="0.5" step="1e-4" />
-
+        <Nav pills>
+            <NavItem><NavLink to={`/vision/status`} activeClassName="active" tag={RRNavLink}> Status </NavLink></NavItem>
+            <NavItem><NavLink to={`/vision/setup`} activeClassName="active" tag={RRNavLink}> Setup </NavLink></NavItem>
+        </Nav>
+        <Switch>
+            <Route path="/vision/status" component={VisionStatus} />
+            <Route path="/vision/setup" component={VisionSetup} />
+            <Redirect path="*" to="/vision/status" />
+        </Switch>
     </div>;
-}
+};

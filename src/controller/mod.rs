@@ -246,7 +246,7 @@ impl Controller {
             },
 
             Message::Command(Command::ManualControlValue(axis, value)) => {
-                self.state.manual.control_value(axis, value as f64);
+                self.state.manual.control_value(axis, value);
             },
 
             Message::Command(Command::ManualControlReset) => {

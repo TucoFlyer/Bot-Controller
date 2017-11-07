@@ -5,3 +5,4 @@ mod framing;
 pub use self::framing::{GimbalPacket, GimbalFraming};
 
 pub mod protocol;
+pub mod util;

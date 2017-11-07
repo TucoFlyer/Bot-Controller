@@ -3,7 +3,7 @@ use serde::de::DeserializeOwned;
 use serde_json::{Value, Number, Map, to_value, from_value};
 use std::iter::FromIterator;
 
-pub fn serde_interpolate<T: Serialize + DeserializeOwned + Clone>(from: &T, to: &T, amount: f64) -> T {
+pub fn serde_interpolate<T: Serialize + DeserializeOwned + Clone>(from: &T, to: &T, amount: f32) -> T {
     let from_val = to_value(from).unwrap();
     let to_val = to_value(to).unwrap();
     let result_val = value_interpolate(&from_val, &to_val, amount);
@@ -18,7 +18,7 @@ pub fn serde_interpolate<T: Serialize + DeserializeOwned + Clone>(from: &T, to: 
     }
 }
 
-fn value_interpolate(from: &Value, to: &Value, amount: f64) -> Value {
+fn value_interpolate(from: &Value, to: &Value, amount: f32) -> Value {
     match to {
         &Value::Number(ref to) => Value::Number(match from {
             &Value::Number(ref from) => number_interpolate(from, to, amount),
@@ -36,17 +36,17 @@ fn value_interpolate(from: &Value, to: &Value, amount: f64) -> Value {
     }
 }
 
-fn number_interpolate(from: &Number, to: &Number, amount: f64) -> Number {
+fn number_interpolate(from: &Number, to: &Number, amount: f32) -> Number {
     match to.as_f64() {
         None => to.clone(),
         Some(to) => Number::from_f64(match from.as_f64() {
             None => to,
-            Some(from) => from + (to - from) * amount
+            Some(from) => from + (to - from) * (amount as f64)
         }).unwrap(),
     }
 }
 
-fn array_interpolate(from: &Vec<Value>, to: &Vec<Value>, amount: f64) -> Vec<Value> {
+fn array_interpolate(from: &Vec<Value>, to: &Vec<Value>, amount: f32) -> Vec<Value> {
     to.iter().enumerate().map(|(index, to)| {
         match from.get(index) {
             None => to.clone(),
@@ -55,7 +55,7 @@ fn array_interpolate(from: &Vec<Value>, to: &Vec<Value>, amount: f64) -> Vec<Val
     }).collect()
 }
 
-fn object_interpolate(from: &Map<String, Value>, to: &Map<String, Value>, amount: f64) -> Map<String, Value> {
+fn object_interpolate(from: &Map<String, Value>, to: &Map<String, Value>, amount: f32) -> Map<String, Value> {
     Map::from_iter(to.iter().map(|(key, to)| {
         let value = match from.get(key) {
             None => to.clone(),

@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use controller::velocity::RateLimitedVelocity;
 
 pub struct ManualControls {
-    axes: HashMap<ManualControlAxis, f64>,
+    axes: HashMap<ManualControlAxis, f32>,
     velocity: RateLimitedVelocity,
     camera_control_active_until_timestamp: Option<Instant>,
 }
@@ -24,7 +24,7 @@ impl ManualControls {
         *self = ManualControls::new();
     }
 
-    fn lookup_axis(&mut self, axis: ManualControlAxis) -> f64 {
+    fn lookup_axis(&mut self, axis: ManualControlAxis) -> f32 {
         self.axes.entry(axis).or_insert(0.0).min(1.0).max(-1.0)
     }
 
@@ -47,7 +47,7 @@ impl ManualControls {
         }
     }
 
-    fn lookup_relative_vec(&mut self) -> Vector3<f64> {
+    fn lookup_relative_vec(&mut self) -> Vector3<f32> {
         [
             self.lookup_axis(ManualControlAxis::RelativeX),
             self.lookup_axis(ManualControlAxis::RelativeY),
@@ -55,12 +55,12 @@ impl ManualControls {
         ]
     }
 
-    fn velocity_target(&mut self, config: &Config) -> Vector3<f64> {
+    fn velocity_target(&mut self, config: &Config) -> Vector3<f32> {
         let velocity_scale = config.params.manual_control_velocity_m_per_sec;
         vec3_scale(self.lookup_relative_vec(), velocity_scale)
     }
 
-    pub fn limited_velocity(&mut self) -> Vector3<f64> {
+    pub fn limited_velocity(&mut self) -> Vector3<f32> {
         self.velocity.get()
     }
 
@@ -82,7 +82,7 @@ impl ManualControls {
         }
     }
 
-    pub fn control_value(&mut self, axis: ManualControlAxis, value: f64) {
+    pub fn control_value(&mut self, axis: ManualControlAxis, value: f32) {
         self.axes.insert(axis, value);
     }
 

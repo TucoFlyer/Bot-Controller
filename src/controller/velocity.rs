@@ -3,7 +3,7 @@ use vecmath::*;
 use config::Config;
 
 pub struct RateLimitedVelocity {
-    vec: Vector3<f64>
+    vec: Vector3<f32>
 }
 
 impl RateLimitedVelocity {
@@ -13,8 +13,8 @@ impl RateLimitedVelocity {
         }
     }
 
-    pub fn tick(self: &mut RateLimitedVelocity, config: &Config, target: Vector3<f64>) {
-        let dt = 1.0 / (TICK_HZ as f64);
+    pub fn tick(self: &mut RateLimitedVelocity, config: &Config, target: Vector3<f32>) {
+        let dt = 1.0 / (TICK_HZ as f32);
         let limit_per_tick = config.params.accel_limit_m_per_sec2 * dt;
         let diff = vec3_sub(target, self.vec);
         let len = vec3_len(diff);
@@ -26,7 +26,7 @@ impl RateLimitedVelocity {
         self.vec = vec3_add(self.vec, clipped);
     }
 
-    pub fn get(self: &RateLimitedVelocity) -> Vector3<f64> {
+    pub fn get(self: &RateLimitedVelocity) -> Vector3<f32> {
         self.vec
     }
 }

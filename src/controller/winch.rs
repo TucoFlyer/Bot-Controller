@@ -9,16 +9,16 @@ pub struct WinchController {
     id: usize,
     last_winch_status: Option<WinchStatus>,
     quantized_position_target: i32,
-    fract_position_target: f64,
-    lighting_command_phase: f64,
-    lighting_motion_phase: f64,
-    lighting_filtered_velocity: f64,
+    fract_position_target: f32,
+    lighting_command_phase: f32,
+    lighting_motion_phase: f32,
+    lighting_filtered_velocity: f32,
 }
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum MechStatus {
     Normal,
-    ForceLimited(f64),
+    ForceLimited(f32),
     Stuck,
 }
 
@@ -37,8 +37,8 @@ impl WinchController {
     }
 
     /// Apply one tick's worth of position change at the indicated velocity
-    pub fn velocity_tick(self: &mut WinchController, config: &Config, cal: &WinchCalibration, m_per_s: f64) {
-        let distance_m = m_per_s / (TICK_HZ as f64);
+    pub fn velocity_tick(self: &mut WinchController, config: &Config, cal: &WinchCalibration, m_per_s: f32) {
+        let distance_m = m_per_s / (TICK_HZ as f32);
         self.move_position_target(cal, distance_m);
         self.lighting_command_phase += distance_m * TAU / config.lighting.current.winch.wavelength_m;
     }
@@ -64,11 +64,11 @@ impl WinchController {
         let distance_traveled_m = match self.last_winch_status {
             None => 0.0,
             Some(ref last_status) =>
-                cal.dist_to_m(status.sensors.position.wrapping_sub(last_status.sensors.position) as f64)
+                cal.dist_to_m(status.sensors.position.wrapping_sub(last_status.sensors.position) as f32)
         };
         self.apply_sensed_motion(config, distance_traveled_m);
 
-        let velocity_m = cal.dist_to_m(status.sensors.velocity as f64);
+        let velocity_m = cal.dist_to_m(status.sensors.velocity as f32);
         let velocity_filter_param = config.lighting.current.winch.velocity_filter_param;
         self.lighting_filtered_velocity += (velocity_m - self.lighting_filtered_velocity) * velocity_filter_param;
 
@@ -95,7 +95,7 @@ impl WinchController {
         }
     }
 
-    fn move_position_target(self: &mut WinchController, cal: &WinchCalibration, distance_m: f64) {
+    fn move_position_target(self: &mut WinchController, cal: &WinchCalibration, distance_m: f32) {
         let distance_counts = cal.dist_from_m(distance_m);
         let pos = self.fract_position_target + distance_counts;
         let fract = pos.fract();
@@ -104,11 +104,11 @@ impl WinchController {
         self.quantized_position_target = self.quantized_position_target.wrapping_add(int_diff);
     }
 
-    fn apply_sensed_motion(self: &mut WinchController, config: &Config, distance_m: f64) {
+    fn apply_sensed_motion(self: &mut WinchController, config: &Config, distance_m: f32) {
         self.lighting_motion_phase += distance_m * TAU / config.lighting.current.winch.wavelength_m;
     }
 
-    fn lighting_base_color(&self, config: &Config) -> Vector3<f64> {
+    fn lighting_base_color(&self, config: &Config) -> Vector3<f32> {
         if self.mech_status != MechStatus::Normal {
             config.lighting.current.winch.error_color
         } else {
@@ -120,7 +120,7 @@ impl WinchController {
         }
     }
 
-    fn lighting_flash_color(&self, config: &Config) -> Vector3<f64> {
+    fn lighting_flash_color(&self, config: &Config) -> Vector3<f32> {
         if self.mech_status == MechStatus::Stuck {
             config.lighting.current.winch.stuck_color
         } else {
@@ -128,7 +128,7 @@ impl WinchController {
         }
     }
 
-    fn lighting_wave_amplitude(&self, config: &Config) -> f64 {
+    fn lighting_wave_amplitude(&self, config: &Config) -> f32 {
         match config.mode {
             ControllerMode::Halted => 0.0,
             _ => if self.mech_status != MechStatus::Normal {
@@ -217,10 +217,10 @@ impl MechStatus {
         // Force limited, can't move any further
         } else if status.sensors.force.filtered > status.command.force.pos_motion_max {
             let counts = status.sensors.force.filtered - status.command.force.pos_motion_max;
-            MechStatus::ForceLimited(counts as f64 * cal.kg_force_per_count)
+            MechStatus::ForceLimited(counts as f32 * cal.kg_force_per_count)
         } else if status.sensors.force.filtered < status.command.force.neg_motion_min {
             let counts = status.sensors.force.filtered - status.command.force.neg_motion_min;
-            MechStatus::ForceLimited(counts as f64 * cal.kg_force_per_count)
+            MechStatus::ForceLimited(counts as f32 * cal.kg_force_per_count)
 
         } else if motor_off {
             if outside_position_deadband {

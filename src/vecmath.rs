@@ -1,11 +1,13 @@
 #![allow(dead_code)]
 
+use rand::{thread_rng, Rng};
 use num::traits::{Float, zero, one};
+use vecmath_lib::traits::Sqrt;
 use num::FromPrimitive;
 
 pub use vecmath_lib::*;
-pub use std::f64::consts::PI;
-pub const TAU : f64 = PI * 2.0;
+pub use std::f32::consts::PI;
+pub const TAU : f32 = PI * 2.0;
 
 pub fn rotation_matrix<T: Float>(normalized_axis: Vector3<T>, angle: T) -> Matrix3x4<T> {
 	let (x, y, z) = (normalized_axis[0], normalized_axis[1], normalized_axis[2]);
@@ -122,4 +124,13 @@ pub fn rect_nearest_perimeter_point<T: Float + FromPrimitive>(rect: Vector4<T>, 
 			]
 		}
 	}
+}
+
+pub fn vec2_rand_from_centered_unit_square() -> Vector2<f32> {
+	[ thread_rng().next_f32() - 0.5, thread_rng().next_f32() - 0.5 ]
+}
+
+pub fn vec2_clamp_len<T: Float + Sqrt>(vec: Vector2<T>, limit: T) -> Vector2<T> {
+    let len = vec2_len(vec);
+    if len < limit { vec } else { vec2_scale(vec, limit / len) }
 }

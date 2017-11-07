@@ -4,7 +4,6 @@ use message::OverlayRect;
 use std::io::Cursor;
 use std::mem;
 use config::Config;
-use rand::{thread_rng, Rng};
 use bmfont::{BMFont, OrdinateOrientation, CharPosition, StringParseError};
 
 pub const OVERLAY_HZ : u32 = 60;
@@ -170,10 +169,6 @@ struct Particle {
 	velocity: Vector2<f32>,
 }
 
-fn rand_vec2_from_centered_unit_square() -> Vector2<f32> {
-	[ thread_rng().next_f32() - 0.5, thread_rng().next_f32() - 0.5 ]
-}
-
 impl ParticleDrawing {
 	pub fn new() -> ParticleDrawing {
 		ParticleDrawing {
@@ -186,7 +181,7 @@ impl ParticleDrawing {
 
 		while self.particles.len() < config.overlay.particle_count {
 			self.particles.push(Particle {
-				position: rand_vec2_from_centered_unit_square(),
+				position: vec2_rand_from_centered_unit_square(),
 				velocity: [ 0.0, 0.0 ]
 			});
 		}
@@ -218,7 +213,9 @@ impl ParticleDrawing {
 	fn update_dynamics(&mut self, config: &Config) {
 		for p in 0 .. self.particles.len() {
 			let dt = 1.0 / TICK_HZ as f32;
-			let v = vec2_scale(self.particles[p].velocity, 1.0 - config.overlay.particle_damping);
+			let v_damped = vec2_scale(self.particles[p].velocity, 1.0 - config.overlay.particle_damping);
+			let v_rand = vec2_scale(vec2_rand_from_centered_unit_square(), config.overlay.particle_random_gain);
+			let v = vec2_add(v_damped, v_rand);
 			self.particles[p].velocity = v;
 			self.particles[p].position = vec2_add(self.particles[p].position, vec2_scale(v, dt));
 		}		

@@ -49,7 +49,7 @@ fn flyer() -> Vec<PixelMapping> {
 
 	const NUM_STRIPS : usize = 4;
 	for index in 0..NUM_STRIPS {
-		let theta = (index as f64) / (NUM_STRIPS as f64) * TAU;
+		let theta = (index as f32) / (NUM_STRIPS as f32) * TAU;
 		let mat = rotation_matrix([0.0, 0.0, 1.0], theta);
 		let radius = row_mat3x4_transform_vec3(mat, top_radius);
 		top_strip.line(&mut model, vec3_add(top_center, radius), radius);

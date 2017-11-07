@@ -1,7 +1,7 @@
 use vecmath::Vector3;
 use std::io;
 
-pub fn write_apa102_pixel(wr: &mut io::Write, color: Vector3<f64>) -> io::Result<(usize)> {
+pub fn write_apa102_pixel(wr: &mut io::Write, color: Vector3<f32>) -> io::Result<(usize)> {
     let red = color[0];
     let green = color[1];
     let blue = color[2];
