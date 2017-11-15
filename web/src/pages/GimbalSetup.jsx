@@ -67,6 +67,18 @@ export default (props) => {
                 trigger={gimbal_status_timestamp} timestamp={gimbal_status_timestamp} />
         </Chart>
 
+        <h6>Hold active flags</h6>
+        <Chart height="20">
+            <Series
+                strokeStyle='#a22'
+                value={ (model) => model.gimbal_status.message.GimbalControlStatus.hold_active[0] | 0}
+                trigger={gimbal_status_timestamp} timestamp={gimbal_status_timestamp} />
+            <Series
+                strokeStyle='#22a'
+                value={ (model) => model.gimbal_status.message.GimbalControlStatus.hold_active[1] | 0}
+                trigger={gimbal_status_timestamp} timestamp={gimbal_status_timestamp} />
+        </Chart>
+
         <h6>Gain for hold mode</h6>
         <ConfigSlider item="gimbal.hold_gain" min="0" max="0.3" step="1e-4" />
 
