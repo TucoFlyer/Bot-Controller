@@ -44,6 +44,9 @@ export default (props) => {
         <h6>Color of outline during a manual movement</h6>
         <ConfigColorAlpha item="overlay.tracked_region_manual_color" />
 
+        <h6>Color of active gain regions</h6>
+        <ConfigColorAlpha item="overlay.gain_region_color" />
+
         <h4>Object Detection</h4>
 
         <h6>Min probability for outlines or labels</h6>

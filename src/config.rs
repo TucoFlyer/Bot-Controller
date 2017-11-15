@@ -140,6 +140,7 @@ pub struct OverlayConfig {
     pub tracked_region_default_color: Vector4<f32>,
     pub tracked_region_manual_color: Vector4<f32>,
     pub tracked_region_outline_thickness: f32,
+    pub gain_region_color: Vector4<f32>,
     pub particle_color: Vector4<f32>,
     pub particle_size: f32,
     pub particle_sprite: Vector4<i32>,
@@ -160,6 +161,8 @@ pub struct VisionConfig {
     pub manual_control_restoring_force: f32,
     pub manual_control_timeout_sec: f32,
     pub tracking_default_area: f32,
+    pub tracking_min_area: f32,
+    pub tracking_max_area: f32,
     pub snap_tracked_region_to: Vec<(String, f32)>,
 }
 
@@ -172,7 +175,9 @@ pub struct GimbalConfig {
     pub pitch_limits: (i16, i16),
     pub limiter_gain: f32,
     pub limiter_slowdown_extent: Vector2<f32>,
-    pub drift_compensation: Vector2<f32>,
+    pub drift_compensation_max: f32,
+    pub drift_compensation_gain: Vector2<f32>,
+    pub drift_rect_speed_threshold: f32,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]

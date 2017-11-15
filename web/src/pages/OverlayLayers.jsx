@@ -13,6 +13,9 @@ export default (props) => {
         <h6>Manual moves to tracking rectangle</h6>
         <ConfigSlider item="overlay.tracked_region_manual_color.3" min="0.0" max="1.0" step="1e-2" />
 
+        <h6>Active gain regions</h6>
+        <ConfigSlider item="overlay.gain_region_color.3" min="0.0" max="1.0" step="1e-2" />
+
         <h6>Object detector outlines</h6>
         <ConfigSlider item="overlay.detector_default_outline_color.3" min="0.0" max="1.0" step="1e-2" />
 

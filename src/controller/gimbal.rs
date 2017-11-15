@@ -56,6 +56,7 @@ pub struct GimbalController {
     values: Vec<Vec<GimbalValueState>>,
     yaw_tracking_i: Vec<f32>,
     pitch_tracking_i: Vec<f32>,
+    drift_compensation: Vector2<f32>,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -74,6 +75,7 @@ impl GimbalController {
             }).collect(),
             yaw_tracking_i: Vec::new(),
             pitch_tracking_i: Vec::new(),
+            drift_compensation: [0.0, 0.0],
         }
     }
 
@@ -83,48 +85,43 @@ impl GimbalController {
         let raw_angles = self.request_vec2(gimbal, &mut stale_flag, RequestType::Continuous, values::ENCODER_ANGLES);
         let angles = vec2_encoder_sub(raw_angles, center_cal);
 
-        let status = if stale_flag {
-            // Don't know where the gimbal is; don't try to move
-            GimbalControlStatus {
-                angles,
-                rates: [0, 0],
-                tracking_p_rates: [0.0, 0.0],
-                tracking_i_rates: [0.0, 0.0],
-            }
-        } else {
-            let (tracking_p_rates, tracking_i_rates) = self.tracking_tick(config, tracked);
-
-            let rates = if config.mode == ControllerMode::Halted {
-                // Tracking disabled (but limiter and drift compensation work)
-                [0.0, 0.0]
-            } else {
-                vec2_add(tracking_i_rates, tracking_p_rates)
-            };
-
-            let rates = vec2_add(rates, self.drift_compensation(config));
-            let rates = self.limiter(config, angles, rates);
-            let rates = vec2_clamp_len(rates, config.gimbal.max_rate);
-            let rates = self.dither_rates(rates);
-            GimbalControlStatus {
-                angles,
-                rates,
-                tracking_p_rates,
-                tracking_i_rates,
-            }
+        let mut status = GimbalControlStatus {
+            angles,
+            rates: [0, 0],
+            tracking_p_rates: [0.0, 0.0],
+            tracking_i_rates: [0.0, 0.0],
+            yaw_gain_activations: config.gimbal.yaw_gains.iter().map(|_| 0.0).collect(),
+            pitch_gain_activations: config.gimbal.pitch_gains.iter().map(|_| 0.0).collect(),
+            drift_compensation: self.drift_compensation,
         };
+
+        if !stale_flag {
+            self.tracking_tick(config, tracked, &mut status);
+        }
 
         gimbal.write_control_rates(status.rates);
         status
     }
 
-    fn tracking_tick(&mut self, config: &Config, tracked: &CameraTrackedRegion) -> (Vector2<f32>, Vector2<f32>) {
+    pub fn drift_compensation_tracking_update(&mut self, config: &Config, tracked: CameraTrackedRegion) {
+        let diff = vec2_sub(rect_center(tracked.previous_rect), rect_center(tracked.rect));
+        if vec2_square_len(diff) < config.gimbal.drift_rect_speed_threshold.powi(2) {
+            let comp = vec2_mul(diff, config.gimbal.drift_compensation_gain);
+            let comp = vec2_add(self.drift_compensation, comp);
+            let comp = vec2_clamp_len(comp, config.gimbal.drift_compensation_max);
+            self.drift_compensation = comp;
+        }
+    }
+
+    fn tracking_tick(&mut self, config: &Config, tracked: &CameraTrackedRegion, status: &mut GimbalControlStatus) {
         let border = config.vision.border_rect;
         let left_dist = rect_left(tracked.rect) - rect_left(border);
         let top_dist = rect_top(tracked.rect) - rect_top(border);
         let right_dist = rect_right(border) - rect_right(tracked.rect);
         let bottom_dist = rect_bottom(border) - rect_bottom(tracked.rect);
 
-        let axis = |i_state: &mut Vec<f32>, gains: &Vec<GimbalTrackingGain>, lower_dist: f32, upper_dist: f32| {
+        let axis = |i_state: &mut Vec<f32>, errs: &mut Vec<f32>, gains: &Vec<GimbalTrackingGain>, lower_dist: f32, upper_dist: f32| {
+            // Initialize internal integrator state at init or when number of gains change
             i_state.truncate(gains.len());
             while i_state.len() < gains.len() {
                 i_state.push(0.0);
@@ -135,6 +132,7 @@ impl GimbalController {
             for index in 0 .. gains.len() {
                 let gain = &gains[index];
                 let err = (gain.width - lower_dist).max(0.0) - (gain.width - upper_dist).max(0.0);
+                errs[index] = err;
                 if i_state[index] * err <= 0.0 {
                     // Halt or change directions; clear integral gain accumulator
                     i_state[index] = 0.0;
@@ -146,13 +144,22 @@ impl GimbalController {
             (p, i)
         };
 
-        let (xp, xi) = axis(&mut self.yaw_tracking_i, &config.gimbal.yaw_gains, left_dist, right_dist);
-        let (yp, yi) = axis(&mut self.pitch_tracking_i, &config.gimbal.pitch_gains, top_dist, bottom_dist);
-        ([xp, yp], [xi, yi])
-    }
+        let (xp, xi) = axis(&mut self.yaw_tracking_i, &mut status.yaw_gain_activations, &config.gimbal.yaw_gains, left_dist, right_dist);
+        let (yp, yi) = axis(&mut self.pitch_tracking_i, &mut status.pitch_gain_activations, &config.gimbal.pitch_gains, top_dist, bottom_dist);
+        status.tracking_p_rates = [xp, yp];
+        status.tracking_i_rates = [xi, yi];
 
-    fn drift_compensation(&self, config: &Config) -> Vector2<f32> {
-        vec2_cast(config.gimbal.drift_compensation)
+        let rates = if config.mode == ControllerMode::Halted {
+            // Tracking disabled (but limiter and drift compensation work)
+            [0.0, 0.0]
+        } else {
+            vec2_add(status.tracking_i_rates, status.tracking_p_rates)
+        };
+
+        let rates = vec2_add(rates, status.drift_compensation);
+        let rates = self.limiter(config, status.angles, rates);
+        let rates = vec2_clamp_len(rates, config.gimbal.max_rate);
+        status.rates = self.dither_rates(rates);
     }
 
     fn limiter(&self, config: &Config, angles: Vector2<i16>, rates: Vector2<f32>) -> Vector2<f32> {

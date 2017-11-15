@@ -6,10 +6,9 @@ mod winch;
 mod state;
 mod timer;
 mod gimbal;
+mod draw;
 
 use message::*;
-use vecmath::*;
-use config::ControllerMode;
 use std::sync::mpsc::{SyncSender, Receiver, sync_channel};
 use bus::{Bus, BusReader};
 use std::thread;
@@ -143,11 +142,7 @@ impl Controller {
         }
 
         if self.timers.video_frame.poll() {
-            self.draw.clear();
-            self.draw_mode_overlay();
-            self.state.draw_tracking_overlay(&self.local_config, &mut self.draw);
-            self.draw_debug_overlay();
-
+            self.render_overlay();
             let scene = self.draw.scene.drain(..).collect();
             self.broadcast(Message::CameraOverlayScene(scene).timestamp());
         }
@@ -157,28 +152,15 @@ impl Controller {
         }
     }
 
-    fn draw_mode_overlay(&mut self) {
+    fn render_overlay(&mut self) {
         let config = &self.local_config;
-        let draw = &mut self.draw;
-
-        if config.mode == ControllerMode::Halted {
-            draw.current.outline_color = config.overlay.halt_color;
-            draw.current.outline_thickness = config.overlay.border_thickness;
-            draw.outline_rect(rect_offset(config.vision.border_rect, -config.overlay.border_thickness));
-        }
-    }
-
-    fn draw_debug_overlay(&mut self) {
-        let config = &self.local_config;
-        let draw = &mut self.draw;
-
-        let debug = format!("{:?}, {:?}", config.mode, self.gimbal_status);
-
-        draw.current.color = config.overlay.debug_color;
-        draw.current.text_height = config.overlay.debug_text_height;
-        draw.current.background_color = config.overlay.debug_background_color;
-        draw.current.outline_thickness = 0.0;
-        draw.text(rect_topleft(config.vision.border_rect), [0.0, 0.0], &debug).unwrap();
+        self.draw.clear();
+        draw::mode_indicator(config, &mut self.draw);
+        draw::detected_objects(config, &mut self.draw, &self.state.detected.1);
+        draw::tracking_gains(config, &mut self.draw, &self.gimbal_status);
+        draw::tracking_rect(config, &mut self.draw, &self.state.tracked, &self.state.manual);
+        self.state.tracking_particles.render(config, &mut self.draw);
+        draw::debug_text(config, &mut self.draw, format!("{:?}, {:?}", config.mode, self.gimbal_status));
     }
 
     fn handle_message(&mut self, ts_msg: TimestampedMessage, gimbal_port: &GimbalPort) {
@@ -218,6 +200,7 @@ impl Controller {
             },
 
             Message::Command(Command::CameraRegionTracking(tr)) => {
+                self.gimbal_ctrl.drift_compensation_tracking_update(&self.local_config, tr.clone());
                 self.state.camera_region_tracking_update(tr);
             },
 

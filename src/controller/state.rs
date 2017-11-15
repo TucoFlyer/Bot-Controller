@@ -5,17 +5,17 @@ use config::{Config, ControllerMode};
 use controller::manual::ManualControls;
 use controller::winch::{WinchController, MechStatus};
 use led::{LightAnimator, LightEnvironment};
-use overlay::{DrawingContext, ParticleDrawing};
+use overlay::ParticleDrawing;
 
 pub struct ControllerState {
     pub manual: ManualControls,
     pub tracked: CameraTrackedRegion,
+    pub detected: (Instant, CameraDetectedObjects),
+    pub tracking_particles: ParticleDrawing,
     lights: LightAnimator,
     winches: Vec<WinchController>,
     flyer_sensors: Option<FlyerSensors>,
-    detected: (Instant, CameraDetectedObjects),
     pending_snap: bool,
-    tracking_particles: ParticleDrawing,
     last_mode: ControllerMode,
 }
 
@@ -81,7 +81,7 @@ impl ControllerState {
             self.tracked.rect = rect_constrain(obj.rect, config.vision.border_rect);
             self.tracked.frame = self.detected.1.frame;
             Some(self.tracked.rect)
-        } 
+        }
         else {
             None
         }
@@ -111,13 +111,16 @@ impl ControllerState {
 
         let mut result = None;
         for obj in &self.detected.1.objects {
-            for rule in &config.vision.snap_tracked_region_to {
-                if obj.prob >= rule.1 && obj.label == rule.0 {
-                    result = match result {
-                        None => Some(obj),
-                        Some(prev) => if obj.prob > prev.prob { Some(obj) } else { Some(prev) }
-                    };
-                    break;
+            let area = rect_area(obj.rect);
+            if area >= config.vision.tracking_min_area && area <= config.vision.tracking_max_area {
+                for rule in &config.vision.snap_tracked_region_to {
+                    if obj.prob >= rule.1 && obj.label == rule.0 {
+                        result = match result {
+                            None => Some(obj),
+                            Some(prev) => if obj.prob > prev.prob { Some(obj) } else { Some(prev) }
+                        };
+                        break;
+                    }
                 }
             }
         }
@@ -135,58 +138,6 @@ impl ControllerState {
     pub fn camera_region_tracking_update(&mut self, tr: CameraTrackedRegion) {
         if !self.manual.camera_control_active() {
             self.tracked = tr;
-        }
-    }
-
-    pub fn draw_tracking_overlay(&self, config: &Config, draw: &mut DrawingContext) {
-        draw.current.outline_color = config.overlay.detector_default_outline_color;
-        for obj in &self.detected.1.objects {
-            if obj.prob >= config.overlay.detector_outline_min_prob {
-                draw.current.outline_thickness = obj.prob * config.overlay.detector_outline_max_thickness;
-                draw.outline_rect(obj.rect);
-                let outer_rect = rect_offset(obj.rect, draw.current.outline_thickness);
-
-                if obj.prob >= config.overlay.detector_label_min_prob {
-                    draw.current.text_height = config.overlay.label_text_size;
-                    draw.current.color = config.overlay.label_color;
-                    draw.current.background_color = config.overlay.label_background_color;
-                    draw.current.outline_thickness = 0.0;
-
-                    let label = if config.overlay.detector_label_prob_values {
-                        format!("{} p={:.3}", obj.label, obj.prob)
-                    } else {
-                        obj.label.clone()
-                    };
-
-                    draw.text(rect_topleft(outer_rect), [0.0, 1.0], &label).unwrap();
-                }
-            }
-        }
-
-        if !self.tracked.is_empty() {
-            draw.current.outline_thickness = config.overlay.tracked_region_outline_thickness;
-
-            if self.manual.camera_control_active() {
-                draw.current.outline_color = config.overlay.tracked_region_manual_color;
-                draw.outline_rect(self.tracked.rect);
-    
-            } else {
-                draw.current.outline_color = config.overlay.tracked_region_default_color;
-                draw.outline_rect(self.tracked.rect);
-
-                let outer_rect = rect_offset(self.tracked.rect, config.overlay.tracked_region_outline_thickness);
-
-                let tr_label = format!("psr={:.2} age={} area={:.3}",
-                    self.tracked.psr, self.tracked.age, rect_area(self.tracked.rect));
-
-                draw.current.text_height = config.overlay.label_text_size;
-                draw.current.color = config.overlay.label_color;
-                draw.current.background_color = config.overlay.label_background_color;
-                draw.current.outline_thickness = 0.0;
-                draw.text(rect_bottomleft(outer_rect), [0.0, 0.0], &tr_label).unwrap();
-            }
-
-            self.tracking_particles.render(config, draw);
         }
     }
 

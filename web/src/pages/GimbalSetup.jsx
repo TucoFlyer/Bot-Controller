@@ -1,21 +1,40 @@
 import React from 'react';
 import { ConfigSlider } from '../Config';
+import { Chart, Series } from '../BotChart';
 
 export default (props) => {
+    const gimbal_status_timestamp = (model) => model.gimbal_status.local_timestamp;
+
     return <div>
 
         <h6>Max gimbal control rate</h6>
         <ConfigSlider item="gimbal.max_rate" min="0" max="800" step="1" />
 
-        <h6>Drift compensation</h6>
-        <ConfigSlider item="gimbal.drift_compensation.0" min="-5" max="5" step="1e-4" />
-        <ConfigSlider item="gimbal.drift_compensation.1" min="-5" max="5" step="1e-4" />
+        <h4>Drift compensation</h4>
+
+        <h6>Current drift compensation outputs to gimbal control rate</h6>
+        <Chart>
+            <Series
+                strokeStyle='#a22'
+                value={ (model) => model.gimbal_status.message.GimbalControlStatus.drift_compensation[0] }
+                trigger={gimbal_status_timestamp} timestamp={gimbal_status_timestamp} />
+            <Series
+                strokeStyle='#22a'
+                value={ (model) => model.gimbal_status.message.GimbalControlStatus.drift_compensation[1] }
+                trigger={gimbal_status_timestamp} timestamp={gimbal_status_timestamp} />
+        </Chart>
+
+        <h6>Maximum compensation rate</h6>
+        <ConfigSlider item="gimbal.drift_compensation_max" min="0" max="10" step="1e-4" />
+
+        <h6>Gain for drift compensation adjustments</h6>
+        <ConfigSlider item="gimbal.drift_compensation_gain.0" min="0" max="300.0" step="1e-4" />
+        <ConfigSlider item="gimbal.drift_compensation_gain.1" min="0" max="300.0" step="1e-4" />
+
+        <h6>Threshold for tracking rectangles slow enough to affect drift compensation</h6>
+        <ConfigSlider item="gimbal.drift_rect_speed_threshold" min="0" max="0.05" step="1e-4" />
 
         <h4>Tracking</h4>
-
-        <h6>Drift compensation</h6>
-        <ConfigSlider item="gimbal.drift_compensation.0" min="-5" max="5" step="1e-4" />
-        <ConfigSlider item="gimbal.drift_compensation.1" min="-5" max="5" step="1e-4" />
 
         <h5>Yaw gain region 0</h5>
 

@@ -76,6 +76,9 @@ pub struct GimbalControlStatus {
     pub rates: Vector2<i16>,
     pub tracking_p_rates: Vector2<f32>,
     pub tracking_i_rates: Vector2<f32>,
+    pub yaw_gain_activations: Vec<f32>,
+    pub pitch_gain_activations: Vec<f32>,
+    pub drift_compensation: Vector2<f32>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -91,6 +94,8 @@ pub struct OverlayRect {
 pub struct CameraTrackedRegion {
     /// Horizontal camera extents [-1,1], aspect correct, Y+ down
     pub rect: Vector4<f32>,
+    /// Previous frame's corresponding rectangle.
+    pub previous_rect: Vector4<f32>,
     /// Peak to side ratio (tracking quality)
     pub psr: f32,
     /// Number of frames since last tracking reset
@@ -105,6 +110,7 @@ impl CameraTrackedRegion {
     pub fn new() -> CameraTrackedRegion {
         CameraTrackedRegion {
             rect: [0.0, 0.0, 0.0, 0.0],
+            previous_rect: [0.0, 0.0, 0.0, 0.0],
             psr: 0.0,
             age: 0,
             frame: 0,

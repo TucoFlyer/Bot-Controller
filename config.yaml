@@ -30,35 +30,37 @@ gimbal:
   max_rate: 408
   yaw_gains: 
     - 
-      width: 0.3386000096797943
-      p_gain: 291.4161071777344
-      i_gain: 2.2525999546051025
+      width: 0.30709999799728394
+      p_gain: 163.69529724121094
+      i_gain: 1.2074999809265137
     - 
-      width: 0.05389999970793724
+      width: 0.08250000327825546
       p_gain: 953.57373046875
       i_gain: 3.8833999633789063
   pitch_gains: 
     - 
-      width: 0.3052999973297119
-      p_gain: 167.2209014892578
-      i_gain: 1.2853000164031982
+      width: 0.15729999542236328
+      p_gain: 49.34920120239258
+      i_gain: 0
     - 
-      width: 0.09260000288486481
-      p_gain: 948.0457763671875
-      i_gain: 2.7778000831604004
+      width: 0.05389999970793724
+      p_gain: 511.2578125
+      i_gain: 0.4440999925136566
   yaw_limits: 
-    - -1528
-    - 1544
+    - -1482
+    - 1477
   pitch_limits: 
-    - -400
-    - 350
-  limiter_gain: 14.23449993133545
+    - -346
+    - -147
+  limiter_gain: 1.395799994468689
   limiter_slowdown_extent: 
     - 407.18231201171875
     - 55.47949981689453
-  drift_compensation: 
-    - -0.9424999952316284
-    - 0.2287999987602234
+  drift_compensation_max: 6.478300094604492
+  drift_compensation_gain: 
+    - 98.46029663085938
+    - 65.55919647216797
+  drift_rect_speed_threshold: 0.008500000461935997
 overlay: 
   halt_color: 
     - 1
@@ -70,16 +72,16 @@ overlay:
     - 1
     - 1
     - 1
-    - 0.5199999809265137
+    - 1
   debug_background_color: 
     - 0
     - 0
     - 0
-    - 0.28999999165534973
+    - 0.75
   debug_text_height: 0.027300000190734863
   detector_outline_min_prob: 0
   detector_outline_max_thickness: 0.027000000700354576
-  detector_label_min_prob: 0.30720001459121704
+  detector_label_min_prob: 0.07199999690055847
   detector_label_prob_values: true
   detector_default_outline_color: 
     - 0.34117648005485535
@@ -108,11 +110,16 @@ overlay:
     - 0.30588236451148987
     - 0.28999999165534973
   tracked_region_outline_thickness: 0.027499999850988388
+  gain_region_color: 
+    - 1
+    - 1
+    - 1
+    - 0.20000000298023224
   particle_color: 
     - 0.9254902005195618
     - 0.9647058844566345
     - 0.14509804546833038
-    - 0.5699999928474426
+    - 0.3400000035762787
   particle_size: 0.04820000007748604
   particle_sprite: 
     - 146
@@ -134,9 +141,11 @@ vision:
     - 1.125
   manual_control_deadzone: 0.04569999873638153
   manual_control_speed: 2.5485000610351563
-  manual_control_restoring_force: 0.9634000062942505
-  manual_control_timeout_sec: 0.40290001034736633
+  manual_control_restoring_force: 1.9467999935150146
+  manual_control_timeout_sec: 0.050599999725818634
   tracking_default_area: 0.1899999976158142
+  tracking_min_area: 0
+  tracking_max_area: 4
   snap_tracked_region_to: 
     - 
       - cat
@@ -199,7 +208,7 @@ lighting:
     frame_rate: 160
     filter_param: 0.15000000596046448
   current: 
-    brightness: 0.20000000298023224
+    brightness: 1.3700000047683716
     flash_rate_hz: 1.9199999570846558
     flash_exponent: 3.180000066757202
     winch: 
