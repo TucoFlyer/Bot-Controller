@@ -175,9 +175,7 @@ pub struct GimbalConfig {
     pub pitch_limits: (i16, i16),
     pub limiter_gain: f32,
     pub limiter_slowdown_extent: Vector2<f32>,
-    pub drift_compensation_max: f32,
-    pub drift_compensation_gain: Vector2<f32>,
-    pub drift_rect_speed_threshold: f32,
+    pub hold_gain: f32,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]

@@ -56,11 +56,7 @@ gimbal:
   limiter_slowdown_extent: 
     - 407.18231201171875
     - 55.47949981689453
-  drift_compensation_max: 6.478300094604492
-  drift_compensation_gain: 
-    - 98.46029663085938
-    - 65.55919647216797
-  drift_rect_speed_threshold: 0.008500000461935997
+  hold_gain: 0.03319999948143959
 overlay: 
   halt_color: 
     - 1

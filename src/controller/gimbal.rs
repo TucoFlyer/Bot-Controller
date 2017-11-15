@@ -7,56 +7,12 @@ use fygimbal::util::vec2_encoder_sub;
 use fygimbal::GimbalPort;
 use std::time::{Duration, Instant};
 
-struct GimbalValueState {
-    last_requested: Option<Instant>,
-    last_update: Option<(Instant, GimbalValueData)>,
-}
-
-impl GimbalValueState {
-    fn new() -> GimbalValueState {
-        GimbalValueState {
-            last_requested: None,
-            last_update: None,
-        }
-    }
-
-    fn poll_for_request(&mut self, interval_millis: u64) -> bool {
-        let now = Instant::now();
-        let needs_request = match self.last_requested {
-            None => true,
-            Some(timestamp) => now > timestamp + Duration::from_millis(interval_millis),
-        };
-        if needs_request {
-            self.last_requested = Some(now);
-            true
-        } else {
-            false
-        }
-    }
-
-    fn value_with_max_age(&self, stale_flag: &mut bool, millis: u64) -> i16 {
-        let max_age = Duration::from_millis(millis);
-        let now = Instant::now();
-        match self.last_update {
-            None => {
-                *stale_flag = true;
-                0
-            },
-            Some((timestamp, ref data)) => {
-                if now > timestamp + max_age {
-                    *stale_flag = true;
-                }
-                data.value
-            }
-        }
-    }
-}
-
 pub struct GimbalController {
     values: Vec<Vec<GimbalValueState>>,
     yaw_tracking_i: Vec<f32>,
     pitch_tracking_i: Vec<f32>,
-    drift_compensation: Vector2<f32>,
+    hold_angles: Vector2<i16>,
+    hold_active: Vector2<bool>,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -75,7 +31,8 @@ impl GimbalController {
             }).collect(),
             yaw_tracking_i: Vec::new(),
             pitch_tracking_i: Vec::new(),
-            drift_compensation: [0.0, 0.0],
+            hold_angles: [0, 0],
+            hold_active: [false, false],
         }
     }
 
@@ -92,7 +49,8 @@ impl GimbalController {
             tracking_i_rates: [0.0, 0.0],
             yaw_gain_activations: config.gimbal.yaw_gains.iter().map(|_| 0.0).collect(),
             pitch_gain_activations: config.gimbal.pitch_gains.iter().map(|_| 0.0).collect(),
-            drift_compensation: self.drift_compensation,
+            hold_angles: self.hold_angles,
+            hold_active: self.hold_active,
         };
 
         if !stale_flag {
@@ -101,16 +59,6 @@ impl GimbalController {
 
         gimbal.write_control_rates(status.rates);
         status
-    }
-
-    pub fn drift_compensation_tracking_update(&mut self, config: &Config, tracked: CameraTrackedRegion) {
-        let diff = vec2_sub(rect_center(tracked.previous_rect), rect_center(tracked.rect));
-        if vec2_square_len(diff) < config.gimbal.drift_rect_speed_threshold.powi(2) {
-            let comp = vec2_mul(diff, config.gimbal.drift_compensation_gain);
-            let comp = vec2_add(self.drift_compensation, comp);
-            let comp = vec2_clamp_len(comp, config.gimbal.drift_compensation_max);
-            self.drift_compensation = comp;
-        }
     }
 
     fn tracking_tick(&mut self, config: &Config, tracked: &CameraTrackedRegion, status: &mut GimbalControlStatus) {
@@ -150,13 +98,24 @@ impl GimbalController {
         status.tracking_i_rates = [xi, yi];
 
         let rates = if config.mode == ControllerMode::Halted {
-            // Tracking disabled (but limiter and drift compensation work)
+            // Tracking disabled (but limiter and hold mode work)
             [0.0, 0.0]
         } else {
             vec2_add(status.tracking_i_rates, status.tracking_p_rates)
         };
 
-        let rates = vec2_add(rates, status.drift_compensation);
+        self.hold_active = [rates[0] == 0.0, rates[1] == 0.0];
+        if self.hold_active[0] && !status.hold_active[0] { self.hold_angles[0] = status.angles[0]; }
+        if self.hold_active[1] && !status.hold_active[1] { self.hold_angles[1] = status.angles[1]; }
+
+        let hold_err = vec2_sub(status.hold_angles, status.angles);
+        let hold_rates = vec2_scale([hold_err[0] as f32, hold_err[1] as f32], config.gimbal.hold_gain);
+
+        let rates = [
+            if status.hold_active[0] { hold_rates[0] } else { rates[0] },
+            if status.hold_active[1] { hold_rates[1] } else { rates[1] },
+        ];
+
         let rates = self.limiter(config, status.angles, rates);
         let rates = vec2_clamp_len(rates, config.gimbal.max_rate);
         status.rates = self.dither_rates(rates);
@@ -227,6 +186,51 @@ impl GimbalController {
         let target = data.addr.target as usize;
         if index < fygimbal::protocol::NUM_VALUES && target < fygimbal::protocol::NUM_AXES {
             self.values[index][target].last_update = Some((Instant::now(), data));
+        }
+    }
+}
+
+struct GimbalValueState {
+    last_requested: Option<Instant>,
+    last_update: Option<(Instant, GimbalValueData)>,
+}
+
+impl GimbalValueState {
+    fn new() -> GimbalValueState {
+        GimbalValueState {
+            last_requested: None,
+            last_update: None,
+        }
+    }
+
+    fn poll_for_request(&mut self, interval_millis: u64) -> bool {
+        let now = Instant::now();
+        let needs_request = match self.last_requested {
+            None => true,
+            Some(timestamp) => now > timestamp + Duration::from_millis(interval_millis),
+        };
+        if needs_request {
+            self.last_requested = Some(now);
+            true
+        } else {
+            false
+        }
+    }
+
+    fn value_with_max_age(&self, stale_flag: &mut bool, millis: u64) -> i16 {
+        let max_age = Duration::from_millis(millis);
+        let now = Instant::now();
+        match self.last_update {
+            None => {
+                *stale_flag = true;
+                0
+            },
+            Some((timestamp, ref data)) => {
+                if now > timestamp + max_age {
+                    *stale_flag = true;
+                }
+                data.value
+            }
         }
     }
 }

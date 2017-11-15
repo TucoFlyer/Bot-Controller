@@ -200,7 +200,6 @@ impl Controller {
             },
 
             Message::Command(Command::CameraRegionTracking(tr)) => {
-                self.gimbal_ctrl.drift_compensation_tracking_update(&self.local_config, tr.clone());
                 self.state.camera_region_tracking_update(tr);
             },
 
