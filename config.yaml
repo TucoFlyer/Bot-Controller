@@ -135,13 +135,13 @@ vision:
     - -0.5625
     - 2
     - 1.125
-  manual_control_deadzone: 0.04569999873638153
-  manual_control_speed: 2.5485000610351563
-  manual_control_restoring_force: 1.9467999935150146
-  manual_control_timeout_sec: 0.050599999725818634
-  tracking_default_area: 0.1899999976158142
-  tracking_min_area: 0
-  tracking_max_area: 4
+  manual_control_deadzone: 0.1404999941587448
+  manual_control_speed: 1.989300012588501
+  manual_control_restoring_force: 1.9795000553131104
+  manual_control_timeout_sec: 0.021199999377131462
+  tracking_default_area: 0.16779999434947968
+  tracking_min_area: 0.03220000118017197
+  tracking_max_area: 1.080199956893921
   snap_tracked_region_to: 
     - 
       - cat

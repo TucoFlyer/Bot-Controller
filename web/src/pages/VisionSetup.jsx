@@ -16,18 +16,18 @@ export default (props) => {
         <ConfigSlider item="vision.manual_control_restoring_force" min="0.0" max="10.0" step="1e-4" />
 
         <h6>Idle timeout (seconds)</h6>
-        <ConfigSlider item="vision.manual_control_timeout_sec" min="0.0" max="2.0" step="1e-4" />
+        <ConfigSlider item="vision.manual_control_timeout_sec" min="0.0" max="0.1" step="1e-4" />
 
         <h4>Tracked Region</h4>
 
         <h6>Default area for manual control</h6>
-        <ConfigSlider item="vision.tracking_default_area" min="0.0" max="0.5" step="1e-4" />
+        <ConfigSlider item="vision.tracking_default_area" min="0.0" max="2.0" step="1e-4" />
 
         <h6>Minimum allowed area during automatic control</h6>
-        <ConfigSlider item="vision.tracking_min_area" min="0.0" max="0.5" step="1e-4" />
+        <ConfigSlider item="vision.tracking_min_area" min="0.0" max="2.0" step="1e-4" />
 
         <h6>Maximum allowed area during automatic control</h6>
-        <ConfigSlider item="vision.tracking_max_area" min="0.0" max="4.0" step="1e-4" />
+        <ConfigSlider item="vision.tracking_max_area" min="0.0" max="2.0" step="1e-4" />
 
     </div>;
 }
