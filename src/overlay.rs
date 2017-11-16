@@ -167,6 +167,7 @@ pub struct ParticleDrawing {
 struct Particle {
 	position: Vector2<f32>,
 	velocity: Vector2<f32>,
+	sprite: Vector4<i32>,
 }
 
 impl ParticleDrawing {
@@ -179,11 +180,12 @@ impl ParticleDrawing {
 	fn update_particle_count(&mut self, config: &Config) {
 		self.particles.truncate(config.overlay.particle_count);
 
+		let velocity = [ 0.0, 0.0 ];
+		let sprites = &config.overlay.particle_sprites;
 		while self.particles.len() < config.overlay.particle_count {
-			self.particles.push(Particle {
-				position: vec2_rand_from_centered_unit_square(),
-				velocity: [ 0.0, 0.0 ]
-			});
+			let sprite = sprites[self.particles.len() % sprites.len()];
+			let position = vec2_rand_from_centered_unit_square();
+			self.particles.push(Particle { sprite, position, velocity });
 		}
 	}
 
@@ -207,7 +209,7 @@ impl ParticleDrawing {
 					}
 				}
 			}
-		}		
+		}
 	}
 
 	fn update_dynamics(&mut self, config: &Config) {
@@ -218,7 +220,7 @@ impl ParticleDrawing {
 			let v = vec2_add(v_damped, v_rand);
 			self.particles[p].velocity = v;
 			self.particles[p].position = vec2_add(self.particles[p].position, vec2_scale(v, dt));
-		}		
+		}
 	}
 
 	pub fn follow_rect(&mut self, config: &Config, rect: Vector4<f32>) {
@@ -234,7 +236,7 @@ impl ParticleDrawing {
 			let v_edge = vec2_scale(edge_diff, config.overlay.particle_edge_gain);
 			let v_perp = vec2_scale(perpendicular, config.overlay.particle_perpendicular_gain);
 			let v = vec2_add(v_edge, v_perp);
-			
+
 			self.particles[p].velocity = vec2_add(self.particles[p].velocity, v);
 		}
 
@@ -246,7 +248,7 @@ impl ParticleDrawing {
 		let rect = rect_centered_on_origin(config.overlay.particle_size, config.overlay.particle_size);
 		draw.current.color = config.overlay.particle_color;
 		for particle in &self.particles {
-			draw.sprite_rect(rect_translate(rect, particle.position), config.overlay.particle_sprite);
+			draw.sprite_rect(rect_translate(rect, particle.position), particle.sprite);
 		}
 	}
 }

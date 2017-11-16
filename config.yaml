@@ -56,7 +56,7 @@ gimbal:
   limiter_slowdown_extent: 
     - 407.18231201171875
     - 55.47949981689453
-  hold_gain: 0.03319999948143959
+  hold_gain: 0.21889999508857727
 overlay: 
   halt_color: 
     - 1
@@ -117,11 +117,22 @@ overlay:
     - 0.14509804546833038
     - 0.3400000035762787
   particle_size: 0.04820000007748604
-  particle_sprite: 
-    - 146
-    - 413
-    - 74
-    - 74
+  particle_sprites: 
+    - 
+      - 118
+      - 432
+      - 78
+      - 78
+    - 
+      - 200
+      - 445
+      - 69
+      - 63
+    - 
+      - 271
+      - 426
+      - 100
+      - 81
   particle_count: 10
   particle_damping: 0.049837999045848846
   particle_edge_gain: 0.6951969861984253
@@ -204,7 +215,7 @@ lighting:
     frame_rate: 160
     filter_param: 0.15000000596046448
   current: 
-    brightness: 1.3700000047683716
+    brightness: 1
     flash_rate_hz: 1.9199999570846558
     flash_exponent: 3.180000066757202
     winch: 

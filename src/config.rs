@@ -143,7 +143,7 @@ pub struct OverlayConfig {
     pub gain_region_color: Vector4<f32>,
     pub particle_color: Vector4<f32>,
     pub particle_size: f32,
-    pub particle_sprite: Vector4<i32>,
+    pub particle_sprites: Vec<Vector4<i32>>,
     pub particle_count: usize,
     pub particle_damping: f32,
     pub particle_edge_gain: f32,
