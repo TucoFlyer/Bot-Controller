@@ -116,7 +116,7 @@ overlay:
     - 0.9647058844566345
     - 0.14509804546833038
     - 0.3400000035762787
-  particle_size: 0.04820000007748604
+  particle_size: 0.06669999659061432
   particle_sprites: 
     - 
       - 118
@@ -136,10 +136,10 @@ overlay:
   particle_count: 10
   particle_damping: 0.049837999045848846
   particle_edge_gain: 0.6951969861984253
-  particle_perpendicular_gain: 0.07074499875307083
+  particle_perpendicular_gain: 0.047249000519514084
   particle_min_distance: 0.27917298674583435
   particle_min_distance_gain: 0.008185000158846378
-  particle_random_gain: 0.162555992603302
+  particle_random_gain: 0.06603600084781647
 vision: 
   border_rect: 
     - -1
