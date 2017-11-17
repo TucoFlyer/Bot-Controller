@@ -7,6 +7,15 @@ export default (props) => {
 
     return <div>
 
+        <h6>Gain for hold mode</h6>
+        <ConfigSlider item="gimbal.hold_gain" min="0" max="3.0" step="1e-4" />
+
+        <h6>Max gimbal control rate</h6>
+        <ConfigSlider item="gimbal.max_rate" min="0" max="800" step="1" />
+
+        <h6>Integrator decay rate</h6>
+        <ConfigSlider item="gimbal.i_decay_rate" min="0" max="0.02" step="1e-4" />
+
         <h4>Yaw Tracking</h4>
 
         <h5>Gain region 0</h5>
@@ -55,15 +64,7 @@ export default (props) => {
         <h6>Integral gain</h6>
         <ConfigSlider item="gimbal.pitch_gains.1.i_gain" min="0" max="10.0" step="1e-4" />
 
-        <h4>Angle Hold</h4>
-
-        <h6>Gain for hold mode</h6>
-        <ConfigSlider item="gimbal.hold_gain" min="0" max="3.0" step="1e-4" />
-
         <h4>Limits</h4>
-
-        <h6>Max gimbal control rate</h6>
-        <ConfigSlider item="gimbal.max_rate" min="0" max="800" step="1" />
 
         <h6>Yaw limits, min/max</h6>
         <ConfigSlider item="gimbal.yaw_limits.0" min="-2048" max="2048" step="1" />

@@ -185,6 +185,7 @@ pub struct GimbalConfig {
     pub limiter_gain: f32,
     pub limiter_slowdown_extent: Vector2<f32>,
     pub hold_gain: f32,
+    pub i_decay_rate: f32,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]

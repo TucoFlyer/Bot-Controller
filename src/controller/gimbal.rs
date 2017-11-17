@@ -82,8 +82,8 @@ impl GimbalController {
                 let err = (gain.width - lower_dist).max(0.0) - (gain.width - upper_dist).max(0.0);
                 errs[index] = err;
                 if i_state[index] * err <= 0.0 {
-                    // Halt or change directions; clear integral gain accumulator
-                    i_state[index] = 0.0;
+                    // Halt or change directions; reduce integral gain accumulator
+                    i_state[index] -= i_state[index] * config.gimbal.i_decay_rate;
                 }
                 i_state[index] += err;
                 p += err * gain.p_gain;
