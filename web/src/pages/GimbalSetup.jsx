@@ -7,8 +7,11 @@ export default (props) => {
 
     return <div>
 
-        <h6>Gain for hold mode</h6>
-        <ConfigSlider item="gimbal.hold_gain" min="0" max="3.0" step="1e-4" />
+        <h6>Hold gain</h6>
+        <ConfigSlider item="gimbal.hold_gain" min="0" max="0.5" step="1e-4" />
+
+        <h6>Limiter gain</h6>
+        <ConfigSlider item="gimbal.limiter_gain" min="0" max="1.0" step="1e-4" />
 
         <h6>Max gimbal control rate</h6>
         <ConfigSlider item="gimbal.max_rate" min="0" max="800" step="1" />
@@ -73,9 +76,6 @@ export default (props) => {
         <h6>Pitch limits, min/max</h6>
         <ConfigSlider item="gimbal.pitch_limits.0" min="-1024" max="1024" step="1" />
         <ConfigSlider item="gimbal.pitch_limits.1" min="-1024" max="1024" step="1" />
-
-        <h6>Limiter gain</h6>
-        <ConfigSlider item="gimbal.limiter_gain" min="0" max="100" step="1e-4" />
 
         <h6>Limiter slowdown extent</h6>
         <ConfigSlider item="gimbal.limiter_slowdown_extent.0" min="1" max="500" step="1e-4" />
