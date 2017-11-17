@@ -7,9 +7,9 @@ export default (props) => {
 
     return <div>
 
-        <h4>Tracking</h4>
+        <h4>Yaw Tracking</h4>
 
-        <h5>Yaw gain region 0</h5>
+        <h5>Gain region 0</h5>
 
         <h6>Width</h6>
         <ConfigSlider item="gimbal.yaw_gains.0.width" min="0" max="1.0" step="1e-4" />
@@ -20,7 +20,7 @@ export default (props) => {
         <h6>Integral gain</h6>
         <ConfigSlider item="gimbal.yaw_gains.0.i_gain" min="0" max="10.0" step="1e-4" />
 
-        <h5>Yaw gain region 1</h5>
+        <h5>Gain region 1</h5>
 
         <h6>Width</h6>
         <ConfigSlider item="gimbal.yaw_gains.1.width" min="0" max="1.0" step="1e-4" />
@@ -31,7 +31,9 @@ export default (props) => {
         <h6>Integral gain</h6>
         <ConfigSlider item="gimbal.yaw_gains.1.i_gain" min="0" max="10.0" step="1e-4" />
 
-        <h5>Pitch gain region 0</h5>
+        <h4>Pitch Tracking</h4>
+
+        <h5>Gain region 0</h5>
 
         <h6>Width</h6>
         <ConfigSlider item="gimbal.pitch_gains.0.width" min="0" max="1.0" step="1e-4" />
@@ -42,7 +44,7 @@ export default (props) => {
         <h6>Integral gain</h6>
         <ConfigSlider item="gimbal.pitch_gains.0.i_gain" min="0" max="10.0" step="1e-4" />
 
-        <h5>Pitch gain region 1</h5>
+        <h5>Gain region 1</h5>
 
         <h6>Width</h6>
         <ConfigSlider item="gimbal.pitch_gains.1.width" min="0" max="1.0" step="1e-4" />
@@ -56,7 +58,7 @@ export default (props) => {
         <h4>Angle Hold</h4>
 
         <h6>Gain for hold mode</h6>
-        <ConfigSlider item="gimbal.hold_gain" min="0" max="0.3" step="1e-4" />
+        <ConfigSlider item="gimbal.hold_gain" min="0" max="3.0" step="1e-4" />
 
         <h4>Limits</h4>
 

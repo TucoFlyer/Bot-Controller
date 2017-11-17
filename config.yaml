@@ -56,7 +56,7 @@ gimbal:
   limiter_slowdown_extent: 
     - 407.18231201171875
     - 55.47949981689453
-  hold_gain: 0.21889999508857727
+  hold_gain: 1.885599970817566
 overlay: 
   halt_color: 
     - 1
