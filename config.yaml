@@ -52,7 +52,7 @@ gimbal:
   pitch_limits: 
     - -415
     - 113
-  limiter_gain: 1.395799994468689
+  limiter_gain: 3.186000108718872
   limiter_slowdown_extent: 
     - 407.18231201171875
     - 55.47949981689453

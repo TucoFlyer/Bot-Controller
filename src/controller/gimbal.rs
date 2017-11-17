@@ -122,34 +122,25 @@ impl GimbalController {
     }
 
     fn limiter(&self, config: &Config, angles: Vector2<i16>, rates: Vector2<f32>) -> Vector2<f32> {
+        let axis = |rate: f32, angle: i16, limits: (i16, i16), slowdown_extent: f32| {
+            let angle = angle as f32;
+            let limits = (limits.0 as f32, limits.1 as f32);
 
-        let single_edge = |rate: f32, distance: i16, out_dir: i16, slowdown_extent: f32| {
-            let outside_distance = distance * out_dir;
-            let rate = rate + if outside_distance > 0 {
-                // Past the limit; push back inward
-                (-distance as f32) * config.gimbal.limiter_gain
+            if angle < limits.0 {
+                rate.max(0.0) + (limits.0 - angle) * config.gimbal.limiter_gain
+            } else if angle > limits.1 {
+                rate.min(0.0) + (limits.1 - angle) * config.gimbal.limiter_gain
+            } else if angle < limits.0 + slowdown_extent {
+                rate.max((angle - limits.0) / slowdown_extent * config.gimbal.max_rate)
+            } else if angle > limits.1 - slowdown_extent {
+                rate.min((limits.1 - angle) / slowdown_extent * config.gimbal.max_rate)
             } else {
-                0.0
-            };
-
-            let outward_limit = if outside_distance >= 0 {
-                0.0
-            } else {
-                (-outside_distance as f32) / slowdown_extent
-            };
-            let outward_limit = outward_limit.max(0.0).min(1.0) * config.gimbal.max_rate;
-
-            if out_dir > 0 { rate.min(outward_limit) } else { rate.max(-outward_limit) }
+                rate
+            }
         };
-
         [
-            single_edge(single_edge(rates[0],
-                angles[0] - config.gimbal.yaw_limits.0, -1, config.gimbal.limiter_slowdown_extent[0]),
-                angles[0] - config.gimbal.yaw_limits.1, 1, config.gimbal.limiter_slowdown_extent[0]),
-
-            single_edge(single_edge(rates[1],
-                angles[1] - config.gimbal.pitch_limits.0, -1, config.gimbal.limiter_slowdown_extent[1]),
-                angles[1] - config.gimbal.pitch_limits.1, 1, config.gimbal.limiter_slowdown_extent[1])
+            axis(rates[0], angles[0], config.gimbal.yaw_limits, config.gimbal.limiter_slowdown_extent[0]),
+            axis(rates[1], angles[1], config.gimbal.pitch_limits, config.gimbal.limiter_slowdown_extent[1])
         ]
     }
 
