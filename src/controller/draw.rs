@@ -102,3 +102,38 @@ pub fn tracking_gains(config: &Config, draw: &mut DrawingContext, gimbal: &Optio
         }
     }
 }
+
+pub fn gimbal_status(config: &Config, draw: &mut DrawingContext, gimbal: &Option<GimbalControlStatus>) {
+    if let &Some(ref gimbal) = gimbal {
+
+        draw.current.background_color = config.overlay.gimbal_background_color;
+        draw.current.outline_color = config.overlay.gimbal_outline_color;
+        draw.current.outline_thickness = config.overlay.gimbal_outline_thickness;
+
+        let angles = gimbal.angles;
+        let yaw_limits = config.gimbal.yaw_limits;
+        let pitch_limits = config.gimbal.pitch_limits;
+        let rect_center = config.overlay.gimbal_rect_center;
+        let rect_width = config.overlay.gimbal_rect_width;
+
+        let yaw_extent = (yaw_limits.1 - yaw_limits.0) as f32;
+        let pitch_extent = (pitch_limits.1 - pitch_limits.0) as f32;
+
+        let rect_height = rect_width * pitch_extent / yaw_extent;
+        let rect = rect_translate(rect_centered_on_origin(rect_width, rect_height), rect_center);
+
+        let rel_x = (angles[0] - yaw_limits.0) as f32 / yaw_extent;
+        let rel_y = (angles[1] - pitch_limits.0) as f32 / pitch_extent;
+
+        let cursor_center = [ rect[0] + rect[2] * (1.0 - rel_x), rect[1] + rect[3] * (1.0 - rel_y) ];
+        let cursor_size = config.overlay.gimbal_cursor_size;
+        let cursor_rect = rect_translate(rect_centered_on_origin(cursor_size, cursor_size), cursor_center);
+
+        draw.background_rect(rect);
+
+        draw.current.color = config.overlay.gimbal_cursor_color;
+        draw.sprite_rect(cursor_rect, config.overlay.gimbal_cursor_sprite);
+
+        draw.outline_rect(rect);
+    }
+}

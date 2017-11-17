@@ -89,5 +89,29 @@ export default (props) => {
         <h6>Halt border color</h6>
         <ConfigColorAlpha item="overlay.halt_color" />
 
+        <h4>Gimbal Status</h4>
+
+        <h6>Center position</h6>
+        <ConfigSlider item="overlay.gimbal_rect_center.0" min="-1.0" max="1.0" step="1e-4" />
+        <ConfigSlider item="overlay.gimbal_rect_center.1" min="-1.0" max="1.0" step="1e-4" />
+
+        <h6>Width</h6>
+        <ConfigSlider item="overlay.gimbal_rect_width" min="0" max="1.0" step="1e-4" />
+
+        <h6>Background color</h6>
+        <ConfigColorAlpha item="overlay.gimbal_background_color" />
+
+        <h6>Outline color</h6>
+        <ConfigColorAlpha item="overlay.gimbal_outline_color" />
+
+        <h6>Outline thickness</h6>
+        <ConfigSlider item="overlay.gimbal_outline_thickness" min="0.0" max="0.05" step="1e-4" />
+
+        <h6>Cursor color</h6>
+        <ConfigColorAlpha item="overlay.gimbal_cursor_color" />
+
+        <h6>Cursor size</h6>
+        <ConfigSlider item="overlay.gimbal_cursor_size" min="0.0" max="0.2" step="1e-4" />
+
     </div>;
 }

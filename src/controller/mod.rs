@@ -159,6 +159,7 @@ impl Controller {
         draw::detected_objects(config, &mut self.draw, &self.state.detected.1);
         draw::tracking_gains(config, &mut self.draw, &self.gimbal_status);
         draw::tracking_rect(config, &mut self.draw, &self.state.tracked, &self.state.manual);
+        draw::gimbal_status(config, &mut self.draw, &self.gimbal_status);
         self.state.tracking_particles.render(config, &mut self.draw);
         draw::debug_text(config, &mut self.draw, format!("{:?}, {:?}", config.mode, self.gimbal_status));
     }

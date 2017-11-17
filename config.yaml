@@ -41,7 +41,7 @@ gimbal:
     - 
       width: 0.15729999542236328
       p_gain: 49.34920120239258
-      i_gain: 0
+      i_gain: 0.0934000015258789
     - 
       width: 0.05389999970793724
       p_gain: 511.2578125
@@ -50,8 +50,8 @@ gimbal:
     - -1482
     - 1477
   pitch_limits: 
-    - -346
-    - -147
+    - -415
+    - 113
   limiter_gain: 1.395799994468689
   limiter_slowdown_extent: 
     - 407.18231201171875
@@ -68,12 +68,12 @@ overlay:
     - 1
     - 1
     - 1
-    - 1
+    - 0
   debug_background_color: 
     - 0
     - 0
     - 0
-    - 0.75
+    - 0
   debug_text_height: 0.027300000190734863
   detector_outline_min_prob: 0
   detector_outline_max_thickness: 0.027000000700354576
@@ -140,6 +140,32 @@ overlay:
   particle_min_distance: 0.27917298674583435
   particle_min_distance_gain: 0.008185000158846378
   particle_random_gain: 0.06603600084781647
+  gimbal_rect_center: 
+    - 0.003000000026077032
+    - 0.5038999915122986
+  gimbal_rect_width: 0.4603999853134155
+  gimbal_background_color: 
+    - 0
+    - 0
+    - 0
+    - 0.05999999865889549
+  gimbal_outline_color: 
+    - 1
+    - 1
+    - 1
+    - 0.10999999940395355
+  gimbal_outline_thickness: 0.004100000020116568
+  gimbal_cursor_color: 
+    - 0.6274510025978088
+    - 0.8784313797950745
+    - 0.9529411792755127
+    - 0.7699999809265137
+  gimbal_cursor_size: 0.015300000086426735
+  gimbal_cursor_sprite: 
+    - 262
+    - 294
+    - 16
+    - 16
 vision: 
   border_rect: 
     - -1

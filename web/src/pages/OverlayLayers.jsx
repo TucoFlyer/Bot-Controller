@@ -31,5 +31,14 @@ export default (props) => {
         <h6>Debug text background</h6>
         <ConfigSlider item="overlay.debug_background_color.3" min="0.0" max="1.0" step="1e-2" />
 
+        <h6>Gimbal background</h6>
+        <ConfigSlider item="overlay.gimbal_background_color.3" min="0.0" max="1.0" step="1e-2" />
+
+        <h6>Gimbal outline</h6>
+        <ConfigSlider item="overlay.gimbal_outline_color.3" min="0.0" max="1.0" step="1e-2" />
+
+        <h6>Gimbal cursor</h6>
+        <ConfigSlider item="overlay.gimbal_cursor_color.3" min="0.0" max="1.0" step="1e-2" />
+
     </div>;
 }

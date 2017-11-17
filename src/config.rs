@@ -151,6 +151,14 @@ pub struct OverlayConfig {
     pub particle_min_distance: f32,
     pub particle_min_distance_gain: f32,
     pub particle_random_gain: f32,
+    pub gimbal_rect_center: Vector2<f32>,
+    pub gimbal_rect_width: f32,
+    pub gimbal_background_color: Vector4<f32>,
+    pub gimbal_outline_color: Vector4<f32>,
+    pub gimbal_outline_thickness: f32,
+    pub gimbal_cursor_color: Vector4<f32>,
+    pub gimbal_cursor_size: f32,
+    pub gimbal_cursor_sprite: Vector4<i32>,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
