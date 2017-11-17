@@ -167,6 +167,7 @@ pub struct VisionConfig {
     pub manual_control_deadzone: f32,
     pub manual_control_speed: f32,
     pub manual_control_restoring_force: f32,
+    pub manual_control_restoring_force_width: f32,
     pub manual_control_timeout_sec: f32,
     pub tracking_default_area: f32,
     pub tracking_min_area: f32,

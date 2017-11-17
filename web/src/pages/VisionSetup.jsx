@@ -13,10 +13,13 @@ export default (props) => {
         <ConfigSlider item="vision.manual_control_speed" min="0.0" max="6.0" step="1e-4" />
 
         <h6>Restoring force</h6>
-        <ConfigSlider item="vision.manual_control_restoring_force" min="0.0" max="10.0" step="1e-4" />
+        <ConfigSlider item="vision.manual_control_restoring_force" min="0.0" max="20.0" step="1e-4" />
+
+        <h6>Restoring force, gain region width multiplier</h6>
+        <ConfigSlider item="vision.manual_control_restoring_force_width" min="1.0" max="1.5" step="1e-4" />
 
         <h6>Idle timeout (seconds)</h6>
-        <ConfigSlider item="vision.manual_control_timeout_sec" min="0.0" max="0.1" step="1e-4" />
+        <ConfigSlider item="vision.manual_control_timeout_sec" min="0.0" max="2.0" step="1e-4" />
 
         <h4>Tracked Region</h4>
 

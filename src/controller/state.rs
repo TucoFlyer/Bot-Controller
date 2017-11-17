@@ -56,23 +56,10 @@ impl ControllerState {
         self.lights.update(env);
     }
 
-    fn default_tracking_rect(config: &Config) -> Vector4<f32> {
-        let side_len = config.vision.tracking_default_area.sqrt();
-        rect_centered_on_origin(side_len, side_len)
-    }
-
     pub fn tracking_update(&mut self, config: &Config, time_step: f32) -> Option<Vector4<f32>> {
         if self.manual.camera_control_active() {
             // Manual tracking control temporarily overrides other sources
-            let camera_vec = self.manual.camera_vector();
-            let deadzone = ManualControls::camera_vector_in_deadzone(camera_vec, config);
-            let camera_vec = if deadzone { [0.0, 0.0] } else { camera_vec };
-            let velocity = vec2_mul(camera_vec, vec2_scale([1.0, -1.0], config.vision.manual_control_speed));
-            let restoring_force = vec2_scale([-1.0, -1.0], config.vision.manual_control_restoring_force);
-            let velocity = vec2_add(velocity, vec2_mul(rect_center(self.tracked.rect), restoring_force));
-            let center = vec2_add(rect_center(self.tracked.rect), vec2_scale(velocity, time_step));
-            self.tracked.rect = rect_translate(ControllerState::default_tracking_rect(config), center);
-            self.tracked.rect = rect_constrain(self.tracked.rect, config.vision.border_rect);
+            self.tracked.rect = self.manual.tracking_update(config, self.tracked.rect, time_step);
             Some(self.tracked.rect)
         }
         else if let Some(obj) = self.find_best_snap_object(config) {

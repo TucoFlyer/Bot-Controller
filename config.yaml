@@ -174,8 +174,9 @@ vision:
     - 1.125
   manual_control_deadzone: 0.1404999941587448
   manual_control_speed: 1.989300012588501
-  manual_control_restoring_force: 1.9795000553131104
-  manual_control_timeout_sec: 0.021199999377131462
+  manual_control_restoring_force: 7.347400188446045
+  manual_control_restoring_force_width: 1.149999976158142
+  manual_control_timeout_sec: 0.9296000003814697
   tracking_default_area: 0.16779999434947968
   tracking_min_area: 0.03220000118017197
   tracking_max_area: 1.080199956893921
