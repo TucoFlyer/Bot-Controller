@@ -65,6 +65,18 @@ export default (props) => {
                 trigger={gimbal_status_timestamp} timestamp={gimbal_status_timestamp} />
         </Chart>
 
+        <h6>Rates applied due to angle hold</h6>
+        <Chart>
+            <Series
+                strokeStyle='#a22'
+                value={ (model) => model.gimbal_status.message.GimbalControlStatus.hold_rates[0] }
+                trigger={gimbal_status_timestamp} timestamp={gimbal_status_timestamp} />
+            <Series
+                strokeStyle='#22a'
+                value={ (model) => model.gimbal_status.message.GimbalControlStatus.hold_rates[1] }
+                trigger={gimbal_status_timestamp} timestamp={gimbal_status_timestamp} />
+        </Chart>
+
         <h6>Current hold angles</h6>
         <Chart>
             <Series

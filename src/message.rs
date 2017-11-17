@@ -80,6 +80,7 @@ pub struct GimbalControlStatus {
     pub pitch_gain_activations: Vec<f32>,
     pub hold_angles: Vector2<i16>,
     pub hold_active: Vector2<bool>,
+    pub hold_rates: Vector2<f32>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]

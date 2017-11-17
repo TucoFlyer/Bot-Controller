@@ -49,8 +49,9 @@ impl GimbalController {
             tracking_i_rates: [0.0, 0.0],
             yaw_gain_activations: config.gimbal.yaw_gains.iter().map(|_| 0.0).collect(),
             pitch_gain_activations: config.gimbal.pitch_gains.iter().map(|_| 0.0).collect(),
-            hold_angles: self.hold_angles,
-            hold_active: self.hold_active,
+            hold_angles: [0, 0],
+            hold_active: [false, false],
+            hold_rates: [0.0, 0.0],
         };
 
         if !stale_flag {
@@ -104,17 +105,29 @@ impl GimbalController {
             vec2_add(status.tracking_i_rates, status.tracking_p_rates)
         };
 
-        self.hold_active = [rates[0] == 0.0, rates[1] == 0.0];
-        if self.hold_active[0] && !status.hold_active[0] { self.hold_angles[0] = status.angles[0]; }
-        if self.hold_active[1] && !status.hold_active[1] { self.hold_angles[1] = status.angles[1]; }
+        let next_hold_active = if config.mode == ControllerMode::Halted {
+            // Always hold position in halt mode
+            [true, true]
+        } else {
+            // Look for transition in/out of proportional gain region.
+            // Ignore integral gain here, as it needs to persist across the transition into hold mode.
+            [ status.tracking_p_rates[0] == 0.0, status.tracking_p_rates[1] == 0.0 ]
+        };
+
+        // Capture angles at the beginning of a hold
+        if next_hold_active[0] && !self.hold_active[0] { self.hold_angles[0] = status.angles[0]; }
+        if next_hold_active[1] && !self.hold_active[1] { self.hold_angles[1] = status.angles[1]; }
+        self.hold_active = next_hold_active;
+        status.hold_angles = self.hold_angles;
+        status.hold_active = self.hold_active;
 
         let hold_err = vec2_sub(status.hold_angles, status.angles);
-        let hold_rates = vec2_scale([hold_err[0] as f32, hold_err[1] as f32], config.gimbal.hold_gain);
-
-        let rates = [
-            if status.hold_active[0] { hold_rates[0] } else { rates[0] },
-            if status.hold_active[1] { hold_rates[1] } else { rates[1] },
+        let hold_rates = [
+            if self.hold_active[0] { hold_err[0] as f32 * config.gimbal.hold_gain } else { 0.0 },
+            if self.hold_active[1] { hold_err[1] as f32 * config.gimbal.hold_gain } else { 0.0 },
         ];
+        status.hold_rates = hold_rates;
+        let rates = vec2_add(rates, hold_rates);
 
         let rates = self.limiter(config, status.angles, rates);
         let rates = vec2_clamp_len(rates, config.gimbal.max_rate);
@@ -127,13 +140,18 @@ impl GimbalController {
             let limits = (limits.0 as f32, limits.1 as f32);
 
             if angle < limits.0 {
+                // Past lower limit; spring back
                 rate.max(0.0) + (limits.0 - angle) * config.gimbal.limiter_gain
             } else if angle > limits.1 {
+                // Past upper limit; spring back
                 rate.min(0.0) + (limits.1 - angle) * config.gimbal.limiter_gain
             } else if angle < limits.0 + slowdown_extent {
-                rate.max((angle - limits.0) / slowdown_extent * config.gimbal.max_rate)
+                // In lower slowdown region
+                let speed_limit = (angle - limits.0) / slowdown_extent * config.gimbal.max_rate;
+                rate.max(-speed_limit)
             } else if angle > limits.1 - slowdown_extent {
-                rate.min((limits.1 - angle) / slowdown_extent * config.gimbal.max_rate)
+                let speed_limit = -(angle - limits.1) / slowdown_extent * config.gimbal.max_rate;
+                rate.min(speed_limit)
             } else {
                 rate
             }
