@@ -184,8 +184,10 @@ pub struct GimbalConfig {
     pub pitch_limits: (i16, i16),
     pub limiter_gain: f32,
     pub limiter_slowdown_extent: Vector2<f32>,
-    pub hold_gain: f32,
-    pub i_decay_rate: f32,
+    pub hold_p_gain: f32,
+    pub hold_i_gain: f32,
+    pub tracking_i_decay_rate: f32,
+    pub hold_i_decay_rate: f32,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
@@ -197,7 +199,7 @@ pub struct GimbalTrackingGain {
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct BotParams {
-    pub gimbal_max_control_rate: f32, 
+    pub gimbal_max_control_rate: f32,
     pub manual_control_velocity_m_per_sec: f32,
     pub accel_limit_m_per_sec2: f32,
     pub force_neg_motion_min_kg: f32,

@@ -13,6 +13,7 @@ pub struct GimbalController {
     pitch_tracking_i: Vec<f32>,
     hold_angles: Vector2<i16>,
     hold_active: Vector2<bool>,
+    hold_i: Vector2<f32>,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -33,6 +34,7 @@ impl GimbalController {
             pitch_tracking_i: Vec::new(),
             hold_angles: [0, 0],
             hold_active: [false, false],
+            hold_i: [0.0, 0.0],
         }
     }
 
@@ -47,22 +49,25 @@ impl GimbalController {
             rates: [0, 0],
             tracking_p_rates: [0.0, 0.0],
             tracking_i_rates: [0.0, 0.0],
+            hold_p_rates: [0.0, 0.0],
+            hold_i_rates: [0.0, 0.0],
             yaw_gain_activations: config.gimbal.yaw_gains.iter().map(|_| 0.0).collect(),
             pitch_gain_activations: config.gimbal.pitch_gains.iter().map(|_| 0.0).collect(),
-            hold_angles: [0, 0],
-            hold_active: [false, false],
-            hold_rates: [0.0, 0.0],
+            hold_angles: self.hold_angles,
+            hold_active: self.hold_active,
         };
 
         if !stale_flag {
-            self.tracking_tick(config, tracked, &mut status);
+            self.tracking_tick(config, &mut status, tracked);
+            self.hold_tick(config, &mut status);
+            self.gimbal_rate_tick(config, &mut status);
         }
 
         gimbal.write_control_rates(status.rates);
         status
     }
 
-    fn tracking_tick(&mut self, config: &Config, tracked: &CameraTrackedRegion, status: &mut GimbalControlStatus) {
+    fn tracking_tick(&mut self, config: &Config, status: &mut GimbalControlStatus, tracked: &CameraTrackedRegion) {
         let border = config.vision.border_rect;
         let left_dist = rect_left(tracked.rect) - rect_left(border);
         let top_dist = rect_top(tracked.rect) - rect_top(border);
@@ -84,7 +89,7 @@ impl GimbalController {
                 errs[index] = err;
                 if i_state[index] * err <= 0.0 {
                     // Halt or change directions; reduce integral gain accumulator
-                    i_state[index] -= i_state[index] * config.gimbal.i_decay_rate;
+                    i_state[index] -= i_state[index] * config.gimbal.tracking_i_decay_rate;
                 }
                 i_state[index] += err;
                 p += err * gain.p_gain;
@@ -97,14 +102,9 @@ impl GimbalController {
         let (yp, yi) = axis(&mut self.pitch_tracking_i, &mut status.pitch_gain_activations, &config.gimbal.pitch_gains, top_dist, bottom_dist);
         status.tracking_p_rates = [xp, yp];
         status.tracking_i_rates = [xi, yi];
+    }
 
-        let rates = if config.mode == ControllerMode::Halted {
-            // Tracking disabled (but limiter and hold mode work)
-            [0.0, 0.0]
-        } else {
-            vec2_add(status.tracking_i_rates, status.tracking_p_rates)
-        };
-
+    fn hold_tick(&mut self, config: &Config, status: &mut GimbalControlStatus) {
         let next_hold_active = if config.mode == ControllerMode::Halted {
             // Always hold position in halt mode
             [true, true]
@@ -122,13 +122,31 @@ impl GimbalController {
         status.hold_active = self.hold_active;
 
         let hold_err = vec2_sub(status.hold_angles, status.angles);
-        let hold_rates = [
-            if self.hold_active[0] { hold_err[0] as f32 * config.gimbal.hold_gain } else { 0.0 },
-            if self.hold_active[1] { hold_err[1] as f32 * config.gimbal.hold_gain } else { 0.0 },
-        ];
-        status.hold_rates = hold_rates;
-        let rates = vec2_add(rates, hold_rates);
 
+        for axis in 0..1 {
+            let err = hold_err[axis] as f32;
+            if next_hold_active[axis] {
+                self.hold_i[axis] += err;
+                status.hold_p_rates[axis] = err * config.gimbal.hold_p_gain;
+            } else {
+                self.hold_i[axis] -= self.hold_i[axis] * config.gimbal.hold_i_decay_rate;
+                status.hold_p_rates[axis] = 0.0;
+            }
+            status.hold_i_rates[axis] = self.hold_i[axis] * config.gimbal.hold_i_gain;
+        }
+    }
+
+    fn gimbal_rate_tick(&mut self, config: &Config, status: &mut GimbalControlStatus) {
+        // In halt, tracking is disabled (but limiter and hold mode work)
+        let tracking_rates = if config.mode == ControllerMode::Halted {
+            [0.0, 0.0]
+        } else {
+            vec2_add(status.tracking_i_rates, status.tracking_p_rates)
+        };
+
+        let hold_rates = vec2_add(status.hold_i_rates, status.hold_p_rates);
+
+        let rates = vec2_add(tracking_rates, hold_rates);
         let rates = self.limiter(config, status.angles, rates);
         let rates = vec2_clamp_len(rates, config.gimbal.max_rate);
         status.rates = self.dither_rates(rates);
