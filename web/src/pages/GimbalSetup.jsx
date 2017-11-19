@@ -11,7 +11,7 @@ export default (props) => {
         <ConfigSlider item="gimbal.hold_p_gain" min="0" max="0.5" step="1e-4" />
 
         <h6>Hold integral gain</h6>
-        <ConfigSlider item="gimbal.hold_i_gain" min="0" max="0.0001" step="1e-8" />
+        <ConfigSlider item="gimbal.hold_i_gain" min="0" max="0.0005" step="1e-8" />
 
         <h6>Limiter gain</h6>
         <ConfigSlider item="gimbal.limiter_gain" min="0" max="1.0" step="1e-4" />
@@ -20,10 +20,10 @@ export default (props) => {
         <ConfigSlider item="gimbal.max_rate" min="0" max="800" step="1" />
 
         <h6>Tracking integrator decay rate</h6>
-        <ConfigSlider item="gimbal.tracking_i_decay_rate" min="0" max="0.02" step="1e-4" />
+        <ConfigSlider item="gimbal.tracking_i_decay_rate" min="0" max="0.1" step="1e-4" />
 
         <h6>Hold integrator decay rate</h6>
-        <ConfigSlider item="gimbal.hold_i_decay_rate" min="0" max="0.02" step="1e-4" />
+        <ConfigSlider item="gimbal.hold_i_decay_rate" min="0" max="0.1" step="1e-4" />
 
         <h4>Yaw Tracking</h4>
 

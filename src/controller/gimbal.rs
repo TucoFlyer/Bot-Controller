@@ -123,7 +123,7 @@ impl GimbalController {
 
         let hold_err = vec2_sub(status.hold_angles, status.angles);
 
-        for axis in 0..1 {
+        for axis in 0..2 {
             let err = hold_err[axis] as f32;
             if next_hold_active[axis] {
                 self.hold_i[axis] += err;
