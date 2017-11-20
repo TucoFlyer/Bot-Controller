@@ -20,10 +20,10 @@ export default (props) => {
         <ConfigSlider item="gimbal.max_rate" min="0" max="800" step="1" />
 
         <h6>Tracking integrator decay rate</h6>
-        <ConfigSlider item="gimbal.tracking_i_decay_rate" min="0" max="0.1" step="1e-4" />
+        <ConfigSlider item="gimbal.tracking_i_decay_rate" min="0" max="0.01" step="1e-4" />
 
         <h6>Hold integrator decay rate</h6>
-        <ConfigSlider item="gimbal.hold_i_decay_rate" min="0" max="0.1" step="1e-4" />
+        <ConfigSlider item="gimbal.hold_i_decay_rate" min="0" max="0.01" step="1e-4" />
 
         <h4>Yaw Tracking</h4>
 
