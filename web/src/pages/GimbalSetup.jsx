@@ -1,10 +1,7 @@
 import React from 'react';
 import { ConfigSlider } from '../Config';
-import { Chart, Series } from '../BotChart';
 
 export default (props) => {
-    const gimbal_status_timestamp = (model) => model.gimbal_status.local_timestamp;
-
     return <div>
 
         <h6>Hold proportional gain</h6>
