@@ -4,6 +4,35 @@ import { BotConnection } from '../BotConnection';
 import reactCSS from 'reactcss';
 import { Chart, Series } from '../BotChart';
 
+let descriptions = {
+    0x02: "Status flags, bit2=motor_power, bit1=usually_1",
+    0x03: "Follow Loop (or Bot-Controller) → Per-joint velocity target",
+    0x04: "Angular velocity from IMU at camera mount",
+    0x05: "dynamic",
+    0x06: "dynamic",
+    0x07: "dynamic",
+    0x08: "unknown, related to current state of follow loop (integrated heading)",
+    0x09: "Integrated IMU angles, 1/100 degree",
+    0x28: "dynamic",
+    0x2c: "Magnetic encoder positions per joint",
+    0x47: "unknown control loop → motor, only updates when motor is on",
+    0x48: "dynamic",
+    0x4a: "dynamic, quantized velocity related",
+    0x4b: "Follow loop, offset angle for param08",
+    0x4c: "Follow loop, angle error",
+    0x4d: "Center calibration point 0",
+    0x53: "Joystick state flag (t=2)",
+    0x63: "Follow loop, enable/disable flag (t=0)",
+    0x64: "Off-center calibration point 1",
+    0x65: "Follow loop, user-settable rate parameter",
+    0x66: "Joystick mode flag",
+    0x67: "unknown, reset by windows software prior to motor power-on",
+    0x68: "Follow loop, joystick offset (t=2)",
+    0x6f: "motor power related",
+    0x70: "motor power related",
+    0x7f: "Firmware version",
+};
+
 export default (props) => {
 	let params = [];
 	for (let i = 0; i < 128; i++) {
@@ -24,8 +53,8 @@ export default (props) => {
 
         <h4>Polling</h4>
 
-        <div><GimbalPollerToggle interval={1000.0} requests={request_all}> All parameters (1 sec) </GimbalPollerToggle></div>
-        <div><GimbalPollerToggle interval={10000.0} requests={request_all}> All parameters (10 sec) </GimbalPollerToggle></div>
+        <GimbalPollerToggle block interval={1000.0} requests={request_all}> All parameters (1 sec) </GimbalPollerToggle>
+        <GimbalPollerToggle block interval={10000.0} requests={request_all}> All parameters (10 sec) </GimbalPollerToggle>
 
         <h4>Firmware parameters</h4>
         <div> { params } </div>
@@ -39,12 +68,13 @@ class GimbalRow extends Component {
         super();
         this.state = {
             graphEnabled: false,
+            editEnabled: false,
         };
     }
 
-    onChangeGraphCheckbox(event) {
+    onChangeEditCheckbox(event) {
         this.setState({
-            graphEnabled: event.target.checked
+            editEnabled: event.target.checked
         });
     }
 
@@ -75,10 +105,26 @@ class GimbalRow extends Component {
             <GimbalPollerToggle interval={300.0} requests={req_continuous}>cont</GimbalPollerToggle>
             <GimbalPollerToggle interval={100.0} requests={req_once}>100ms</GimbalPollerToggle>
             <GimbalPollerToggle interval={1000.0} requests={req_once}>1s</GimbalPollerToggle>
-            <span>
-                <input type="checkbox" onChange={this.onChangeGraphCheckbox.bind(this)} checked={this.state.graphEnabled} />
+            <span className="GimbalPollerToggle">
+                <input type="checkbox" checked={this.state.graphEnabled} onChange={(event) => {
+                    this.setState({ graphEnabled: event.target.checked });
+                }} />
                 <label>graph</label>
             </span>
+            <span className="GimbalPollerToggle">
+                <input type="checkbox" checked={this.state.editEnabled} onChange={(event) => {
+                    this.setState({ editEnabled: event.target.checked });
+                }} />
+                <label>edit</label>
+            </span>
+            <span className="description">
+                { descriptions[index] || "" }
+            </span>
+            { this.state.editEnabled && <div>
+                <GimbalSlider index={index} target={0} />
+                <GimbalSlider index={index} target={1} />
+                <GimbalSlider index={index} target={2} />
+            </div> }
             { this.state.graphEnabled && <div>
                 <Chart>
                     <Series
@@ -122,10 +168,15 @@ class GimbalPollerToggle extends Component {
     }
 
     render() {
-        return <span className="GimbalPollerToggle">
+        let s = <span className="GimbalPollerToggle">
             <input type="checkbox" onChange={this.onChange.bind(this)} checked={this.state.enabled} />
             <label>{this.props.children}</label>
         </span>;
+        if (this.props.block) {
+            return <div className="GimbalPollerToggle"> {s} </div>;
+        } else {
+            return s;
+        }
     }
 
     onChange(event) {
@@ -177,6 +228,7 @@ class GimbalParam extends Component {
         this.state = {
         	opacity: 0.0,
             op: "unread",
+            dyn: "static",
             value: 0,
         };
  	}
@@ -189,7 +241,7 @@ class GimbalParam extends Component {
 	            }
 	        }
 	    });
-        return <span className={`GimbalParam op-${this.state.op}`}>
+        return <span className={`GimbalParam op-${this.state.op} ${this.state.dyn}`}>
         	<span style={styles.current}>{this.state.value}</span>
         </span>;
     }
@@ -207,10 +259,57 @@ class GimbalParam extends Component {
     	if (tsm) {
     		const fade_duration = 500;
     		const age = ((new Date()).getTime() - tsm.local_timestamp);
-    		const opacity = Math.max(0.4, 1.0 - age / fade_duration);
+    		const opacity = Math.max(0.5, 1.0 - age / fade_duration);
     		const value = tsm.message.GimbalValue[0].value;
             const op = tsm.message.GimbalValue[1];
-    		this.setState({ opacity, op, value });
+            const dyn = (this.state.op !== "unread" && this.state.value !== value) ? "dynamic" : this.state.dyn;
+    		this.setState({ opacity, op, value, dyn });
     	}
+    }
+}
+
+class GimbalSlider extends Component {
+    static contextTypes = {
+        botConnection: PropTypes.instanceOf(BotConnection),
+    }
+
+    constructor() {
+        super();
+        this.state = {
+            value: 0,
+        };
+    }
+
+    render() {
+        let { index, target, value, ...props } = this.props;
+        return (
+            <div className="GimbalSlider">
+                <input
+                    min="-32767"
+                    max="32767"
+                    step="1"
+                    {...props}
+                    type="range"
+                    value={value}
+                    onChange={this.handleChange.bind(this)}
+                />
+            </div>
+        );
+    }
+
+    handleChange(event) {
+        const value = parseInt(event.target.value, 0);
+        this.setState({ value });
+        this.context.botConnection.socket.send(JSON.stringify({
+            Command: {
+                GimbalValueWrite: {
+                    addr: {
+                        target: this.props.target,
+                        index: this.props.index,
+                    },
+                    value
+                }
+            }
+        }));
     }
 }
