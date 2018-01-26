@@ -50,7 +50,7 @@ gimbal:
     - -1710
     - 1710
   pitch_limits: 
-    - -716
+    - -480
     - 232
   limiter_gain: 0.4740000069141388
   limiter_slowdown_extent: 

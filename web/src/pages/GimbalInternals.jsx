@@ -13,10 +13,11 @@ let descriptions = {
     0x07: "dynamic",
     0x08: "unknown, related to current state of follow loop (integrated heading)",
     0x09: "Integrated IMU angles, 1/100 degree",
-    0x28: "dynamic",
+    0x18: "Motor control mode (for calibration maybe?), (0-5)",
+    0x28: "motor phase offset estimate, eq ~16000 (param27?) at CAL1",
     0x2c: "Magnetic encoder positions per joint",
-    0x47: "unknown control loop → motor, only updates when motor is on",
-    0x48: "dynamic",
+    0x47: "motor unknown, FIR filter",
+    0x48: "motor unknown, FIR filter",
     0x4a: "dynamic, quantized velocity related",
     0x4b: "Follow loop, offset angle for param08",
     0x4c: "Follow loop, angle error",
@@ -28,8 +29,8 @@ let descriptions = {
     0x66: "Joystick mode flag",
     0x67: "unknown, reset by windows software prior to motor power-on",
     0x68: "Follow loop, joystick offset (t=2)",
-    0x6f: "motor power related",
-    0x70: "motor power related",
+    0x6f: "motor unknown, unfiltered, position-like",
+    0x70: "motor unknown, unfiltered, velocity-like",
     0x7f: "Firmware version",
 };
 
@@ -281,7 +282,7 @@ class GimbalSlider extends Component {
     }
 
     render() {
-        let { index, target, value, ...props } = this.props;
+        let { index, target, ...props } = this.props;
         return (
             <div className="GimbalSlider">
                 <input
@@ -290,11 +291,30 @@ class GimbalSlider extends Component {
                     step="1"
                     {...props}
                     type="range"
-                    value={value}
+                    value={this.state.value}
                     onChange={this.handleChange.bind(this)}
                 />
+                <span>
+                    {this.state.value}
+                </span>
             </div>
         );
+    }
+
+    componentDidMount() {
+        this.context.botConnection.events.on('frame', this.handleFrame);
+    }
+
+    componentWillUnmount() {
+        this.context.botConnection.events.removeListener('frame', this.handleFrame);
+    }
+
+    handleFrame = (model) => {
+        const tsm = (model.gimbal_values[this.props.index] || [])[this.props.target];
+        if (tsm) {
+            const value = tsm.message.GimbalValue[0].value;
+            this.setState({ value });
+        }
     }
 
     handleChange(event) {
