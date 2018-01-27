@@ -64,6 +64,13 @@ class CalibratorBase extends Component {
 }
 
 class DistanceCalibrator extends CalibratorBase {
+    constructor() {
+        super();
+        this.state.distance_1 = "";
+        this.state.distance_2 = "";
+        this.state.distance_3 = "";
+    }
+
     currentMeasurement() {
         const id = parseInt(this.props.winchId, 10);
         const model = this.context.botConnection.model;
@@ -72,20 +79,16 @@ class DistanceCalibrator extends CalibratorBase {
 
     makeCalibration() {
         const measures = this.state.measures;
-        const delta_1 = Math.abs(measures[1] - measures[0]);
-        const delta_2 = Math.abs(measures[2] - measures[1]);
-        const delta_3 = Math.abs(measures[3] - measures[2]);
-        const avg_delta = (delta_1 + delta_2 + delta_3) / 3;
-
-        if (avg_delta < 1.0) {
-            return { error: "No motion recorded" };
-        }
+        const ratio_1 = parseFloat(this.state.distance_1) / Math.abs(measures[1] - measures[0]);
+        const ratio_2 = parseFloat(this.state.distance_2) / Math.abs(measures[2] - measures[1]);
+        const ratio_3 = parseFloat(this.state.distance_3) / Math.abs(measures[3] - measures[2]);
+        const avg_ratio = (ratio_1 + ratio_2 + ratio_3) / 3;
 
         const id = parseInt(this.props.winchId, 10);
         let winches = []
         winches[id] = {
             calibration: {
-                m_dist_per_count: 1.0 / avg_delta,
+                m_dist_per_count: avg_ratio,
             }
         };
         return { config: { winches } };
@@ -96,11 +99,20 @@ class DistanceCalibrator extends CalibratorBase {
         return <ol>
             <li>Open a <a target="_blank" href={`/#/winch/${id}/control`}>winch controller</a></li>
             <li>{this.measurementButton(0, "Record")} a reference position {this.measurementValue(0)}</li>
-            <li>Move the winch 1 meter in either direction</li>
+            <li>Move the winch about a meter in either direction, and record the exact distance:&nbsp;
+                <input type="text" size="6" value={this.state.distance_1} onChange={
+                (event) => this.setState({ distance_1: event.target.value })
+                }></input> m</li>
             <li>{this.measurementButton(1, "Record")} a data point {this.measurementValue(1)}</li>
-            <li>Move the winch another meter in either direction</li>
+            <li>Move the winch about a meter in either direction, and record the exact distance:&nbsp;
+                <input type="text" size="6" value={this.state.distance_2} onChange={
+                (event) => this.setState({ distance_2: event.target.value })
+                }></input> m</li>
             <li>{this.measurementButton(2, "Record")} another data point {this.measurementValue(2)}</li>
-            <li>Move the winch another meter in either direction</li>
+            <li>Move the winch about a meter in either direction, and record the exact distance:&nbsp;
+                <input type="text" size="6" value={this.state.distance_3} onChange={
+                (event) => this.setState({ distance_3: event.target.value })
+                }></input> m</li>
             <li>{this.measurementButton(3, "Record")} another data point {this.measurementValue(3)}</li>
             <li>Now to calculate the new calibration. {this.previewCalibration(4)}</li>
             <li>{this.saveButton(4, "Save")} it to the controller</li>
@@ -145,10 +157,6 @@ class ForceCalibrator extends CalibratorBase {
         this.state.added_weight = "";
     }
 
-    handleChangeWeight = (event) => {
-        this.setState({ added_weight: event.target.value });
-    }
-
     render() {
         return <ol>
             <li>Temporarily adjust the filtering to be quite slow (near 0.0) damping any visible vibration.
@@ -159,8 +167,9 @@ class ForceCalibrator extends CalibratorBase {
             <li>Attach an arbitrary counterweight to the winch.</li>
             <li>{this.measurementButton(1, "Record")} the reference weight {this.measurementValue(1)}</li>
             <li>Add a known additional weight,&nbsp;
-                <input type="text" size="6" value={this.state.added_weight} onChange={this.handleChangeWeight}>
-                </input> kg</li>
+                <input type="text" size="6" value={this.state.added_weight} onChange={
+                (event) => this.setState({ added_weight: event.target.value })
+                }></input> kg</li>
             <li>{this.measurementButton(2, "Record")} the total weight {this.measurementValue(2)}</li>
             <li>Take the additional weight back off, leaving the arbitrary load.</li>
             <li>{this.measurementButton(3, "Record")} the reference again {this.measurementValue(3)}</li>
