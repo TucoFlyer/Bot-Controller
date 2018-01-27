@@ -1,5 +1,6 @@
 ---
-mode: ManualFlyer
+mode: 
+  ManualWinch: 1
 controller_addr: "10.32.0.1:9024"
 flyer_addr: "10.32.0.8:9024"
 web: 
@@ -217,9 +218,9 @@ winches:
       - -10
       - 0
     calibration: 
-      force_zero_count: 0
-      kg_force_per_count: 1
-      m_dist_per_count: 1
+      force_zero_count: -110492.546875
+      kg_force_per_count: 0.00000266622510025627
+      m_dist_per_count: 0.000033002936106640846
   - 
     addr: "10.32.0.12:9024"
     loc: 
@@ -227,9 +228,9 @@ winches:
       - -10
       - 0
     calibration: 
-      force_zero_count: 0
-      kg_force_per_count: 1
-      m_dist_per_count: 1
+      force_zero_count: -110492.546875
+      kg_force_per_count: 0.00000266622510025627
+      m_dist_per_count: 0.000033002936106640846
   - 
     addr: "10.32.0.13:9024"
     loc: 
@@ -237,9 +238,9 @@ winches:
       - 10
       - 0
     calibration: 
-      force_zero_count: 0
-      kg_force_per_count: 1
-      m_dist_per_count: 1
+      force_zero_count: -110492.546875
+      kg_force_per_count: 0.00000266622510025627
+      m_dist_per_count: 0.000033002936106640846
 lighting: 
   animation: 
     frame_rate: 160
