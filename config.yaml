@@ -1,6 +1,6 @@
 ---
 mode: 
-  ManualWinch: 1
+  ManualWinch: 0
 controller_addr: "10.32.0.1:9024"
 flyer_addr: "10.32.0.8:9024"
 web: 
@@ -12,7 +12,7 @@ web:
   browser_port_override: 3000
 params: 
   gimbal_max_control_rate: 10000
-  manual_control_velocity_m_per_sec: 0.25999999046325684
+  manual_control_velocity_m_per_sec: 0.30000001192092896
   accel_limit_m_per_sec2: 0.4399999976158142
   force_neg_motion_min_kg: 0.28999999165534973
   force_pos_motion_max_kg: 3.890000104904175
@@ -208,9 +208,9 @@ winches:
       - 10
       - 0
     calibration: 
-      force_zero_count: -110492.546875
-      kg_force_per_count: 0.00000266622510025627
-      m_dist_per_count: 0.000033002936106640846
+      force_zero_count: -112354.390625
+      kg_force_per_count: 0.000002789995960483793
+      m_dist_per_count: 0.000033150394301628694
   - 
     addr: "10.32.0.11:9024"
     loc: 
@@ -218,9 +218,9 @@ winches:
       - -10
       - 0
     calibration: 
-      force_zero_count: -110492.546875
-      kg_force_per_count: 0.00000266622510025627
-      m_dist_per_count: 0.000033002936106640846
+      force_zero_count: -116558.359375
+      kg_force_per_count: 0.0000028257150006538723
+      m_dist_per_count: 0.000036947942135157064
   - 
     addr: "10.32.0.12:9024"
     loc: 
@@ -228,9 +228,9 @@ winches:
       - -10
       - 0
     calibration: 
-      force_zero_count: -110492.546875
-      kg_force_per_count: 0.00000266622510025627
-      m_dist_per_count: 0.000033002936106640846
+      force_zero_count: 29199.767578125
+      kg_force_per_count: 0.0000027787955332314596
+      m_dist_per_count: 0.00003337504676892422
   - 
     addr: "10.32.0.13:9024"
     loc: 
@@ -238,9 +238,9 @@ winches:
       - 10
       - 0
     calibration: 
-      force_zero_count: -110492.546875
-      kg_force_per_count: 0.00000266622510025627
-      m_dist_per_count: 0.000033002936106640846
+      force_zero_count: 89032.0625
+      kg_force_per_count: 0.0000038013520224922104
+      m_dist_per_count: 0.000033002186683006585
 lighting: 
   animation: 
     frame_rate: 160
