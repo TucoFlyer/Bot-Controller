@@ -11,7 +11,7 @@ export default class FlyerHome extends Component {
     }
 
     render() {
-        return <div>     
+        return <div>
 
             <h6>Flyer Mode:</h6>
             <ConfigTextBlock item="mode" />

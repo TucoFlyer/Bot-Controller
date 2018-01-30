@@ -15,7 +15,7 @@ const AnalogCharts = (props) => {
                 maxValue="4096"
                 >
                 <Series
-               
+
                     strokeStyle={colors[id]}
                     value={ (model) => model.flyer.message.FlyerSensors.analog.values[id] }
                     trigger={analog_trigger} timestamp={flyer_timestamp}

@@ -6,6 +6,7 @@ import { IfAuthenticated } from '../BotConnection';
 import { ConfigText, withConfig } from '../Config';
 import { Badge } from 'reactstrap';
 
+import WinchAll from './WinchAll';
 import WinchSensors from './WinchSensors';
 import WinchTiming from './WinchTiming';
 import WinchPID from './WinchPID';
@@ -53,9 +54,14 @@ export default withConfig( class extends Component {
         return (
             <div>
                 <Nav pills>
+                    <NavItem>
+                        <NavLink to={`/winch/all`} activeClassName="active" tag={RRNavLink}> All </NavLink>
+                    </NavItem>
                     { winchNav }
                 </Nav>
+                <Route path="/winch/all" component={WinchAll} />
                 <Route path="/winch/:winchId" component={Winch} />
+                <Redirect path="*" to="/winch/all" />
             </div>
         );
     }
