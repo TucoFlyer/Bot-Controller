@@ -14,9 +14,9 @@ params:
   gimbal_max_control_rate: 10000
   manual_control_velocity_m_per_sec: 0.30000001192092896
   accel_limit_m_per_sec2: 0.4399999976158142
-  force_neg_motion_min_kg: 0.28999999165534973
+  force_neg_motion_min_kg: 0.10999999940395355
   force_pos_motion_max_kg: 3.890000104904175
-  force_lockout_below_kg: 0.07999999821186066
+  force_lockout_below_kg: 0.05999999865889549
   force_lockout_above_kg: 4
   force_filter_param: 0.04019999876618385
   deadband_position_err_m: 0.02800000086426735
@@ -255,9 +255,9 @@ lighting:
         - 0.3450980484485626
         - 0.15294118225574493
       manual_color: 
-        - 0.13725490868091583
-        - 0.3137255012989044
-        - 0.41960784792900085
+        - 0.2705882489681244
+        - 0.4941176474094391
+        - 0.5960784554481506
       halt_color: 
         - 0.37254902720451355
         - 0.23529411852359772
@@ -275,9 +275,9 @@ lighting:
         - 0.18039216101169586
         - 0.2862745225429535
       motion_color: 
-        - 0.16470588743686676
-        - 0.5607843399047852
-        - 0.6392157077789307
+        - 0.30980393290519714
+        - 0.6941176652908325
+        - 0.7647058963775635
       wavelength_m: 0.10000000149011612
       wave_window_length_m: 0.12999999523162842
       wave_amplitude: 1
