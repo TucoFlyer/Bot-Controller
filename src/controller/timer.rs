@@ -6,10 +6,10 @@ use overlay::OVERLAY_HZ;
 
 pub struct ControllerTimers {
     pub tick: IntervalTimer,
-    pub video_frame: IntervalTimer,    
+    pub video_frame: IntervalTimer,
 }
 
-impl ControllerTimers { 
+impl ControllerTimers {
     pub fn new() -> ControllerTimers {
         ControllerTimers {
             tick: IntervalTimer::new(TICK_HZ),

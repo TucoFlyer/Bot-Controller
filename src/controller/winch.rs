@@ -1,5 +1,6 @@
 use message::*;
 use vecmath::*;
+use std::time::{Duration, Instant};
 use config::{Config, ControllerMode, WinchCalibration};
 use led::WinchLighting;
 
@@ -7,7 +8,7 @@ use led::WinchLighting;
 pub struct WinchController {
     pub mech_status: MechStatus,
     id: usize,
-    last_winch_status: Option<WinchStatus>,
+    last_winch_status: Option<(WinchStatus, Instant)>,
     quantized_position_target: i32,
     fract_position_target: f32,
     lighting_command_phase: f32,
@@ -18,6 +19,7 @@ pub struct WinchController {
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum MechStatus {
     Normal,
+    /// How far into force limit, always in [-1, +1]
     ForceLimited(f32),
     Stuck,
 }
@@ -63,7 +65,7 @@ impl WinchController {
 
         let distance_traveled_m = match self.last_winch_status {
             None => 0.0,
-            Some(ref last_status) =>
+            Some((ref last_status, _)) =>
                 cal.dist_to_m(status.sensors.position.wrapping_sub(last_status.sensors.position) as f32)
         };
         self.apply_sensed_motion(config, distance_traveled_m);
@@ -73,7 +75,7 @@ impl WinchController {
         self.lighting_filtered_velocity += (velocity_m - self.lighting_filtered_velocity) * velocity_filter_param;
 
         self.mech_status = MechStatus::new(cal, status);
-        self.last_winch_status = Some(status.clone());
+        self.last_winch_status = Some((status.clone(), Instant::now()));
     }
 
     pub fn make_command(self: &WinchController, config: &Config, cal: &WinchCalibration, status: &WinchStatus) -> WinchCommand {
@@ -143,20 +145,28 @@ impl WinchController {
     fn was_motor_shutoff(&self, status: &WinchStatus) -> bool {
         match self.last_winch_status {
             None => status.motor.pwm.enabled == 0,
-            Some(ref last_status) => last_status.motor.pwm.enabled != 0 && status.motor.pwm.enabled == 0
+            Some((ref last_status, _)) => last_status.motor.pwm.enabled != 0 && status.motor.pwm.enabled == 0
         }
     }
 
     fn was_tick_discontinuity(&self, status: &WinchStatus) -> bool {
         match self.last_winch_status {
             None => true,
-            Some(ref last_status) => status.tick_counter.wrapping_sub(last_status.tick_counter) > 2,
+            Some((ref last_status, _)) => status.tick_counter.wrapping_sub(last_status.tick_counter) > 2,
+        }
+    }
+
+    pub fn is_status_watchdog_okay(&self) -> bool {
+        let deadline = Duration::from_millis((1000 * 3 / TICK_HZ) as u64);
+        match self.last_winch_status {
+            None => false,
+            Some((_, timestamp)) => timestamp + deadline > Instant::now(),
         }
     }
 
     fn reset(self: &mut WinchController, status: &WinchStatus) {
         // Initialize assumed winch state from this packet
-        self.last_winch_status = Some(status.clone());
+        self.last_winch_status = Some((status.clone(), Instant::now()));
         self.quantized_position_target = status.sensors.position;
         self.fract_position_target = 0.0;
     }
@@ -217,10 +227,12 @@ impl MechStatus {
         // Force limited, can't move any further
         } else if status.sensors.force.filtered > status.command.force.pos_motion_max {
             let counts = status.sensors.force.filtered - status.command.force.pos_motion_max;
-            MechStatus::ForceLimited(counts as f32 * cal.kg_force_per_count)
+            let unit_value = status.command.force.lockout_above - status.command.force.pos_motion_max;
+            MechStatus::ForceLimited(counts as f32 / unit_value.max(1.0))
         } else if status.sensors.force.filtered < status.command.force.neg_motion_min {
             let counts = status.sensors.force.filtered - status.command.force.neg_motion_min;
-            MechStatus::ForceLimited(counts as f32 * cal.kg_force_per_count)
+            let unit_value = status.command.force.neg_motion_min - status.command.force.lockout_below;
+            MechStatus::ForceLimited(counts as f32 / unit_value.max(1.0))
 
         } else if motor_off {
             if outside_position_deadband {

@@ -140,22 +140,62 @@ impl ControllerState {
 
             ControllerMode::ManualWinch(manual_id) => {
                 if manual_id == id {
-                    let v = self.manual.limited_velocity()[1];
-                    match self.winches[id].mech_status {
-                        MechStatus::Normal => v,
-                        MechStatus::Stuck => 0.0,
-                        MechStatus::ForceLimited(f) => if v * f < 0.0 { v } else { 0.0 },
-                    }
+                    self.manual_single_winch_controller(id)
                 } else {
                     0.0
                 }
             },
+
+            ControllerMode::ManualFlyer => {
+                self.manual_multi_winch_controller(config, id)
+            }
 
             _ => 0.0
         };
 
         self.winches[id].velocity_tick(config, cal, velocity);
         self.winches[id].make_command(config, cal, &status)
+    }
+
+    fn manual_single_winch_controller(&self, id: usize) -> f32 {
+        let v = self.manual.limited_velocity()[1];
+        match self.winches[id].mech_status {
+            MechStatus::Stuck => 0.0,
+            MechStatus::ForceLimited(f) => if v * f < 0.0 { v } else { 0.0 },
+            MechStatus::Normal => v,
+        }
+    }
+
+    fn manual_multi_winch_controller(&self, config: &Config, id: usize) -> f32 {
+        let v = self.manual.limited_velocity();
+        let v = [v[0], -v[1], v[2]];
+        self.multi_winch_controller(config, id, v)
+    }
+
+    fn multi_winch_controller(&self, config: &Config, id: usize, velocity: Vector3<f32>) -> f32 {
+        if !self.is_status_watchdog_okay() {
+            0.0
+        } else {
+            match self.winches[id].mech_status {
+                MechStatus::Stuck => 0.0,
+                MechStatus::ForceLimited(f) => -f * config.params.force_return_velocity_max_m_per_sec,
+                MechStatus::Normal => vec3_dot(velocity, self.winch_rope_direction_vector(config, id)),
+            }
+        }
+    }
+
+    fn winch_rope_direction_vector(&self, config: &Config, id: usize) -> Vector3<f32> {
+        // fix me
+        vec3_normalized(config.winches[id].loc)
+    }
+
+    fn is_status_watchdog_okay(&self) -> bool {
+        for winch in &self.winches {
+            if !winch.is_status_watchdog_okay() {
+                return false;
+            }
+        }
+        return true;
     }
 
     pub fn light_environment(&self, config: &Config) -> LightEnvironment {

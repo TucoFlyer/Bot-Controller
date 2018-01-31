@@ -20,9 +20,9 @@ export default class extends Component {
         const winch_timestamp = (model) => model.winches[id].local_timestamp;
 
         const params = !this.state.editable ? (
- 
+
             <Button block color="warning" onClick={ () => this.setState({ editable: true }) }> Edit parameters </Button>
- 
+
         ) : (<div>
 
             <h6>Lockout below force, all winches (kgf)</h6>
@@ -36,6 +36,9 @@ export default class extends Component {
 
             <h6>Lockout above force, all winches (kgf)</h6>
             <ConfigSlider item="params.force_lockout_above_kg" min="0" max="5" step="1e-2" />
+
+            <h6>Auto force return velocity maximum, all winches (m/s)</h6>
+            <ConfigSlider item="params.force_return_velocity_max_m_per_sec" min="0" max="2.0" step="1e-2" />
 
             <h6>Force filter param, all winches (unitless)</h6>
             <ConfigSlider item="params.force_filter_param" min="0.0" max="0.2" step="1e-4" />

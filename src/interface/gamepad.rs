@@ -45,7 +45,7 @@ impl State {
     }
 
     fn z_command(self: &State) -> Command {
-        Command::ManualControlValue(ManualControlAxis::RelativeZ, (self.right_z - self.left_z))
+        Command::ManualControlValue(ManualControlAxis::RelativeZ, self.right_z - self.left_z)
     }
 
     fn pitch_command(self: &State) -> Command {

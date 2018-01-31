@@ -207,6 +207,7 @@ pub struct BotParams {
     pub force_lockout_below_kg: f32,
     pub force_lockout_above_kg: f32,
     pub force_filter_param: f32,
+    pub force_return_velocity_max_m_per_sec: f32,
     pub deadband_position_err_m: f32,
     pub deadband_velocity_limit_m_per_sec: f32,
     pub pos_err_filter_param: f32,

@@ -92,7 +92,7 @@ impl ManualControls {
         vec3_scale(self.lookup_relative_vec(), velocity_scale)
     }
 
-    pub fn limited_velocity(&mut self) -> Vector3<f32> {
+    pub fn limited_velocity(&self) -> Vector3<f32> {
         self.velocity.get()
     }
 
