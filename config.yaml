@@ -1,6 +1,5 @@
 ---
-mode: 
-  ManualWinch: 3
+mode: Halted
 controller_addr: "10.32.0.1:9024"
 flyer_addr: "10.32.0.8:9024"
 web: 
@@ -14,12 +13,12 @@ params:
   gimbal_max_control_rate: 10000
   manual_control_velocity_m_per_sec: 0.30000001192092896
   accel_limit_m_per_sec2: 0.4399999976158142
-  force_neg_motion_min_kg: 0.15000000596046448
+  force_neg_motion_min_kg: 0.23999999463558197
   force_pos_motion_max_kg: 3.799999952316284
-  force_lockout_below_kg: 0.029999999329447746
+  force_lockout_below_kg: 0.05000000074505806
   force_lockout_above_kg: 4.5
-  force_filter_param: 0.004401000216603279
-  force_return_velocity_max_m_per_sec: 0.800000011920929
+  force_filter_param: 0.07159999758005142
+  force_return_velocity_max_m_per_sec: 0.5099999904632568
   deadband_position_err_m: 0.02800000086426735
   deadband_velocity_limit_m_per_sec: 0.03519999980926514
   pos_err_filter_param: 0.05897999927401543
@@ -239,8 +238,8 @@ winches:
       - 20
       - 30
     calibration: 
-      force_zero_count: 89032.0625
-      kg_force_per_count: 0.0000038013520224922104
+      force_zero_count: 118460.65625
+      kg_force_per_count: 0.0000035167245187039953
       m_dist_per_count: 0.000033002186683006585
 lighting: 
   animation: 
