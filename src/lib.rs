@@ -17,11 +17,6 @@ extern crate chrono;
 extern crate bmfont;
 extern crate bus;
 
-// Metrics
-extern crate dipstick;
-#[macro_use]
-extern crate lazy_static;
-
 // Gamepad input
 extern crate gilrs;
 

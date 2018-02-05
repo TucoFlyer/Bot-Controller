@@ -13,19 +13,6 @@ const MAX_PACKETS_PER_READ_BATCH : usize = 2;
 const MAX_PACKET_LENGTH : usize = 16;
 const MAX_CONTINUOUS_POLL_MILLIS : u64 = 500;
 
-mod metrics {
-    use dipstick::*;
-    use config::METRICS;
-
-    lazy_static! {
-        static ref MODULE : AppMetrics<Dispatch> = METRICS.with_name("gimbal");
-        pub static ref PACKET_BATCH_COUNT : AppCounter<Dispatch> = MODULE.counter("packet_batch_count");
-        pub static ref PACKETS_SENT : AppCounter<Dispatch> = MODULE.counter("packets_sent");
-        pub static ref PACKETS_RECEIVED : AppCounter<Dispatch> = MODULE.counter("packets_received");
-        pub static ref PACKETS_PER_BATCH : AppGauge<Dispatch> = MODULE.gauge("packets_per_batch");
-    }
-}
-
 #[derive(Debug, Clone)]
 pub struct GimbalPort {
     packets: mpsc::SyncSender<GimbalPacket>,
@@ -257,7 +244,6 @@ impl GimbalPoller {
     }
 
     fn handle_packet(&mut self, packet: GimbalPacket, controller: &ControllerPort) {
-        metrics::PACKETS_RECEIVED.count(1);
         if packet.framing == GimbalFraming::Normal {
             if packet.target == protocol::target::HOST {
                 if packet.command == protocol::cmd::GET_VALUE {
@@ -303,7 +289,7 @@ impl GimbalPoller {
         }
     }
 
-    fn write_next_batch(&mut self, writer: &mut io::Write, controller: &ControllerPort) -> io::Result<()> {
+    fn write_next_batch(&mut self, writer: &mut io::Write, controller: &ControllerPort) -> io::Result<usize> {
         let mut packets_sent = 0;
 
         // Spend all packets except the last one on a mix of writes
@@ -335,10 +321,6 @@ impl GimbalPoller {
             packets_sent += 1;
         }
 
-        metrics::PACKET_BATCH_COUNT.count(1);
-        metrics::PACKETS_SENT.count(packets_sent);
-        metrics::PACKETS_PER_BATCH.value(packets_sent);
-
-        Ok(())
+        Ok(packets_sent)
     }
 }

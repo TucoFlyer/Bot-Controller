@@ -7,7 +7,6 @@ use led::WinchLighting;
 pub struct WinchController {
     pub mech_status: MechStatus,
     id: usize,
-    metrics: metrics::Winch,
     last_winch_status: Option<(WinchStatus, Instant)>,
     quantized_position_target: i32,
     fract_position_target: f32,
@@ -24,35 +23,10 @@ pub enum MechStatus {
     Stuck,
 }
 
-mod metrics {
-    use dipstick::*;
-    use config::METRICS;
-
-    pub struct Winch {
-        pub force_g : AppGauge<Dispatch>,
-        pub velocity_mm_s : AppGauge<Dispatch>,
-        pub motion_mm : AppCounter<Dispatch>,
-        pub motion_abs_mm : AppCounter<Dispatch>,
-    }
-
-    impl Winch {
-        pub fn new(id: usize) -> Winch {
-            let module = METRICS.with_name(format!("winch{}", id));
-            Winch {
-                force_g: module.gauge("force_g"),
-                velocity_mm_s: module.gauge("velocity_mm_s"),
-                motion_mm: module.counter("motion_mm"),
-                motion_abs_mm: module.counter("motion_abs_mm"),
-            }
-        }
-    }
-}
-
 impl WinchController {
     pub fn new(id: usize) -> WinchController {
         WinchController {
             id,
-            metrics: metrics::Winch::new(id),
             last_winch_status: None,
             quantized_position_target: 0,
             fract_position_target: 0.0,
@@ -98,11 +72,6 @@ impl WinchController {
         let velocity_m = cal.dist_to_m(status.sensors.velocity as f32);
         let velocity_filter_param = config.lighting.current.winch.velocity_filter_param;
         self.lighting_filtered_velocity += (velocity_m - self.lighting_filtered_velocity) * velocity_filter_param;
-
-        self.metrics.force_g.value(1e3 * cal.force_to_kg(status.sensors.force.filtered));
-        self.metrics.velocity_mm_s.value(1e3 * velocity_m);
-        self.metrics.motion_mm.count(1e3 * distance_traveled_m);
-        self.metrics.motion_abs_mm.count(1e3 * distance_traveled_m.abs());
 
         self.mech_status = MechStatus::new(status);
         self.last_winch_status = Some((status.clone(), Instant::now()));

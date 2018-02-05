@@ -15,8 +15,6 @@ use std::sync::mpsc::{Sender, Receiver, channel};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
-use dipstick;
-use dipstick::WithNamespace;
 use chrono::NaiveTime;
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
@@ -224,26 +222,7 @@ pub struct BotParams {
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct MetricsConfig {
     pub statsd_addr: Option<SocketAddr>,
-    pub statsd_namespace: String,
-    pub flush_interval: f32,
-}
-
-lazy_static! {
-    static ref DISPATCH: dipstick::DispatchPoint = dipstick::dispatch();
-    pub static ref METRICS: dipstick::AppMetrics<dipstick::Dispatch> = dipstick::app_metrics(DISPATCH.clone());
-}
-
-impl MetricsConfig {
-    pub fn start(&self) {
-        if let Some(statsd_addr) = self.statsd_addr {
-            let dest = dipstick::to_statsd(statsd_addr).unwrap();
-            let namespaced = dest.with_name(self.statsd_namespace.clone());
-            let stats = dipstick::app_metrics(dipstick::aggregate(dipstick::all_stats, namespaced));
-            let interval = Duration::from_millis((self.flush_interval * 1000.0) as u64);
-            stats.flush_every(interval);
-            DISPATCH.set_receiver(stats);
-        }
-    }
+    pub prefix: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
