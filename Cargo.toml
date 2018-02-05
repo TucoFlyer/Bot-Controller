@@ -40,7 +40,7 @@ hmac = "0.4.2"
 sha2 = "0.6.0"
 base64 = "0.6.0"
 
-qrcode = { git = "https://github.com/kennytm/qrcode-rust", default-features = false }
+qrcode = { version = "0.5.0", features = [] }
 websocket = "0.20.1"
 iron = "0.5.1"
 staticfile = "0.4.0"
