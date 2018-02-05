@@ -12,6 +12,7 @@ fn main() {
 
     interface::web::start(&config, &port);
     interface::gamepad::start(&config, &port);
+    interface::metrics::start(&config, &port);
 
     watchdog::run(&port);
 }

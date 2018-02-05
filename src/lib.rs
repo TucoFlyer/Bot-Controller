@@ -16,10 +16,8 @@ extern crate atomicwrites;
 extern crate chrono;
 extern crate bmfont;
 extern crate bus;
-
-// Gamepad input
+extern crate cadence;
 extern crate gilrs;
-
 extern crate num;
 
 // For fygimbal
