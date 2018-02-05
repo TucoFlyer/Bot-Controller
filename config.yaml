@@ -1,79 +1,79 @@
 ---
-mode: Halted
+mode: ManualFlyer
 controller_addr: "10.32.0.1:9024"
 flyer_addr: "10.32.0.8:9024"
-web: 
+web:
   http_addr: "10.0.0.5:8080"
   ws_addr: "10.0.0.5:8081"
   web_root_path: web/build
   connection_file_path: connection.txt
   open_browser: true
   browser_port_override: 3000
-params: 
+metrics:
+  statsd_addr: "10.0.0.40:8125"
+  statsd_namespace: tucoflyer
+  flush_interval: 1
+params:
   gimbal_max_control_rate: 10000
-  manual_control_velocity_m_per_sec: 0.30000001192092896
-  accel_limit_m_per_sec2: 0.4399999976158142
+  manual_control_velocity_m_per_sec: 0.800000011920929
+  accel_limit_m_per_sec2: 0.9100000262260437
   force_neg_motion_min_kg: 0.23999999463558197
   force_pos_motion_max_kg: 3.799999952316284
   force_lockout_below_kg: 0.05000000074505806
   force_lockout_above_kg: 4.5
   force_filter_param: 0.07159999758005142
   force_return_velocity_max_m_per_sec: 0.5099999904632568
-  deadband_position_err_m: 0.02800000086426735
+  deadband_position_err_m: 0.01899999938905239
   deadband_velocity_limit_m_per_sec: 0.03519999980926514
-  pos_err_filter_param: 0.05897999927401543
+  pos_err_filter_param: 0.10046800225973129
   vel_err_filter_param: 0.007999000139534473
   integral_err_decay_param: 0.0021989999804645777
   pwm_gain_p: 1.3300000429153442
   pwm_gain_i: 3.3459999561309814
   pwm_gain_d: 0.22065000236034393
-gimbal: 
+gimbal:
   max_rate: 208
-  yaw_gains: 
-    - 
-      width: 0.30709999799728394
+  yaw_gains:
+    - width: 0.30709999799728394
       p_gain: 201.19540405273438
       i_gain: 0.832099974155426
-    - 
-      width: 0.08250000327825546
+    - width: 0.08250000327825546
       p_gain: 953.57373046875
       i_gain: 3.8833999633789063
-  pitch_gains: 
-    - 
-      width: 0.3001999855041504
+  pitch_gains:
+    - width: 0.3001999855041504
       p_gain: 86.48919677734375
       i_gain: 0
-    - 
-      width: 0.05389999970793724
+    - width: 0.05389999970793724
       p_gain: 449.3822937011719
       i_gain: 0.2370000034570694
-  yaw_limits: 
+  yaw_limits:
     - -1710
     - 1710
-  pitch_limits: 
+  pitch_limits:
     - -480
     - 232
   limiter_gain: 0.4740000069141388
-  limiter_slowdown_extent: 
+  limiter_slowdown_extent:
     - 98.92839813232422
     - 47.83530044555664
   hold_p_gain: 0.11469999700784683
   hold_i_gain: 0.0000759899994591251
   tracking_i_decay_rate: 0.004399999976158142
   hold_i_decay_rate: 0.007499999832361937
-overlay: 
-  halt_color: 
+overlay:
+  halt_color:
     - 1
     - 0.0235294122248888
     - 0
     - 0.3400000035762787
   border_thickness: 0.10159999877214432
-  debug_color: 
+  debug_color:
     - 1
     - 1
     - 1
     - 0
-  debug_background_color: 
+  debug_background_color:
     - 0
     - 0
     - 0
@@ -83,57 +83,54 @@ overlay:
   detector_outline_max_thickness: 0.027000000700354576
   detector_label_min_prob: 0.07199999690055847
   detector_label_prob_values: true
-  detector_default_outline_color: 
+  detector_default_outline_color:
     - 0.34117648005485535
     - 0.34117648005485535
     - 0.5372549295425415
     - 0.8100000023841858
-  label_color: 
+  label_color:
     - 0.9803921580314636
     - 0.9529411792755127
     - 0.9529411792755127
     - 0.699999988079071
   label_text_size: 0.021400000900030136
-  label_background_color: 
+  label_background_color:
     - 0
     - 0
     - 0
     - 0.5099999904632568
-  tracked_region_default_color: 
+  tracked_region_default_color:
     - 0.4627451002597809
     - 0.9098039269447327
     - 0.615686297416687
     - 0
-  tracked_region_manual_color: 
+  tracked_region_manual_color:
     - 0.843137264251709
     - 0.5333333611488342
     - 0.30588236451148987
     - 0.28999999165534973
   tracked_region_outline_thickness: 0.027499999850988388
-  gain_region_color: 
+  gain_region_color:
     - 1
     - 1
     - 1
     - 0
-  particle_color: 
+  particle_color:
     - 0.9254902005195618
     - 0.9647058844566345
     - 0.14509804546833038
     - 0.3400000035762787
   particle_size: 0.06669999659061432
-  particle_sprites: 
-    - 
-      - 118
+  particle_sprites:
+    - - 118
       - 432
       - 78
       - 78
-    - 
-      - 200
+    - - 200
       - 445
       - 69
       - 63
-    - 
-      - 271
+    - - 271
       - 426
       - 100
       - 81
@@ -144,34 +141,34 @@ overlay:
   particle_min_distance: 0.27917298674583435
   particle_min_distance_gain: 0.008185000158846378
   particle_random_gain: 0.06603600084781647
-  gimbal_rect_center: 
+  gimbal_rect_center:
     - 0.003000000026077032
     - 0.4609000086784363
   gimbal_rect_width: 0.4603999853134155
-  gimbal_background_color: 
+  gimbal_background_color:
     - 0
     - 0
     - 0
     - 0.11999999731779099
-  gimbal_outline_color: 
+  gimbal_outline_color:
     - 1
     - 1
     - 1
     - 0.14000000059604645
   gimbal_outline_thickness: 0.004100000020116568
-  gimbal_cursor_color: 
+  gimbal_cursor_color:
     - 0.6274510025978088
     - 0.8784313797950745
     - 0.9529411792755127
     - 0.7699999809265137
   gimbal_cursor_size: 0.0203000009059906
-  gimbal_cursor_sprite: 
+  gimbal_cursor_sprite:
     - 0
     - 299
     - 22
     - 21
-vision: 
-  border_rect: 
+vision:
+  border_rect:
     - -1
     - -0.5625
     - 2
@@ -184,97 +181,88 @@ vision:
   tracking_default_area: 0.16779999434947968
   tracking_min_area: 0.03220000118017197
   tracking_max_area: 1.080199956893921
-  snap_tracked_region_to: 
-    - 
-      - cat
+  snap_tracked_region_to:
+    - - cat
       - 0.5
-    - 
-      - bird
+    - - bird
       - 0.5
-    - 
-      - zebra
+    - - zebra
       - 0.5
-    - 
-      - dog
+    - - dog
       - 0.5
-    - 
-      - sheep
+    - - sheep
       - 0.5
-winches: 
-  - 
-    addr: "10.32.0.10:9024"
-    loc: 
+winches:
+  - addr: "10.32.0.10:9024"
+    loc:
       - -20
       - -20
       - 30
-    calibration: 
+    calibration:
       force_zero_count: -112354.390625
       kg_force_per_count: 0.000002789995960483793
       m_dist_per_count: 0.000033150394301628694
-  - 
-    addr: "10.32.0.11:9024"
-    loc: 
+  - addr: "10.32.0.11:9024"
+    loc:
       - 20
       - -20
       - 30
-    calibration: 
+    calibration:
       force_zero_count: -116558.359375
       kg_force_per_count: 0.0000028257150006538723
       m_dist_per_count: 0.000036947942135157064
-  - 
-    addr: "10.32.0.12:9024"
-    loc: 
+  - addr: "10.32.0.12:9024"
+    loc:
       - 20
       - 20
       - 30
-    calibration: 
+    calibration:
       force_zero_count: 29199.767578125
       kg_force_per_count: 0.0000027787955332314596
       m_dist_per_count: 0.00003337504676892422
-  - 
-    addr: "10.32.0.13:9024"
-    loc: 
+  - addr: "10.32.0.13:9024"
+    loc:
       - -20
       - 20
       - 30
-    calibration: 
+    calibration:
       force_zero_count: 118460.65625
       kg_force_per_count: 0.0000035167245187039953
       m_dist_per_count: 0.000033002186683006585
-lighting: 
-  animation: 
+lighting:
+  animation:
     frame_rate: 160
     filter_param: 0.15000000596046448
-  current: 
+  current:
     brightness: 1
     flash_rate_hz: 1.9199999570846558
     flash_exponent: 3.180000066757202
-    winch: 
-      normal_color: 
+    winch:
+      normal_color:
         - 0.125490203499794
         - 0.3450980484485626
         - 0.15294118225574493
-      manual_color: 
+      manual_color:
         - 0.2705882489681244
         - 0.4941176474094391
         - 0.5960784554481506
-      halt_color: 
+      halt_color:
         - 0.37254902720451355
         - 0.23529411852359772
         - 0.18431372940540314
-      error_color: 
+      error_color:
         - 0.8392156958580017
         - 0.13333334028720856
         - 0.11372549086809158
-      stuck_color: 
+      stuck_color:
         - 0.5254902243614197
         - 0.21568627655506134
         - 0.01568627543747425
-      command_color: 
+      command_color:
         - 0.06666667014360428
         - 0.18039216101169586
         - 0.2862745225429535
-      motion_color: 
+      motion_color:
         - 0.30980393290519714
         - 0.6941176652908325
         - 0.7647058963775635

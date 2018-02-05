@@ -13,6 +13,19 @@ const MAX_PACKETS_PER_READ_BATCH : usize = 2;
 const MAX_PACKET_LENGTH : usize = 16;
 const MAX_CONTINUOUS_POLL_MILLIS : u64 = 500;
 
+mod metrics {
+    use dipstick::*;
+    use config::METRICS;
+
+    lazy_static! {
+        static ref MODULE : AppMetrics<Dispatch> = METRICS.with_name("gimbal");
+        pub static ref PACKET_BATCH_COUNT : AppCounter<Dispatch> = MODULE.counter("packet_batch_count");
+        pub static ref PACKETS_SENT : AppCounter<Dispatch> = MODULE.counter("packets_sent");
+        pub static ref PACKETS_RECEIVED : AppCounter<Dispatch> = MODULE.counter("packets_received");
+        pub static ref PACKETS_PER_BATCH : AppGauge<Dispatch> = MODULE.gauge("packets_per_batch");
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct GimbalPort {
     packets: mpsc::SyncSender<GimbalPacket>,
@@ -177,7 +190,7 @@ impl ValueTracker {
 
                 Some((ts, GimbalRequestScope::Continuous)) => {
                     if Instant::now() > ts + Duration::from_millis(MAX_CONTINUOUS_POLL_MILLIS) {
-                        self.items[index].request = None;                    
+                        self.items[index].request = None;
                     } else {
                         return Some(ValueTracker::index_addr(index));
                     }
@@ -244,6 +257,7 @@ impl GimbalPoller {
     }
 
     fn handle_packet(&mut self, packet: GimbalPacket, controller: &ControllerPort) {
+        metrics::PACKETS_RECEIVED.count(1);
         if packet.framing == GimbalFraming::Normal {
             if packet.target == protocol::target::HOST {
                 if packet.command == protocol::cmd::GET_VALUE {
@@ -290,22 +304,22 @@ impl GimbalPoller {
     }
 
     fn write_next_batch(&mut self, writer: &mut io::Write, controller: &ControllerPort) -> io::Result<()> {
-        let mut remaining = MAX_PACKETS_PER_READ_BATCH;
+        let mut packets_sent = 0;
 
         // Spend all packets except the last one on a mix of writes
-        while remaining > 1 {
+        while packets_sent < MAX_PACKETS_PER_READ_BATCH - 1 {
             if let Ok(packet) = self.packets.try_recv() {
                 if packet.data.len() <= MAX_PACKET_LENGTH {
                     packet.write_to(writer)?;
-                    remaining -= 1;
+                    packets_sent += 1;
                 }
             }
             else if let Some(data) = self.value_tracker.next_write() {
                 let msg = Message::GimbalValue(data.clone(), GimbalValueOp::WriteComplete);
                 let packet = protocol::pack::set_value(data.addr.target, data.addr.index, data.value);
                 packet.write_to(writer)?;
+                packets_sent += 1;
                 controller.send(msg.timestamp());
-                remaining -= 1;
             }
             else {
                 break;
@@ -313,12 +327,18 @@ impl GimbalPoller {
         }
 
         // The last packet should be a read, so we can wait for the response
-        assert!(remaining >= 1);
+        assert!(packets_sent <= MAX_PACKETS_PER_READ_BATCH - 1);
         if let Some(addr) = self.value_tracker.next_request() {
             let packet = protocol::pack::get_value(addr.target, addr.index);
             self.pending_read = Some(addr);
             packet.write_to(writer)?;
+            packets_sent += 1;
         }
+
+        metrics::PACKET_BATCH_COUNT.count(1);
+        metrics::PACKETS_SENT.count(packets_sent);
+        metrics::PACKETS_PER_BATCH.value(packets_sent);
+
         Ok(())
     }
 }

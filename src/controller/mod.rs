@@ -36,6 +36,23 @@ pub struct Controller {
     gimbal_status: Option<GimbalControlStatus>,
 }
 
+mod metrics {
+    use dipstick::*;
+    use config::METRICS;
+
+    lazy_static! {
+        static ref MODULE : AppMetrics<Dispatch> = METRICS.with_name("controller");
+        pub static ref STARTUP : AppCounter<Dispatch> = MODULE.counter("startup");
+        pub static ref MESSAGES_HANDLED : AppCounter<Dispatch> = MODULE.counter("messages_handled");
+        pub static ref CONFIG_UPDATES : AppCounter<Dispatch> = MODULE.counter("config_updates");
+        pub static ref REGION_TRACKING_UPDATES : AppCounter<Dispatch> = MODULE.counter("region_tracking_updates");
+        pub static ref OBJECT_DETECTION_UPDATES : AppCounter<Dispatch> = MODULE.counter("object_detection_updates");
+        pub static ref MODE_CHANGES : AppCounter<Dispatch> = MODULE.counter("mode_changes");
+        pub static ref MANUAL_CONTROL_UPDATES : AppCounter<Dispatch> = MODULE.counter("manual_control_updates");
+        pub static ref MANUAL_CONTROL_RESETS : AppCounter<Dispatch> = MODULE.counter("manual_control_resets");
+    }
+}
+
 enum ControllerInput {
     Message(TimestampedMessage),
     ReaderRequest(SyncSender<BusReader<TimestampedMessage>>),
@@ -94,6 +111,7 @@ impl Controller {
     }
 
     pub fn start(mut self, gimbal_port: GimbalPort) {
+        metrics::STARTUP.count(1);
         thread::Builder::new().name("Controller".into()).spawn(move || {
             loop {
                 self.poll(&gimbal_port);
@@ -165,12 +183,14 @@ impl Controller {
     }
 
     fn handle_message(&mut self, ts_msg: TimestampedMessage, gimbal_port: &GimbalPort) {
+        metrics::MESSAGES_HANDLED.count(1);
         match ts_msg.message {
 
             Message::UpdateConfig(updates) => {
                 // Merge a freeform update into the configuration, and save it.
                 // Errors here go right to the console, since errors caused by a
                 // client should have been detected earlier and sent to that client.
+                metrics::CONFIG_UPDATES.count(1);
                 match self.local_config.merge(updates) {
                     Err(e) => println!("Error in UpdateConfig from message bus: {}", e),
                     Ok(config) => {
@@ -194,6 +214,7 @@ impl Controller {
             },
 
             Message::Command(Command::CameraObjectDetection(obj)) => {
+                metrics::OBJECT_DETECTION_UPDATES.count(1);
                 self.state.camera_object_detection_update(obj);
                 if let Some(tracking_rect) = self.state.tracking_update(&self.local_config, 0.0) {
                     self.broadcast(Message::CameraInitTrackedRegion(tracking_rect).timestamp());
@@ -201,11 +222,13 @@ impl Controller {
             },
 
             Message::Command(Command::CameraRegionTracking(tr)) => {
+                metrics::REGION_TRACKING_UPDATES.count(1);
                 self.state.camera_region_tracking_update(tr);
             },
 
             Message::Command(Command::SetMode(mode)) => {
                 // The controller mode is part of the config, so this could be changed via UpdateConfig as well, but this option is strongly typed
+                metrics::MODE_CHANGES.count(1);
                 if self.local_config.mode != mode {
                     self.local_config.mode = mode;
                     self.config_changed();
@@ -229,10 +252,12 @@ impl Controller {
             },
 
             Message::Command(Command::ManualControlValue(axis, value)) => {
+                metrics::MANUAL_CONTROL_UPDATES.count(1);
                 self.state.manual.control_value(axis, value);
             },
 
             Message::Command(Command::ManualControlReset) => {
+                metrics::MANUAL_CONTROL_RESETS.count(1);
                 self.state.manual.control_reset();
             },
 

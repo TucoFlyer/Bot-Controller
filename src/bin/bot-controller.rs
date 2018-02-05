@@ -3,6 +3,10 @@ use tucoflyer::{SharedConfigFile, BotSocket, Controller, interface, watchdog};
 
 fn main() {
     let config = SharedConfigFile::load("config.yaml").expect("Failed to read configuration");
+
+    config.get_latest().metrics.start();
+
+
     let socket = BotSocket::new(&config.get_latest()).expect("Failed to start bot networking");
 
     let controller = Controller::new(&config, &socket);
