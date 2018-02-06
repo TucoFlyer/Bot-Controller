@@ -157,11 +157,15 @@ impl ControllerState {
         self.winches[id].make_command(config, cal, &status)
     }
 
+    fn force_limit_guard(&self, limit_direction: f32, velocity: f32) -> f32 {
+        if velocity * limit_direction < 0.0 { velocity } else { 0.0 }
+    }
+
     fn manual_single_winch_controller(&self, id: usize) -> f32 {
         let v = self.manual.limited_velocity()[1];
         match self.winches[id].mech_status {
             MechStatus::Stuck => 0.0,
-            MechStatus::ForceLimited(f) => if v * f < 0.0 { v } else { 0.0 },
+            MechStatus::ForceLimited(f) => self.force_limit_guard(f, v),
             MechStatus::Normal => v,
         }
     }
@@ -173,13 +177,15 @@ impl ControllerState {
     }
 
     fn multi_winch_controller(&self, config: &Config, id: usize, velocity: Vector3<f32>) -> f32 {
+        let projected_velocity = vec3_dot(velocity, self.winch_rope_direction_vector(config, id));
+        let return_v = config.params.force_return_velocity_max_m_per_sec;
         if !self.is_status_watchdog_okay() {
             0.0
         } else {
             match self.winches[id].mech_status {
                 MechStatus::Stuck => 0.0,
-                MechStatus::ForceLimited(f) => -f * config.params.force_return_velocity_max_m_per_sec,
-                MechStatus::Normal => vec3_dot(velocity, self.winch_rope_direction_vector(config, id)),
+                MechStatus::ForceLimited(f) => self.force_limit_guard(f, projected_velocity - f * return_v),
+                MechStatus::Normal => projected_velocity,
             }
         }
     }
