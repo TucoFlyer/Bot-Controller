@@ -13,8 +13,8 @@ metrics:
   influxdb_host: "http://10.0.0.40:8086"
   database: tucoflyer
   authentication: ~
-  batch_size: 1000
-  max_sample_hz: 50
+  batch_size: 8000
+  max_sample_hz: 100
 params:
   gimbal_max_control_rate: 10000
   manual_control_velocity_m_per_sec: 0.800000011920929
