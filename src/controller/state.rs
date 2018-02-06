@@ -184,7 +184,7 @@ impl ControllerState {
         } else {
             match self.winches[id].mech_status {
                 MechStatus::Stuck => 0.0,
-                MechStatus::ForceLimited(f) => self.force_limit_guard(f, projected_velocity - f * return_v),
+                MechStatus::ForceLimited(f) => self.force_limit_guard(f, projected_velocity) - f * return_v,
                 MechStatus::Normal => projected_velocity,
             }
         }
