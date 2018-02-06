@@ -17,6 +17,7 @@ struct MetricSampler {
     winch_ts: Vec<Instant>,
     flyer_ts: Instant,
     manual_ts: Instant,
+    gimbal_control_ts: Instant,
     object_detector_ts: Instant,
     region_tracker_ts: Instant,
     manual_axes: HashMap<ManualControlAxis, f32>,
@@ -33,6 +34,7 @@ impl MetricSampler {
             object_detector_ts: now,
             region_tracker_ts: now,
             manual_ts: now,
+            gimbal_control_ts: now,
             manual_axes: HashMap::new(),
         }
     }
@@ -89,6 +91,21 @@ impl MetricSampler {
                     p.add_field("gyroscope.x", Value::Integer(status.imu.gyroscope[0].into()));
                     p.add_field("gyroscope.y", Value::Integer(status.imu.gyroscope[1].into()));
                     p.add_field("gyroscope.z", Value::Integer(status.imu.gyroscope[2].into()));
+                    points.push(p);
+                }
+            },
+
+            &Message::GimbalControlStatus(ref status) => {
+                if tsm.timestamp >= self.gimbal_control_ts + self.min_interval {
+                    self.gimbal_control_ts = tsm.timestamp;
+
+                    let mut p = Point::new("gimbal.control.status");
+                    p.add_timestamp(self.sync.to_millis(tsm.timestamp));
+
+                    p.add_field("angle.x", Value::Integer(status.angles[0].into()));
+                    p.add_field("angle.y", Value::Integer(status.angles[1].into()));
+                    p.add_field("rate.x", Value::Integer(status.rates[0].into()));
+                    p.add_field("rate.y", Value::Integer(status.rates[1].into()));
                     points.push(p);
                 }
             },
