@@ -2,7 +2,7 @@ use controller::ControllerPort;
 use config::{Config, SharedConfigFile};
 use message::{TimestampedMessage, Message, Command, ManualControlAxis};
 use std::thread;
-use std::sync::mpsc::channel;
+use std::sync::mpsc::sync_channel;
 use std::mem;
 use std::collections::HashMap;
 use num::range;
@@ -39,7 +39,7 @@ impl MetricSampler {
         }
     }
 
-    fn handle_message(&mut self, points: &mut Vec<Point>, config: &Config, tsm: &TimestampedMessage) {
+    fn handle_message(&mut self, points: &mut Vec<Point>, config: &mut Config, tsm: &TimestampedMessage) {
         match &tsm.message {
 
             &Message::WinchStatus(id, ref status) => {
@@ -110,7 +110,8 @@ impl MetricSampler {
                 }
             },
 
-            &Message::ConfigIsCurrent(ref config) => {
+            &Message::ConfigIsCurrent(ref new_config) => {
+                *config = new_config.clone();
                 let mut p = Point::new("config");
                 p.add_timestamp(self.sync.to_millis(tsm.timestamp));
                 p.add_field("mode", Value::String(format!("{:?}", config.mode)));
@@ -192,7 +193,7 @@ impl TimeSync {
 }
 
 pub fn start(config: &SharedConfigFile, controller: &ControllerPort) {
-    let config = config.get_latest();
+    let mut config = config.get_latest();
     if let Some(metrics_config) = config.metrics.clone() {
         let database = metrics_config.database;
         let batch_size = metrics_config.batch_size;
@@ -205,7 +206,7 @@ pub fn start(config: &SharedConfigFile, controller: &ControllerPort) {
         };
 
         let mut bus_receiver = controller.add_rx();
-        let (batch_sender, batch_receiver) = channel();
+        let (batch_sender, batch_receiver) = sync_channel(16);
 
         let mut sampler = MetricSampler::new(metrics_config.max_sample_hz, config.winches.len());
         let mut points = Vec::new();
@@ -213,12 +214,14 @@ pub fn start(config: &SharedConfigFile, controller: &ControllerPort) {
         thread::Builder::new().name("Metrics sampler".into()).spawn(move || {
             loop {
                 let msg = bus_receiver.recv().unwrap();
-                sampler.handle_message(&mut points, &config, &msg);
+                sampler.handle_message(&mut points, &mut config, &msg);
 
                 if points.len() >= batch_size {
                     let mut batch = Vec::new();
                     mem::swap(&mut points, &mut batch);
-                    batch_sender.send(batch).unwrap();
+                    if batch_sender.try_send(batch).is_err() {
+                        println!("Dropping metrics, transmitter must be busy");
+                    }
                 }
             }
         }).unwrap();
