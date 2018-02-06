@@ -1,3 +1,5 @@
+#![feature(duration_extras)]
+
 // Auth related crypto
 extern crate rand;
 extern crate hmac;
@@ -5,8 +7,7 @@ extern crate sha2;
 extern crate base64;
 
 // All the serialization
-#[macro_use]
-extern crate serde_derive;
+#[macro_use] extern crate serde_derive;
 extern crate serde;
 extern crate serde_json;
 extern crate serde_yaml;
@@ -16,7 +17,7 @@ extern crate atomicwrites;
 extern crate chrono;
 extern crate bmfont;
 extern crate bus;
-extern crate cadence;
+extern crate influx_db_client;
 extern crate gilrs;
 extern crate num;
 

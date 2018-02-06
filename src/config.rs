@@ -23,7 +23,7 @@ pub struct Config {
     pub controller_addr: SocketAddr,
     pub flyer_addr: SocketAddr,
     pub web: WebConfig,
-    pub metrics: MetricsConfig,
+    pub metrics: Option<MetricsConfig>,
     pub params: BotParams,
     pub gimbal: GimbalConfig,
     pub overlay: OverlayConfig,
@@ -221,8 +221,11 @@ pub struct BotParams {
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct MetricsConfig {
-    pub statsd_addr: Option<SocketAddr>,
-    pub prefix: String,
+    pub influxdb_host: String,
+    pub database: String,
+    pub authentication: Option<(String, String)>,
+    pub batch_size: usize,
+    pub max_sample_hz: f32,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]

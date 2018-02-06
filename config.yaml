@@ -10,8 +10,11 @@ web:
   open_browser: true
   browser_port_override: 3000
 metrics:
-  statsd_addr: "10.0.0.40:8125"
-  prefix: tucoflyer
+  influxdb_host: "http://10.0.0.40:8086"
+  database: tucoflyer
+  authentication: ~
+  batch_size: 1000
+  max_sample_hz: 50
 params:
   gimbal_max_control_rate: 10000
   manual_control_velocity_m_per_sec: 0.800000011920929
