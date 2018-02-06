@@ -85,6 +85,7 @@ impl WinchController {
                 force: self.make_force_command(config, cal),
                 pid: self.make_halted_pid_gains(),
                 deadband: self.make_deadband(config, cal),
+                pwm_bias: 0.0,
             },
 
             _ => WinchCommand {
@@ -92,6 +93,7 @@ impl WinchController {
                 force: self.make_force_command(config, cal),
                 pid: self.make_pid_gains(config, cal),
                 deadband: self.make_deadband(config, cal),
+                pwm_bias: config.params.pwm_bias,
             },
         }
     }

@@ -134,6 +134,11 @@ export default class extends Component {
                 <ConfigSlider item="params.pwm_gain_d" min="0" max="1.0" step="1e-5" />
             </div> }</IfAuthenticated>
 
+            <IfAuthenticated>{ this.state.editable && <div>
+                <h6>PWM output bias, all winches</h6>
+                <ConfigSlider item="params.pwm_bias" min="0" max="1.0" step="1e-5" />
+            </div> }</IfAuthenticated>
+
             <h6>PID contributions</h6>
             <Chart>
                 <Series
