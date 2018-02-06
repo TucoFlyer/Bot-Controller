@@ -24,7 +24,7 @@ params:
   force_lockout_below_kg: 0.05000000074505806
   force_lockout_above_kg: 4.5
   force_filter_param: 0.07159999758005142
-  force_return_velocity_max_m_per_sec: 0.5099999904632568
+  force_return_velocity_max_m_per_sec: 0.23999999463558197
   deadband_position_err_m: 0.01899999938905239
   deadband_velocity_limit_m_per_sec: 0.03519999980926514
   pos_err_filter_param: 0.10046800225973129
