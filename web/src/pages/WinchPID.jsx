@@ -135,8 +135,33 @@ export default class extends Component {
             </div> }</IfAuthenticated>
 
             <IfAuthenticated>{ this.state.editable && <div>
+                <h6>PWM output minimum, all winches</h6>
+                <ConfigSlider item="params.pwm_minimum" min="0" max="1.0" step="1e-5" />
+            </div> }</IfAuthenticated>
+
+            <IfAuthenticated>{ this.state.editable && <div>
                 <h6>PWM output bias, all winches</h6>
                 <ConfigSlider item="params.pwm_bias" min="0" max="1.0" step="1e-5" />
+            </div> }</IfAuthenticated>
+
+            <IfAuthenticated>{ this.state.editable && <div>
+                <h6>PWM frequency during low-speed motion, all winches (Hz)</h6>
+                <ConfigSlider item="params.pwm_hz_low_motion" min="100" max="1500" step="0.1" />
+            </div> }</IfAuthenticated>
+
+            <IfAuthenticated>{ this.state.editable && <div>
+                <h6>PWM frequency during high-speed motion, all winches (Hz)</h6>
+                <ConfigSlider item="params.pwm_hz_high_motion" min="1500" max="40000" step="0.1" />
+            </div> }</IfAuthenticated>
+
+            <IfAuthenticated>{ this.state.editable && <div>
+                <h6>PWM frequency filter parameter, all winches</h6>
+                <ConfigSlider item="params.pwm_hz_filter_param" min="0" max="0.1" step="1e-5" />
+            </div> }</IfAuthenticated>
+
+            <IfAuthenticated>{ this.state.editable && <div>
+                <h6>Velocity threshold for PWM frequency shift, all winches (m/s)</h6>
+                <ConfigSlider item="params.pwm_velocity_threshold" min="0" max="0.1" step="1e-5" />
             </div> }</IfAuthenticated>
 
             <h6>PID contributions</h6>
@@ -152,6 +177,13 @@ export default class extends Component {
                 <Series
                     strokeStyle='#22a'
                     value={ (model) => model.winches[id].message.WinchStatus[1].motor.pwm.d }
+                    trigger={tick_trigger} timestamp={winch_timestamp} />
+            </Chart>
+
+            <h6>PWM Frequency (Hz)</h6>
+            <Chart>
+                <Series
+                    value={ (model) => model.winches[id].message.WinchStatus[1].motor.pwm.hz }
                     trigger={tick_trigger} timestamp={winch_timestamp} />
             </Chart>
 

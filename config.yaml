@@ -1,5 +1,5 @@
 ---
-mode: Halted
+mode: ManualFlyer
 controller_addr: "10.32.0.1:9024"
 flyer_addr: "10.32.0.8:9024"
 web:
@@ -25,15 +25,20 @@ params:
   force_lockout_above_kg: 4.5
   force_filter_param: 0.07159999758005142
   force_return_velocity_max_m_per_sec: 0.23999999463558197
-  deadband_position_err_m: 0.02370000071823597
-  deadband_velocity_limit_m_per_sec: 0.03519999980926514
-  pos_err_filter_param: 0.10046800225973129
+  deadband_position_err_m: 0.008899999782443047
+  deadband_velocity_limit_m_per_sec: 0.020999999716877937
+  pos_err_filter_param: 0.08939400315284729
   vel_err_filter_param: 0.007999000139534473
   integral_err_decay_param: 0.009367999620735645
   pwm_gain_p: 1.3300000429153442
   pwm_gain_i: 3.3459999561309814
   pwm_gain_d: 0.22065000236034393
-  pwm_bias: 0.03618000075221062
+  pwm_bias: 0.19314999878406525
+  pwm_minimum: 0.009999999776482582
+  pwm_hz_low_motion: 312
+  pwm_hz_high_motion: 25000
+  pwm_hz_filter_param: 0.018559999763965607
+  pwm_velocity_threshold: 0.0142000000923872
 gimbal:
   max_rate: 208
   yaw_gains:

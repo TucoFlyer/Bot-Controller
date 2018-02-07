@@ -230,6 +230,13 @@ pub struct ForceCommand {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct WinchPWMCommand {
+    pub hz: f32,                // Requested modulation frequency
+    pub minimum: f32,           // Below this absolute value, PWM treated as zero
+    pub bias: f32,              // Magnitude of nonzero values increased by this amount
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct PIDGains {
     pub gain_p: f32,            // PWM strength proportional to position error
     pub gain_i: f32,            // PWM strength proportional to integral of position error
@@ -251,7 +258,7 @@ pub struct WinchCommand {
     pub force: ForceCommand,
     pub pid: PIDGains,
     pub deadband: WinchDeadband,
-    pub pwm_bias: f32,
+    pub pwm: WinchPWMCommand,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -262,18 +269,20 @@ pub struct WinchSensors {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct WinchPWM {
+pub struct WinchPWMStatus {
     pub total: f32,                 // PWM calculated by the PID loop, clamped to [-1, 1]
     pub p: f32,                     // Just the contribution from proportional gain
     pub i: f32,                     // Just the contribution from integral gain
     pub d: f32,                     // Just the contribution from derivative gain
-    pub quant: i16,                 // PWM state after quantizing into clock ticks
-    pub enabled: i16,               // Is the H-bridge enabled? Can be turned off by halt conditions.
+    pub hz: f32,                    // Actual modulation frequency
+    pub clocks: i16,                // PWM state after quantizing into clock ticks
+    pub period: u16,                // Number of clock ticks per PWM cycle
+    pub enabled: u32,               // Is the H-bridge enabled? Can be turned off by halt conditions.
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct WinchMotorControl {
-    pub pwm: WinchPWM,
+    pub pwm: WinchPWMStatus,
     pub position_err: i32,          // Instantaneous position error
     pub pos_err_filtered: f32,      // Low-pass-filtered position error
     pub pos_err_integral: f32,      // Accumulated integral of the position error, reset by halt watchdog

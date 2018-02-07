@@ -10,6 +10,7 @@ pub struct WinchController {
     last_winch_status: Option<(WinchStatus, Instant)>,
     quantized_position_target: i32,
     fract_position_target: f32,
+    pwm_period: f32,
     lighting_command_phase: f32,
     lighting_motion_phase: f32,
     lighting_filtered_velocity: f32,
@@ -30,6 +31,7 @@ impl WinchController {
             last_winch_status: None,
             quantized_position_target: 0,
             fract_position_target: 0.0,
+            pwm_period: 0.0,
             lighting_command_phase: 0.0,
             lighting_motion_phase: 0.0,
             lighting_filtered_velocity: 0.0,
@@ -38,12 +40,11 @@ impl WinchController {
     }
 
     /// Apply one tick's worth of position change at the indicated velocity
-    pub fn velocity_tick(self: &mut WinchController, config: &Config, cal: &WinchCalibration, m_per_s: f32) {
+    pub fn motion_tick_with_velocity(&mut self, config: &Config, cal: &WinchCalibration, m_per_s: f32) {
         let distance_m = m_per_s / (TICK_HZ as f32);
         self.move_position_target(cal, distance_m);
         self.lighting_command_phase += distance_m * TAU / config.lighting.current.winch.wavelength_m;
     }
-
 
     pub fn light_environment(&self, config: &Config) -> WinchLighting {
         WinchLighting {
@@ -55,7 +56,7 @@ impl WinchController {
         }
     }
 
-    pub fn update(self: &mut WinchController, config: &Config, cal: &WinchCalibration, status: &WinchStatus) {
+    pub fn update(&mut self, config: &Config, cal: &WinchCalibration, status: &WinchStatus) {
         if config.mode == ControllerMode::Halted
             || self.was_motor_shutoff(status)
             || self.was_tick_discontinuity(status) {
@@ -73,11 +74,20 @@ impl WinchController {
         let velocity_filter_param = config.lighting.current.winch.velocity_filter_param;
         self.lighting_filtered_velocity += (velocity_m - self.lighting_filtered_velocity) * velocity_filter_param;
 
+        let pwm_period_high_motion = 1.0 / config.params.pwm_hz_high_motion;
+        let pwm_period_low_motion = 1.0 / config.params.pwm_hz_low_motion;
+        let pwm_period_min = pwm_period_high_motion.min(pwm_period_low_motion);
+        let pwm_period_max = pwm_period_high_motion.max(pwm_period_low_motion);
+        let high_speed = velocity_m.abs() >= config.params.pwm_velocity_threshold;
+        let pwm_period_target = if high_speed { pwm_period_high_motion } else { pwm_period_low_motion };
+        self.pwm_period += (pwm_period_target - self.pwm_period) * config.params.pwm_hz_filter_param;
+        self.pwm_period = self.pwm_period.max(pwm_period_min).min(pwm_period_max);
+
         self.mech_status = MechStatus::new(status);
         self.last_winch_status = Some((status.clone(), Instant::now()));
     }
 
-    pub fn make_command(self: &WinchController, config: &Config, cal: &WinchCalibration, status: &WinchStatus) -> WinchCommand {
+    pub fn make_command(&self, config: &Config, cal: &WinchCalibration, status: &WinchStatus) -> WinchCommand {
         match config.mode {
 
             ControllerMode::Halted => WinchCommand {
@@ -85,7 +95,7 @@ impl WinchController {
                 force: self.make_force_command(config, cal),
                 pid: self.make_halted_pid_gains(),
                 deadband: self.make_deadband(config, cal),
-                pwm_bias: 0.0,
+                pwm: self.make_pwm_command(config),
             },
 
             _ => WinchCommand {
@@ -93,12 +103,12 @@ impl WinchController {
                 force: self.make_force_command(config, cal),
                 pid: self.make_pid_gains(config, cal),
                 deadband: self.make_deadband(config, cal),
-                pwm_bias: config.params.pwm_bias,
+                pwm: self.make_pwm_command(config),
             },
         }
     }
 
-    fn move_position_target(self: &mut WinchController, cal: &WinchCalibration, distance_m: f32) {
+    fn move_position_target(&mut self, cal: &WinchCalibration, distance_m: f32) {
         let distance_counts = cal.dist_from_m(distance_m);
         let pos = self.fract_position_target + distance_counts;
         let fract = pos.fract();
@@ -165,14 +175,14 @@ impl WinchController {
         }
     }
 
-    fn reset(self: &mut WinchController, status: &WinchStatus) {
+    fn reset(&mut self, status: &WinchStatus) {
         // Initialize assumed winch state from this packet
         self.last_winch_status = Some((status.clone(), Instant::now()));
         self.quantized_position_target = status.sensors.position;
         self.fract_position_target = 0.0;
     }
 
-    fn make_force_command(self: &WinchController, config: &Config, cal: &WinchCalibration) -> ForceCommand {
+    fn make_force_command(&self, config: &Config, cal: &WinchCalibration) -> ForceCommand {
         ForceCommand {
             filter_param: config.params.force_filter_param as f32,
             neg_motion_min: cal.force_from_kg(config.params.force_neg_motion_min_kg) as f32,
@@ -182,7 +192,16 @@ impl WinchController {
         }
     }
 
-    fn make_pid_gains(self: &WinchController, config: &Config, cal: &WinchCalibration) -> PIDGains {
+    fn make_pwm_command(&self, config: &Config) -> WinchPWMCommand {
+        let hz = if self.pwm_period > 0.0 { 1.0 / self.pwm_period } else { 0.0 };
+        WinchPWMCommand {
+            hz,
+            bias: config.params.pwm_bias,
+            minimum: config.params.pwm_minimum,
+        }
+    }
+
+    fn make_pid_gains(&self, config: &Config, cal: &WinchCalibration) -> PIDGains {
         PIDGains {
             gain_p: cal.pwm_gain_from_m(config.params.pwm_gain_p) as f32,
             gain_i: cal.pwm_gain_from_m(config.params.pwm_gain_i) as f32,
@@ -193,7 +212,7 @@ impl WinchController {
         }
     }
 
-    fn make_halted_pid_gains(self: &WinchController) -> PIDGains {
+    fn make_halted_pid_gains(&self) -> PIDGains {
         // Disable the PID entirely when halted
         PIDGains {
             gain_p: 0.0,
@@ -205,7 +224,7 @@ impl WinchController {
         }
     }
 
-    fn make_deadband(self: &WinchController, config: &Config, cal: &WinchCalibration) -> WinchDeadband {
+    fn make_deadband(&self, config: &Config, cal: &WinchCalibration) -> WinchDeadband {
         WinchDeadband {
             position: cal.dist_from_m(config.params.deadband_position_err_m).round() as i32,
             velocity: cal.dist_from_m(config.params.deadband_velocity_limit_m_per_sec) as f32,

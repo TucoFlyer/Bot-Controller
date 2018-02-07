@@ -218,6 +218,11 @@ pub struct BotParams {
     pub pwm_gain_i: f32,
     pub pwm_gain_d: f32,
     pub pwm_bias: f32,
+    pub pwm_minimum: f32,
+    pub pwm_hz_low_motion: f32,
+    pub pwm_hz_high_motion: f32,
+    pub pwm_hz_filter_param: f32,
+    pub pwm_velocity_threshold: f32,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]

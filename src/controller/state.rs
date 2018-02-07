@@ -153,7 +153,7 @@ impl ControllerState {
             _ => 0.0
         };
 
-        self.winches[id].velocity_tick(config, cal, velocity);
+        self.winches[id].motion_tick_with_velocity(config, cal, velocity);
         self.winches[id].make_command(config, cal, &status)
     }
 
