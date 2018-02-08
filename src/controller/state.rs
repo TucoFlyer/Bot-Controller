@@ -179,14 +179,10 @@ impl ControllerState {
     fn multi_winch_controller(&self, config: &Config, id: usize, velocity: Vector3<f32>) -> f32 {
         let projected_velocity = vec3_dot(velocity, self.winch_rope_direction_vector(config, id));
         let return_v = config.params.force_return_velocity_max_m_per_sec;
-        if !self.is_status_watchdog_okay() {
-            0.0
-        } else {
-            match self.winches[id].mech_status {
-                MechStatus::Stuck => 0.0,
-                MechStatus::ForceLimited(f) => self.force_limit_guard(f, projected_velocity) - f * return_v,
-                MechStatus::Normal => projected_velocity,
-            }
+        match self.winches[id].mech_status {
+            MechStatus::Stuck => 0.0,
+            MechStatus::ForceLimited(f) => self.force_limit_guard(f, projected_velocity) - f * return_v,
+            MechStatus::Normal => projected_velocity,
         }
     }
 
@@ -195,13 +191,19 @@ impl ControllerState {
         vec3_normalized(config.winches[id].loc)
     }
 
-    fn is_status_watchdog_okay(&self) -> bool {
+    pub fn multi_winch_watchdog_should_halt(&self, config: &Config) -> bool {
         for winch in &self.winches {
-            if !winch.is_status_watchdog_okay() {
-                return false;
+            if !winch.is_status_recent() {
+                // This winch isn't okay, halt unless we're in manual mode
+                return match config.mode {
+                    ControllerMode::Halted => false,
+                    ControllerMode::ManualWinch(_) => false,
+                    _ => true,
+                };
             }
         }
-        return true;
+        // All winches okay
+        return false;
     }
 
     pub fn light_environment(&self, config: &Config) -> LightEnvironment {

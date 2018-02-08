@@ -170,7 +170,7 @@ impl WinchController {
         }
     }
 
-    pub fn is_status_watchdog_okay(&self) -> bool {
+    pub fn is_status_recent(&self) -> bool {
         let deadline = Duration::from_millis((1000 * 3 / TICK_HZ) as u64);
         match self.last_winch_status {
             None => false,

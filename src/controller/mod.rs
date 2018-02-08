@@ -11,7 +11,7 @@ mod draw;
 use message::*;
 use std::sync::mpsc::{SyncSender, Receiver, sync_channel};
 use bus::{Bus, BusReader};
-use config::{SharedConfigFile, Config};
+use config::{SharedConfigFile, Config, ControllerMode};
 use botcomm::BotSocket;
 use fygimbal::GimbalPort;
 use self::state::ControllerState;
@@ -180,6 +180,10 @@ impl Controller {
 
             Message::WinchStatus(id, status) => {
                 let command = self.state.winch_control_loop(&self.local_config, id, status);
+                if self.state.multi_winch_watchdog_should_halt(&self.local_config) {
+                    self.local_config.mode = ControllerMode::Halted;
+                    self.config_changed();
+                }
                 drop(self.socket.winch_command(id, command));
             },
 
