@@ -129,8 +129,14 @@ impl WinchController {
             config.lighting.current.winch.error_color
         } else {
             match config.mode {
+                ControllerMode::ManualWinch(id) => {
+                    if id == self.id {
+                        config.lighting.current.winch.manual_selected_color
+                    } else {
+                        config.lighting.current.winch.manual_deselected_color
+                    }
+                },
                 ControllerMode::Halted => config.lighting.current.winch.halt_color,
-                ControllerMode::ManualWinch(id) if id == self.id => config.lighting.current.winch.manual_color,
                 _ => config.lighting.current.winch.normal_color,
             }
         }

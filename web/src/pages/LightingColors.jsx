@@ -9,8 +9,11 @@ export default (props) => {
         <h6>Normal-mode background color</h6>
         <ConfigColor item="lighting.current.winch.normal_color" />
 
+        <h6>Manual-mode selection color</h6>
+        <ConfigColor item="lighting.current.winch.manual_selected_color" />
+
         <h6>Manual-mode background color</h6>
-        <ConfigColor item="lighting.current.winch.manual_color" />
+        <ConfigColor item="lighting.current.winch.manual_deselected_color" />
 
         <h6>Halt-mode background color</h6>
         <ConfigColor item="lighting.current.winch.halt_color" />

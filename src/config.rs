@@ -87,7 +87,8 @@ impl WinchCalibration {
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct WinchLightingScheme {
     pub normal_color: Vector3<f32>,
-    pub manual_color: Vector3<f32>,
+    pub manual_selected_color: Vector3<f32>,
+    pub manual_deselected_color: Vector3<f32>,
     pub halt_color: Vector3<f32>,
     pub error_color: Vector3<f32>,
     pub stuck_color: Vector3<f32>,
