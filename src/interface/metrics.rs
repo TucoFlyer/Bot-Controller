@@ -1,5 +1,5 @@
 use controller::ControllerPort;
-use config::{Config, SharedConfigFile};
+use config::{Config, SharedConfigFile, ControllerMode};
 use message::{TimestampedMessage, Message, Command, ManualControlAxis};
 use std::thread;
 use std::sync::mpsc::sync_channel;
@@ -7,7 +7,10 @@ use std::mem;
 use std::collections::HashMap;
 use num::range;
 use std::time::{Duration, Instant};
-use influx_db_client::{Client, Point, Value, Precision};
+use serde_json::Map;
+use serde_json::Value as JsonValue;
+use serde_json;
+use influx_db_client::{Point, Value};
 use influx_db_client;
 use chrono::{DateTime, Utc};
 
@@ -111,9 +114,25 @@ impl MetricSampler {
 
             &Message::ConfigIsCurrent(ref new_config) => {
                 *config = new_config.clone();
+                let json_config = serde_json::to_value(new_config).unwrap();
                 let mut p = Point::new("config");
                 p.add_timestamp(self.sync.to_millis(tsm.timestamp));
-                p.add_field("mode", Value::String(format!("{:?}", config.mode)));
+
+                if let JsonValue::Object(map) = json_config {
+                    add_json_object_to_point(&mut p, None, map);
+                }
+
+                let modes = [
+                    ("mode.halted", &ControllerMode::Halted),
+                    ("mode.normal", &ControllerMode::Normal),
+                    ("mode.manual_flyer", &ControllerMode::ManualFlyer),
+                    ("mode.manual_winch", &ControllerMode::ManualWinch(0)),
+                ];
+                for &(name, value) in modes.iter() {
+                    let is_current = mem::discriminant(&config.mode) == mem::discriminant(value);
+                    p.add_field(name, Value::Boolean(is_current));
+                }
+
                 points.push(p);
             },
 
@@ -166,6 +185,37 @@ impl MetricSampler {
     }
 }
 
+fn add_json_field_to_point(p: &mut Point, name: &str, val: JsonValue) {
+    match val {
+        JsonValue::Null => p.add_field(name, Value::String("null".into())),
+        JsonValue::Bool(b) => p.add_field(name, Value::Boolean(b)),
+        JsonValue::String(s) => p.add_field(name, Value::String(s)),
+        JsonValue::Number(n) => if let Some(ival) = n.as_i64() {
+            p.add_field(name, Value::Integer(ival));
+        } else if let Some(fval) = n.as_f64() {
+            p.add_field(name, Value::Float(fval));
+        },
+        JsonValue::Array(v) => {
+            for (key, value) in v.into_iter().enumerate() {
+                add_json_field_to_point(p, &format!("{}.{}", name, key), value);
+            }
+        },
+        JsonValue::Object(m) => {
+            add_json_object_to_point(p, Some(name), m);
+        },
+    }
+}
+
+fn add_json_object_to_point(p: &mut Point, prefix: Option<&str>, m: Map<String, JsonValue>) {
+    for (key, value) in m.into_iter() {
+        let name = match prefix {
+            Some(prefix) => format!("{}.{}", prefix, key),
+            None => key,
+        };
+        add_json_field_to_point(p, &name, value);
+    }
+}
+
 struct TimeSync {
     instant: Instant,
     datetime: DateTime<Utc>,
@@ -199,7 +249,7 @@ pub fn start(config: &SharedConfigFile, controller: &ControllerPort) {
         let controller = controller.clone();
         let mut sampler = MetricSampler::new(metrics_config.max_sample_hz, config.winches.len());
 
-        let client = Client::new(&metrics_config.influxdb_host, &database);
+        let client = influx_db_client::Client::new(&metrics_config.influxdb_host, &database);
         let client = if let Some((user, passwd)) = metrics_config.authentication {
             client.set_authentication(user, passwd)
         } else {
@@ -230,7 +280,7 @@ pub fn start(config: &SharedConfigFile, controller: &ControllerPort) {
             loop {
                 let batch = batch_receiver.recv().unwrap();
                 let batch = influx_db_client::Points::create_new(batch);
-                let precision = Some(Precision::Milliseconds);
+                let precision = Some(influx_db_client::Precision::Milliseconds);
 
                 match client.write_points(batch, precision, None) {
                     Ok(_) => (),
