@@ -146,17 +146,17 @@ export default class extends Component {
 
             <IfAuthenticated>{ this.state.editable && <div>
                 <h6>PWM frequency during low-speed motion, all winches (Hz)</h6>
-                <ConfigSlider item="params.pwm_hz_low_motion" min="100" max="1500" step="0.1" />
+                <ConfigSlider item="params.pwm_hz_low_motion" min="100" max="1000" step="1" />
             </div> }</IfAuthenticated>
 
             <IfAuthenticated>{ this.state.editable && <div>
                 <h6>PWM frequency during high-speed motion, all winches (Hz)</h6>
-                <ConfigSlider item="params.pwm_hz_high_motion" min="1500" max="40000" step="0.1" />
+                <ConfigSlider item="params.pwm_hz_high_motion" min="500" max="40000" step="1" />
             </div> }</IfAuthenticated>
 
             <IfAuthenticated>{ this.state.editable && <div>
                 <h6>PWM frequency filter parameter, all winches</h6>
-                <ConfigSlider item="params.pwm_hz_filter_param" min="0" max="0.1" step="1e-5" />
+                <ConfigSlider item="params.pwm_hz_filter_param" min="0" max="0.4" step="1e-5" />
             </div> }</IfAuthenticated>
 
             <IfAuthenticated>{ this.state.editable && <div>

@@ -14,6 +14,7 @@ pub struct WinchController {
     lighting_command_phase: f32,
     lighting_motion_phase: f32,
     lighting_filtered_velocity: f32,
+    has_nonzero_velocity_command: bool,
 }
 
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -36,6 +37,7 @@ impl WinchController {
             lighting_motion_phase: 0.0,
             lighting_filtered_velocity: 0.0,
             mech_status: MechStatus::Normal,
+            has_nonzero_velocity_command: false,
         }
     }
 
@@ -44,6 +46,7 @@ impl WinchController {
         let distance_m = m_per_s / (TICK_HZ as f32);
         self.move_position_target(cal, distance_m);
         self.lighting_command_phase += distance_m * TAU / config.lighting.current.winch.wavelength_m;
+        self.has_nonzero_velocity_command = m_per_s != 0.0;
     }
 
     pub fn light_environment(&self, config: &Config) -> WinchLighting {
@@ -226,8 +229,15 @@ impl WinchController {
 
     fn make_deadband(&self, config: &Config, cal: &WinchCalibration) -> WinchDeadband {
         WinchDeadband {
-            position: cal.dist_from_m(config.params.deadband_position_err_m).round() as i32,
             velocity: cal.dist_from_m(config.params.deadband_velocity_limit_m_per_sec) as f32,
+            position: if self.has_nonzero_velocity_command {
+                // Intending to move; send a zero to disable the firmware deadband support
+                0
+            } else {
+                // Done with commanded move; use configured deadband for position/velocity
+                // to finish moving once the PID loop has mostly converged.
+                cal.dist_from_m(config.params.deadband_position_err_m).round() as i32
+            },
         }
     }
 }

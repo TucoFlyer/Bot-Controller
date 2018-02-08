@@ -35,10 +35,10 @@ params:
   pwm_gain_d: 0.22065000236034393
   pwm_bias: 0.07676000148057938
   pwm_minimum: 0.005960000213235617
-  pwm_hz_low_motion: 312
-  pwm_hz_high_motion: 25000
-  pwm_hz_filter_param: 0.018559999763965607
-  pwm_velocity_threshold: 0.0142000000923872
+  pwm_hz_low_motion: 306.3999938964844
+  pwm_hz_high_motion: 29091.19921875
+  pwm_hz_filter_param: 0.03280000016093254
+  pwm_velocity_threshold: 0.03604999929666519
 gimbal:
   max_rate: 208
   yaw_gains:
