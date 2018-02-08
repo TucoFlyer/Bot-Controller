@@ -229,7 +229,6 @@ pub struct BotParams {
 pub struct MetricsConfig {
     pub influxdb_host: String,
     pub database: String,
-    pub authentication: Option<(String, String)>,
     pub batch_size: usize,
     pub max_sample_hz: f32,
 }

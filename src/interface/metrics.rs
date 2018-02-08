@@ -4,6 +4,7 @@ use message::{TimestampedMessage, Message, Command, ManualControlAxis};
 use std::thread;
 use std::sync::mpsc::sync_channel;
 use std::mem;
+use std::env;
 use std::collections::HashMap;
 use num::range;
 use std::time::{Duration, Instant};
@@ -250,8 +251,8 @@ pub fn start(config: &SharedConfigFile, controller: &ControllerPort) {
         let mut sampler = MetricSampler::new(metrics_config.max_sample_hz, config.winches.len());
 
         let client = influx_db_client::Client::new(&metrics_config.influxdb_host, &database);
-        let client = if let Some((user, passwd)) = metrics_config.authentication {
-            client.set_authentication(user, passwd)
+        let client = if let Ok(username) = env::var("INFLUXDB_USERNAME") {
+            client.set_authentication(username, env::var("INFLUXDB_PASSWORD").unwrap())
         } else {
             client
         };
