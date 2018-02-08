@@ -17,24 +17,24 @@ metrics:
   max_sample_hz: 100
 params:
   gimbal_max_control_rate: 10000
-  manual_control_velocity_m_per_sec: 0.800000011920929
-  accel_limit_m_per_sec2: 0.9100000262260437
+  manual_control_velocity_m_per_sec: 0.6000000238418579
+  accel_limit_m_per_sec2: 0.8600000143051147
   force_neg_motion_min_kg: 0.23999999463558197
-  force_pos_motion_max_kg: 3.799999952316284
+  force_pos_motion_max_kg: 3.0299999713897705
   force_lockout_below_kg: 0.05000000074505806
   force_lockout_above_kg: 4.5
-  force_filter_param: 0.07159999758005142
-  force_return_velocity_max_m_per_sec: 0.23999999463558197
-  deadband_position_err_m: 0.008899999782443047
-  deadband_velocity_limit_m_per_sec: 0.020999999716877937
-  pos_err_filter_param: 0.08939400315284729
+  force_filter_param: 0.06760100275278091
+  force_return_velocity_max_m_per_sec: 0.05000000074505806
+  deadband_position_err_m: 0.021299999207258224
+  deadband_velocity_limit_m_per_sec: 0.015799999237060547
+  pos_err_filter_param: 0.08686999976634979
   vel_err_filter_param: 0.007999000139534473
-  integral_err_decay_param: 0.009367999620735645
+  integral_err_decay_param: 0.007826999761164188
   pwm_gain_p: 1.3300000429153442
   pwm_gain_i: 3.3459999561309814
   pwm_gain_d: 0.22065000236034393
-  pwm_bias: 0.11920999735593796
-  pwm_minimum: 0.009999999776482582
+  pwm_bias: 0.07676000148057938
+  pwm_minimum: 0.005960000213235617
   pwm_hz_low_motion: 312
   pwm_hz_high_motion: 25000
   pwm_hz_filter_param: 0.018559999763965607
@@ -207,8 +207,8 @@ winches:
       - -20
       - 30
     calibration:
-      force_zero_count: -112354.390625
-      kg_force_per_count: 0.000002789995960483793
+      force_zero_count: -112820.9296875
+      kg_force_per_count: 0.0000027034463983000023
       m_dist_per_count: 0.000033150394301628694
   - addr: "10.32.0.11:9024"
     loc:
@@ -216,8 +216,8 @@ winches:
       - -20
       - 30
     calibration:
-      force_zero_count: -116558.359375
-      kg_force_per_count: 0.0000028257150006538723
+      force_zero_count: -106746.8203125
+      kg_force_per_count: 0.0000026383172553323675
       m_dist_per_count: 0.000036947942135157064
   - addr: "10.32.0.12:9024"
     loc:
@@ -225,8 +225,8 @@ winches:
       - 20
       - 30
     calibration:
-      force_zero_count: 29199.767578125
-      kg_force_per_count: 0.0000027787955332314596
+      force_zero_count: 24642.96875
+      kg_force_per_count: 0.0000027904004582524067
       m_dist_per_count: 0.00003337504676892422
   - addr: "10.32.0.13:9024"
     loc:
@@ -234,8 +234,8 @@ winches:
       - 20
       - 30
     calibration:
-      force_zero_count: 118460.65625
-      kg_force_per_count: 0.0000035167245187039953
+      force_zero_count: 133691.53125
+      kg_force_per_count: 0.00000323259450851765
       m_dist_per_count: 0.000033002186683006585
 lighting:
   animation:
