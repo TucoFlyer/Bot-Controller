@@ -196,6 +196,8 @@ pub fn start(config: &SharedConfigFile, controller: &ControllerPort) {
     if let Some(metrics_config) = config.metrics.clone() {
         let database = metrics_config.database;
         let batch_size = metrics_config.batch_size;
+        let controller = controller.clone();
+        let mut sampler = MetricSampler::new(metrics_config.max_sample_hz, config.winches.len());
 
         let client = Client::new(&metrics_config.influxdb_host, &database);
         let client = if let Some((user, passwd)) = metrics_config.authentication {
@@ -204,13 +206,12 @@ pub fn start(config: &SharedConfigFile, controller: &ControllerPort) {
             client
         };
 
-        let mut bus_receiver = controller.add_rx();
         let (batch_sender, batch_receiver) = sync_channel(16);
 
-        let mut sampler = MetricSampler::new(metrics_config.max_sample_hz, config.winches.len());
-        let mut points = Vec::new();
-
         thread::Builder::new().name("Metrics sampler".into()).spawn(move || {
+            let mut bus_receiver = controller.add_rx();
+            let mut points = Vec::new();
+
             loop {
                 let msg = bus_receiver.recv().unwrap();
                 sampler.handle_message(&mut points, &mut config, &msg);

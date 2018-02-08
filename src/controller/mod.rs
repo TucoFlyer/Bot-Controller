@@ -11,7 +11,6 @@ mod draw;
 use message::*;
 use std::sync::mpsc::{SyncSender, Receiver, sync_channel};
 use bus::{Bus, BusReader};
-use std::thread;
 use config::{SharedConfigFile, Config};
 use botcomm::BotSocket;
 use fygimbal::GimbalPort;
@@ -93,12 +92,11 @@ impl Controller {
         self.port_prototype.clone()
     }
 
-    pub fn start(mut self, gimbal_port: GimbalPort) {
-        thread::Builder::new().name("Controller".into()).spawn(move || {
-            loop {
-                self.poll(&gimbal_port);
-            }
-        }).unwrap();
+    pub fn run(mut self, gimbal_port: GimbalPort) {
+        println!("Running.");
+        loop {
+            self.poll(&gimbal_port);
+        }
     }
 
     fn broadcast(&mut self, ts_msg: TimestampedMessage) {

@@ -53,4 +53,3 @@ mod botcomm;
 pub use botcomm::BotSocket;
 
 pub mod interface;
-pub mod watchdog;

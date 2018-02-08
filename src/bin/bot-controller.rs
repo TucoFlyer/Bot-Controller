@@ -1,5 +1,5 @@
 extern crate tucoflyer;
-use tucoflyer::{SharedConfigFile, BotSocket, Controller, interface, watchdog};
+use tucoflyer::{SharedConfigFile, BotSocket, Controller, interface};
 
 fn main() {
     let config = SharedConfigFile::load("config.yaml").expect("Failed to read configuration");
@@ -8,11 +8,10 @@ fn main() {
     let controller = Controller::new(&config, &socket);
     let port = controller.port();
     let gimbal = socket.start_receiver(&port);
-    controller.start(gimbal);
 
     interface::web::start(&config, &port);
     interface::gamepad::start(&config, &port);
     interface::metrics::start(&config, &port);
 
-    watchdog::run(&port);
+    controller.run(gimbal);
 }
