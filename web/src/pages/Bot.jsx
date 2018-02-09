@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { BotConnection } from '../BotConnection';
 import Joystick from '../Joystick';
-import { ConfigTextBlock } from '../Config';
+import { ConfigTextBlock, ConfigButton } from '../Config';
 import { IfAuthenticated } from '../BotConnection';
 
 export default class FlyerHome extends Component {
@@ -17,13 +17,45 @@ export default class FlyerHome extends Component {
             <ConfigTextBlock item="mode" />
 
             <IfAuthenticated><div>
-                <h6>Manual tracking control</h6>
+                <ConfigButton item="mode" value="Halted" block color="danger" > Halt </ConfigButton>
+            </div></IfAuthenticated>
+
+            <IfAuthenticated><div>
+                <h6>Manual camera control</h6>
                 <Joystick
                     onXY={ (x, y) => {
                         this.context.botConnection.send({ Command: { ManualControlValue: [ "CameraYaw", x ] }});
                         this.context.botConnection.send({ Command: { ManualControlValue: [ "CameraPitch", y ] }});
                     }}
                 />
+                <ConfigButton item="mode" value="Halted" block color="danger" > Halt </ConfigButton>
+            </div></IfAuthenticated>
+
+            <IfAuthenticated><div>
+                <h6>Manual flyer control, XY plane (all winches)</h6>
+                <Joystick
+                    onStart={ () => {
+                        this.context.botConnection.send({ Command: { SetMode: "ManualFlyer" }});
+                    }}
+                    onXY={ (x, y) => {
+                        this.context.botConnection.send({ Command: { ManualControlValue: [ "RelativeX", x ] }});
+                        this.context.botConnection.send({ Command: { ManualControlValue: [ "RelativeY", y ] }});
+                    }}
+                />
+                <ConfigButton item="mode" value="Halted" block color="danger" > Halt </ConfigButton>
+            </div></IfAuthenticated>
+
+            <IfAuthenticated><div>
+                <h6>Manual flyer control, Z axis (all winches)</h6>
+                <Joystick
+                    onStart={ () => {
+                        this.context.botConnection.send({ Command: { SetMode: "ManualFlyer" }});
+                    }}
+                    onXY={ (x, y) => {
+                        this.context.botConnection.send({ Command: { ManualControlValue: [ "RelativeZ", y ] }});
+                    }}
+                />
+                <ConfigButton item="mode" value="Halted" block color="danger" > Halt </ConfigButton>
             </div></IfAuthenticated>
 
         </div>;

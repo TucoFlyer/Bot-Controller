@@ -1,16 +1,22 @@
 .Joystick {
+	width: 100%;
+	height: 14em;
+	margin: 0 0 1em 0;
+}
+
+.Joystick .zone {
 	position: absolute;
 	width: 100%;
+	height: 14em;
 	background: #004;
-	height: 100%;
 	text-align: center;
-	padding: 2em 0.5em;
+	padding: 1em;
 }
 
 .Joystick div {
 	color: rgba(255,255,255,0.5);
 }
 
-.Joystick div:first-child {
-	font-size: 2.5em;
+.Joystick .big {
+	font-size: 2em;
 }

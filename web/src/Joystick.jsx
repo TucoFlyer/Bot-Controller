@@ -15,9 +15,11 @@ export default class Joystick extends Component {
 
     render() {
         return (
-            <div className="Joystick" ref={ (div) => this.div = div } >
-                <div>Joystick Area</div>
-                <div>touch here</div>
+            <div className="Joystick">
+                <div className="zone" ref={ (div) => this.div = div }>
+                    <div className="big">Joystick Area</div>
+                    <div>touch here</div>
+                </div>
             </div>
         );
     }
