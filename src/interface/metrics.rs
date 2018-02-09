@@ -55,7 +55,8 @@ impl MetricSampler {
                     p.add_timestamp(self.sync.to_millis(tsm.timestamp));
                     p.add_tag("id", Value::Integer(id as i64));
                     p.add_field("force", Value::Float(cal.force_to_kg(status.sensors.force.filtered).into()));
-                    p.add_field("velocity", Value::Float(cal.dist_to_m(status.sensors.velocity as f32).into()));
+                    p.add_field("velocity", Value::Float(cal.dist_to_m(status.sensors.velocity).into()));
+                    p.add_field("position", Value::Float(cal.dist_to_m(status.sensors.position as f32).into()));
                     p.add_field("position_err", Value::Float(cal.dist_to_m(status.motor.position_err as f32).into()));
                     p.add_field("position_err.filtered", Value::Float(cal.dist_to_m(status.motor.pos_err_filtered).into()));
                     p.add_field("position_err.integral", Value::Float(cal.dist_to_m(status.motor.pos_err_integral).into()));
