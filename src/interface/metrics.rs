@@ -65,6 +65,7 @@ impl MetricSampler {
                     p.add_field("pwm.i", Value::Float(status.motor.pwm.i.into()));
                     p.add_field("pwm.d", Value::Float(status.motor.pwm.d.into()));
                     p.add_field("pwm.total", Value::Float(status.motor.pwm.total.into()));
+                    p.add_field("pwm.hz", Value::Float(status.motor.pwm.hz.into()));
                     p.add_field("pwm.enabled", Value::Boolean(status.motor.pwm.enabled != 0));
                     points.push(p);
                 }
