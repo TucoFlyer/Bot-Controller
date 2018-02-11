@@ -176,8 +176,8 @@ impl WinchController {
         }
     }
 
-    pub fn is_status_recent(&self) -> bool {
-        let deadline = Duration::from_millis((1000 * 3 / TICK_HZ) as u64);
+    pub fn is_status_recent(&self, config: &Config) -> bool {
+        let deadline = Duration::from_millis(config.params.winch_watchdog_millis);
         match self.last_winch_status {
             None => false,
             Some((_, timestamp)) => timestamp + deadline > Instant::now(),

@@ -16,15 +16,15 @@ metrics:
   max_sample_hz: 100
 params:
   gimbal_max_control_rate: 10000
-  manual_control_velocity_m_per_sec: 0.800000011920929
-  accel_limit_m_per_sec2: 0.3100000023841858
-  force_neg_motion_min_kg: 0.23999999463558197
+  manual_control_velocity_m_per_sec: 0.3199999928474426
+  accel_limit_m_per_sec2: 0.14000000059604645
+  force_neg_motion_min_kg: 0.14000000059604645
   force_pos_motion_max_kg: 3.0299999713897705
-  force_lockout_below_kg: 0.05000000074505806
+  force_lockout_below_kg: 0.029999999329447746
   force_lockout_above_kg: 4.5
   force_filter_param: 0.06760100275278091
   force_return_velocity_max_m_per_sec: 0.09000000357627869
-  deadband_position_err_m: 0.028699999675154686
+  deadband_position_err_m: 0.02370000071823597
   deadband_velocity_limit_m_per_sec: 0.00039999998989515007
   pos_err_filter_param: 0.3103010058403015
   vel_err_filter_param: 0.007999000139534473
@@ -33,11 +33,12 @@ params:
   pwm_gain_i: 4.501999855041504
   pwm_gain_d: 0.22065000236034393
   pwm_bias: 0.025989999994635582
-  pwm_minimum: 0.0035600000992417336
+  pwm_minimum: 0.0016799999866634607
   pwm_hz_low_motion: 267
   pwm_hz_high_motion: 23447
   pwm_hz_filter_param: 0.02655000053346157
   pwm_velocity_threshold: 0.0036200000904500484
+  winch_watchdog_millis: 20
 gimbal:
   max_rate: 208
   yaw_gains:
@@ -71,10 +72,10 @@ gimbal:
 overlay:
   halt_color:
     - 1
-    - 0.0235294122248888
+    - 0.05098039284348488
     - 0
-    - 0.3400000035762787
-  border_thickness: 0.10159999877214432
+    - 0.10999999940395355
+  border_thickness: 0.033900000154972076
   debug_color:
     - 1
     - 1
@@ -94,18 +95,18 @@ overlay:
     - 0.34117648005485535
     - 0.34117648005485535
     - 0.5372549295425415
-    - 0.8100000023841858
+    - 0.5899999737739563
   label_color:
     - 0.9803921580314636
     - 0.9529411792755127
     - 0.9529411792755127
-    - 0.699999988079071
+    - 0
   label_text_size: 0.021400000900030136
   label_background_color:
     - 0
     - 0
     - 0
-    - 0.5099999904632568
+    - 0
   tracked_region_default_color:
     - 0.4627451002597809
     - 0.9098039269447327
@@ -167,7 +168,7 @@ overlay:
     - 0.6274510025978088
     - 0.8784313797950745
     - 0.9529411792755127
-    - 0.7699999809265137
+    - 0.8100000023841858
   gimbal_cursor_size: 0.0203000009059906
   gimbal_cursor_sprite:
     - 0

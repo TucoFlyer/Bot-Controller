@@ -224,6 +224,7 @@ pub struct BotParams {
     pub pwm_hz_high_motion: f32,
     pub pwm_hz_filter_param: f32,
     pub pwm_velocity_threshold: f32,
+    pub winch_watchdog_millis: u64,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]

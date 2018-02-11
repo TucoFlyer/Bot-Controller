@@ -158,8 +158,14 @@ impl Controller {
         draw::tracking_gains(config, &mut self.draw, &self.gimbal_status);
         draw::tracking_rect(config, &mut self.draw, &self.state.tracked, &self.state.manual);
         draw::gimbal_status(config, &mut self.draw, &self.gimbal_status);
-        self.state.tracking_particles.render(config, &mut self.draw);
         draw::debug_text(config, &mut self.draw, format!("{:?}, {:?}", config.mode, self.gimbal_status));
+
+        match config.mode {
+            ControllerMode::Halted => {},
+            _ => {
+                self.state.tracking_particles.render(config, &mut self.draw);
+            }
+        }
     }
 
     fn handle_message(&mut self, ts_msg: TimestampedMessage, gimbal_port: &GimbalPort) {
@@ -181,6 +187,7 @@ impl Controller {
             Message::WinchStatus(id, status) => {
                 let command = self.state.winch_control_loop(&self.local_config, id, status);
                 if self.state.multi_winch_watchdog_should_halt(&self.local_config) {
+                    println!("Halting; lost communication with one or more winches");
                     self.local_config.mode = ControllerMode::Halted;
                     self.config_changed();
                 }

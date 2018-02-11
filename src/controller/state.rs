@@ -193,7 +193,7 @@ impl ControllerState {
 
     pub fn multi_winch_watchdog_should_halt(&self, config: &Config) -> bool {
         for winch in &self.winches {
-            if !winch.is_status_recent() {
+            if !winch.is_status_recent(config) {
                 // This winch isn't okay, halt unless we're in manual mode
                 return match config.mode {
                     ControllerMode::Halted => false,
