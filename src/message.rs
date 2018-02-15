@@ -20,6 +20,18 @@ pub enum Command {
     GimbalValueRequests(Vec<GimbalValueRequest>),
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub enum PublicRequest {
+    Placeholder(f32, f32)
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct PublicInput {
+    pub gateway: String,
+    pub sender: String,
+    pub request: PublicRequest,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct TimestampedMessage {
     pub timestamp: Instant,
@@ -28,6 +40,7 @@ pub struct TimestampedMessage {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Message {
+    PublicInput(PublicInput),
     Command(Command),
     FlyerSensors(FlyerSensors),
     WinchStatus(usize, WinchStatus),
@@ -133,7 +146,7 @@ pub struct CameraDetectedObjects {
     pub objects: Vec<CameraDetectedObject>,
 }
 
-impl CameraDetectedObjects { 
+impl CameraDetectedObjects {
     pub fn new() -> CameraDetectedObjects {
         CameraDetectedObjects {
             frame: 0,

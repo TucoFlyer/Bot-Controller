@@ -1,4 +1,4 @@
-use message::{Message, Command, TimestampedMessage};
+use message::{Message, Command, PublicInput, TimestampedMessage};
 use controller::ControllerPort;
 use config::SharedConfigFile;
 use serde_json::{to_string, from_str, Value};
@@ -29,6 +29,7 @@ enum MessageToClient {
 enum MessageToServer {
     Auth(AuthResponse),
     Command(Command),
+    PublicInput(PublicInput),
     UpdateConfig(Value),
 }
 
@@ -389,6 +390,7 @@ impl MessageHandler {
         match message {
             MessageToServer::Auth(r) => self.try_authenticate(r),
             MessageToServer::Command(r) => self.try_command(r),
+            MessageToServer::PublicInput(r) => self.try_public_input(r),
             MessageToServer::UpdateConfig(r) => self.try_update_config(r),
         }
     }
@@ -410,6 +412,11 @@ impl MessageHandler {
             self.controller.send(Message::Command(command).timestamp());
             Ok(None)
         }
+    }
+
+    fn try_public_input(&self, input: PublicInput) -> ClientResult {
+        self.controller.send(Message::PublicInput(input).timestamp());
+        Ok(None)
     }
 
     fn try_update_config(&self, updates: Value) -> ClientResult {
