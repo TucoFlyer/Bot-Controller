@@ -33,8 +33,8 @@ let descriptions = {
     0x2a: "Motor CAL1 IIR filter next coefficient (Fixed point .10)",
     0x2c: "Magnetic encoder positions per joint",
     0x2e: "Motor shutdown bitmask, motor turns off if (param01 & ~param2e)",
-    0x47: "motor unknown, FIR filter",
-    0x48: "motor unknown, FIR filter",
+    0x47: "Motor current feedback target, rotated relative to CAL1",
+    0x48: "Motor current feedback, rotated relative to CAL1",
     0x49: "Output for motor mode 6, [c70] / param0b * 32",
     0x4a: "dynamic, quantized velocity related",
     0x4b: "Load/store offset for param08",
@@ -60,8 +60,8 @@ let descriptions = {
     0x67: "unknown, reset by windows software prior to motor power-on",
     0x68: "Follow loop, joystick offset (t=2)",
     0x69: "IMU type (values: 0x70=MPU-6050, 0x68) (t=2)",
-    0x6f: "Motor feedback ADC1 ch1 with offset",
-    0x70: "Motor feedback ADC2 ch1 with offset",
+    0x6f: "Motor feedback ADC1 ch1 with offset (pre-filter)",
+    0x70: "Motor feedback ADC2 ch1 with offset (pre-filter)",
     0x7f: "Firmware version",
 };
 
