@@ -20,11 +20,12 @@ struct MetricSampler {
     min_interval: Duration,
     winch_ts: Vec<Instant>,
     flyer_ts: Instant,
-    manual_ts: Instant,
+    flush_ts: Instant,
     gimbal_control_ts: Instant,
     object_detector_ts: Instant,
     region_tracker_ts: Instant,
     manual_axes: HashMap<ManualControlAxis, f32>,
+    message_counts: HashMap<&'static str, u64>,
 }
 
 impl MetricSampler {
@@ -37,16 +38,19 @@ impl MetricSampler {
             flyer_ts: now,
             object_detector_ts: now,
             region_tracker_ts: now,
-            manual_ts: now,
+            flush_ts: now,
             gimbal_control_ts: now,
             manual_axes: HashMap::new(),
+            message_counts: HashMap::new(),
         }
     }
 
     fn handle_message(&mut self, points: &mut Vec<Point>, config: &mut Config, tsm: &TimestampedMessage) {
+        *self.message_counts.entry("message").or_insert(0) += 1;
         match &tsm.message {
 
             &Message::WinchStatus(id, ref status) => {
+                *self.message_counts.entry("winch_status").or_insert(0) += 1;
                 if tsm.timestamp >= self.winch_ts[id] + self.min_interval {
                     self.winch_ts[id] = tsm.timestamp;
                     let cal = &config.winches[id].calibration;
@@ -73,6 +77,7 @@ impl MetricSampler {
             },
 
             &Message::FlyerSensors(ref status) => {
+                *self.message_counts.entry("flyer_sensors").or_insert(0) += 1;
                 if tsm.timestamp >= self.flyer_ts + self.min_interval {
                     self.flyer_ts = tsm.timestamp;
 
@@ -101,6 +106,7 @@ impl MetricSampler {
             },
 
             &Message::GimbalControlStatus(ref status) => {
+                *self.message_counts.entry("gimbal_control_status").or_insert(0) += 1;
                 if tsm.timestamp >= self.gimbal_control_ts + self.min_interval {
                     self.gimbal_control_ts = tsm.timestamp;
 
@@ -116,6 +122,7 @@ impl MetricSampler {
             },
 
             &Message::ConfigIsCurrent(ref new_config) => {
+                *self.message_counts.entry("config_is_current").or_insert(0) += 1;
                 *config = new_config.clone();
                 let json_config = serde_json::to_value(new_config).unwrap();
                 let mut p = Point::new("config");
@@ -139,50 +146,112 @@ impl MetricSampler {
                 points.push(p);
             },
 
-            &Message::Command(Command::ManualControlValue(ref axis, value)) => {
-                self.manual_axes.insert(axis.clone(), value);
+            &Message::PublicInput(_) => {
+                *self.message_counts.entry("public_input").or_insert(0) += 1;
             },
 
-            &Message::Command(Command::ManualControlReset) => {
-                self.manual_axes.clear();
+            &Message::UpdateConfig(_) => {
+                *self.message_counts.entry("update_config").or_insert(0) += 1;
             },
 
-            &Message::Command(Command::CameraObjectDetection(ref v)) => {
-                if tsm.timestamp >= self.object_detector_ts + self.min_interval {
-                    self.object_detector_ts = tsm.timestamp;
-                    let mut p = Point::new("camera.object_detector");
-                    p.add_timestamp(self.sync.to_millis(tsm.timestamp));
-                    p.add_field("detector_nsec", Value::Integer(v.detector_nsec as i64));
-                    p.add_field("object_count", Value::Integer(v.objects.len() as i64));
-                    points.push(p);
+            &Message::GimbalValue(_, _) => {
+                *self.message_counts.entry("gimbal_value").or_insert(0) += 1;
+            },
+
+            &Message::UnhandledGimbalPacket(_) => {
+                *self.message_counts.entry("unhandled_gimbal_packet").or_insert(0) += 1;
+            },
+
+            &Message::CameraOverlayScene(ref rects) => {
+                *self.message_counts.entry("camera_overlay_scene").or_insert(0) += 1;
+                *self.message_counts.entry("camera_overlay_scene.rects").or_insert(0) += rects.len() as u64;
+            },
+
+            &Message::CameraInitTrackedRegion(_) => {
+                *self.message_counts.entry("camera_init_tracked_region").or_insert(0) += 1;
+            },
+
+            &Message::Command(ref cmd) => {
+                *self.message_counts.entry("command").or_insert(0) += 1;
+                match cmd {
+
+                    &Command::ManualControlValue(ref axis, value) => {
+                       *self.message_counts.entry("manual_control_value").or_insert(0) += 1;
+                       self.manual_axes.insert(axis.clone(), value);
+                    },
+
+                    &Command::ManualControlReset => {
+                       *self.message_counts.entry("manual_control_reset").or_insert(0) += 1;
+                        self.manual_axes.clear();
+                    },
+
+                    &Command::CameraObjectDetection(ref v) => {
+                       *self.message_counts.entry("camera_object_detection").or_insert(0) += 1;
+                        if tsm.timestamp >= self.object_detector_ts + self.min_interval {
+                            self.object_detector_ts = tsm.timestamp;
+                            let mut p = Point::new("camera.object_detector");
+                            p.add_timestamp(self.sync.to_millis(tsm.timestamp));
+                            p.add_field("detector_nsec", Value::Integer(v.detector_nsec as i64));
+                            p.add_field("object_count", Value::Integer(v.objects.len() as i64));
+                            points.push(p);
+                        }
+                    },
+
+                    &Command::CameraRegionTracking(ref v) => {
+                       *self.message_counts.entry("camera_region_tracking").or_insert(0) += 1;
+                       if tsm.timestamp >= self.region_tracker_ts + self.min_interval {
+                            self.region_tracker_ts = tsm.timestamp;
+                            let mut p = Point::new("camera.region_tracker");
+                            p.add_timestamp(self.sync.to_millis(tsm.timestamp));
+                            p.add_field("tracker_nsec", Value::Integer(v.tracker_nsec as i64));
+                            p.add_field("psr", Value::Float(v.psr.into()));
+                            p.add_field("age", Value::Integer(v.age as i64));
+                            points.push(p);
+                        }
+                    },
+
+                    &Command::SetMode(_) => {
+                       *self.message_counts.entry("set_mode").or_insert(0) += 1;
+                    },
+
+                    &Command::GimbalMotorEnable(_) => {
+                       *self.message_counts.entry("gimbal_motor_enable").or_insert(0) += 1;
+                    },
+
+                    &Command::GimbalPacket(_) => {
+                       *self.message_counts.entry("gimbal_packet").or_insert(0) += 1;
+                    },
+
+                    &Command::GimbalValueWrite(_) => {
+                       *self.message_counts.entry("gimbal_value_write").or_insert(0) += 1;
+                    },
+
+                    &Command::GimbalValueRequests(_) => {
+                       *self.message_counts.entry("gimbal_value_requests").or_insert(0) += 1;
+                    },
                 }
-            },
-
-            &Message::Command(Command::CameraRegionTracking(ref v)) => {
-               if tsm.timestamp >= self.region_tracker_ts + self.min_interval {
-                    self.region_tracker_ts = tsm.timestamp;
-                    let mut p = Point::new("camera.region_tracker");
-                    p.add_timestamp(self.sync.to_millis(tsm.timestamp));
-                    p.add_field("tracker_nsec", Value::Integer(v.tracker_nsec as i64));
-                    p.add_field("psr", Value::Float(v.psr.into()));
-                    p.add_field("age", Value::Integer(v.age as i64));
-                    points.push(p);
-                }
-            },
-
-            _ => {}
+            }
         }
 
-        // Poll for periodic manual control updates, from the self.manual_axes hashmap
-        if tsm.timestamp >= self.manual_ts + self.min_interval {
-            self.manual_ts = tsm.timestamp;
+        // Poll for periodic flush of stats we aggregate here
+        if tsm.timestamp >= self.flush_ts + self.min_interval {
+            self.flush_ts = tsm.timestamp;
+            let timestamp = self.sync.to_millis(tsm.timestamp);
+
             let mut p = Point::new("manual_controls");
-            p.add_timestamp(self.sync.to_millis(tsm.timestamp));
+            p.add_timestamp(timestamp);
             p.add_field("camera.yaw", Value::Float(*self.manual_axes.entry(ManualControlAxis::CameraYaw).or_insert(0.0) as f64));
             p.add_field("camera.pitch", Value::Float(*self.manual_axes.entry(ManualControlAxis::CameraPitch).or_insert(0.0) as f64));
             p.add_field("relative.x", Value::Float(*self.manual_axes.entry(ManualControlAxis::RelativeX).or_insert(0.0) as f64));
             p.add_field("relative.y", Value::Float(*self.manual_axes.entry(ManualControlAxis::RelativeY).or_insert(0.0) as f64));
             p.add_field("relative.z", Value::Float(*self.manual_axes.entry(ManualControlAxis::RelativeZ).or_insert(0.0) as f64));
+            points.push(p);
+
+            let mut p = Point::new("message_counts");
+            p.add_timestamp(timestamp);
+            for (name, count) in self.message_counts.iter() {
+                p.add_field(name, Value::Integer(*count as i64));
+            }
             points.push(p);
         }
     }
