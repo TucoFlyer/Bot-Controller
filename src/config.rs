@@ -190,6 +190,9 @@ pub struct GimbalConfig {
     pub hold_i_gain: f32,
     pub tracking_i_decay_rate: f32,
     pub hold_i_decay_rate: f32,
+    pub current_osc_detector_decay_rate: f32,
+    pub current_peak_detector_decay_rate: f32,
+    pub current_peak_detector_update_rate: f32,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]

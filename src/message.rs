@@ -95,6 +95,11 @@ pub struct GimbalControlStatus {
     pub pitch_gain_activations: Vec<f32>,
     pub hold_angles: Vector2<i16>,
     pub hold_active: Vector2<bool>,
+    pub motor_power: Vector3<bool>,
+    pub current: Vector3<i16>,
+    pub current_osc_detector: Vector3<f32>,
+    pub current_peak_detector: Vector3<f32>,
+    pub supply_voltage: f32,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]

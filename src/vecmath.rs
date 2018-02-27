@@ -3,7 +3,8 @@
 use rand::{thread_rng, Rng};
 use num::traits::{Float, zero, one};
 use vecmath_lib::traits::Sqrt;
-use num::FromPrimitive;
+use num::{Zero, FromPrimitive};
+use std::ops::BitAnd;
 
 pub use vecmath_lib::*;
 pub use std::f32::consts::PI;
@@ -18,6 +19,14 @@ pub fn rotation_matrix<T: Float>(normalized_axis: Vector3<T>, angle: T) -> Matri
         [y*x*icos + z*sin, cos + y*y*icos, y*z*icos - x*sin, zero()],
         [z*x*icos - y*sin, z*y*icos + x*sin, cos+z*z*icos, zero()]
     ]
+}
+
+pub fn vec3_bitand<T: BitAnd + Copy>(a: Vector3<T>, b: Vector3<T>) -> Vector3<<T as BitAnd>::Output> {
+	[ a[0] & b[0], a[1] & b[1], a[2] & b[2] ]
+}
+
+pub fn vec3_nonzero<T: PartialEq + Zero + Copy>(a: Vector3<T>) -> Vector3<bool> {
+	[ a[0] != zero(), a[1] != zero(), a[2] != zero() ]
 }
 
 pub fn vec3_mix<T: Float>(a: Vector3<T>, b: Vector3<T>, scale: T) -> Vector3<T> {

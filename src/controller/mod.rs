@@ -199,7 +199,7 @@ impl Controller {
             },
 
             Message::GimbalValue(val, _) => {
-                self.gimbal_ctrl.value_received(val)
+                self.gimbal_ctrl.value_received(&self.local_config, val)
             },
 
             Message::Command(Command::CameraObjectDetection(obj)) => {
@@ -222,7 +222,7 @@ impl Controller {
             },
 
             Message::Command(Command::GimbalMotorEnable(en)) => {
-                gimbal_port.set_motor_enable(en);
+                self.gimbal_ctrl.set_motor_enable(gimbal_port, en);
             },
 
             Message::Command(Command::GimbalPacket(packet)) => {

@@ -1,7 +1,10 @@
 import React from 'react';
 import { ConfigSlider } from '../Config';
+import { Chart, Series } from '../BotChart';
 
 export default (props) => {
+    const gimbal_status_timestamp = (model) => model.gimbal_status.local_timestamp;
+
     return <div>
 
         <h6>Hold proportional gain</h6>
@@ -83,6 +86,49 @@ export default (props) => {
         <h6>Limiter slowdown extent</h6>
         <ConfigSlider item="gimbal.limiter_slowdown_extent.0" min="1" max="500" step="1e-4" />
         <ConfigSlider item="gimbal.limiter_slowdown_extent.1" min="1" max="500" step="1e-4" />
+
+        <h4>Motor Current</h4>
+
+        <h6>Oscillation detector</h6>
+        <Chart>
+            <Series
+                strokeStyle='#a22'
+                value={ (model) => model.gimbal_status.message.GimbalControlStatus.current_osc_detector[0] }
+                trigger={gimbal_status_timestamp} timestamp={gimbal_status_timestamp} />
+            <Series
+                strokeStyle='#2a2'
+                value={ (model) => model.gimbal_status.message.GimbalControlStatus.current_osc_detector[1] }
+                trigger={gimbal_status_timestamp} timestamp={gimbal_status_timestamp} />
+            <Series
+                strokeStyle='#22a'
+                value={ (model) => model.gimbal_status.message.GimbalControlStatus.current_osc_detector[2] }
+                trigger={gimbal_status_timestamp} timestamp={gimbal_status_timestamp} />
+        </Chart>
+
+        <h6>Oscillation detector, decay rate</h6>
+        <ConfigSlider item="gimbal.current_osc_detector_decay_rate" min="0.0" max="0.5" step="1e-4" />
+
+        <h6>Peak detector</h6>
+        <Chart>
+            <Series
+                strokeStyle='#a22'
+                value={ (model) => model.gimbal_status.message.GimbalControlStatus.current_peak_detector[0] }
+                trigger={gimbal_status_timestamp} timestamp={gimbal_status_timestamp} />
+            <Series
+                strokeStyle='#2a2'
+                value={ (model) => model.gimbal_status.message.GimbalControlStatus.current_peak_detector[1] }
+                trigger={gimbal_status_timestamp} timestamp={gimbal_status_timestamp} />
+            <Series
+                strokeStyle='#22a'
+                value={ (model) => model.gimbal_status.message.GimbalControlStatus.current_peak_detector[2] }
+                trigger={gimbal_status_timestamp} timestamp={gimbal_status_timestamp} />
+        </Chart>
+
+        <h6>Peak detector, decay rate</h6>
+        <ConfigSlider item="gimbal.current_peak_detector_decay_rate" min="0.0" max="0.5" step="1e-4" />
+
+        <h6>Peak detector, update rate</h6>
+        <ConfigSlider item="gimbal.current_peak_detector_update_rate" min="0.0" max="1.0" step="1e-4" />
 
     </div>;
 }

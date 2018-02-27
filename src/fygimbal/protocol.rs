@@ -58,16 +58,16 @@ pub mod motor_mode {
 
 #[allow(dead_code)]
 pub mod motor_error {
-    pub const ERROR_CURRENT_THRESHOLD : u16 = 1<<3;
-    pub const CALIBRATED_ACCEL_NEAR_ZERO : u16 = 1<<15;
+    pub const ERROR_CURRENT_THRESHOLD : i16 = 1<<3;
+    pub const CALIBRATED_ACCEL_NEAR_ZERO : i16 = 1<<15;
 }
 
 #[allow(dead_code)]
 pub mod motor_status {
-    pub const LATCH_INPUT_UNK : u16 = 1<<0;
-    pub const LATCH_STATE_UNK : u16 = 1<<1;
-    pub const POWER_ON : u16 = 1<<2;
-    pub const USER_CURRENT_THRESHOLD : u16 = 1<<9;
+    pub const LATCH_INPUT_UNK : i16 = 1<<0;
+    pub const LATCH_STATE_UNK : i16 = 1<<1;
+    pub const POWER_ON : i16 = 1<<2;
+    pub const USER_CURRENT_THRESHOLD : i16 = 1<<9;
 }
 
 #[allow(dead_code)]

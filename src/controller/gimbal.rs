@@ -2,7 +2,7 @@ use vecmath::*;
 use message::*;
 use config::{ControllerMode, Config, GimbalTrackingGain};
 use fygimbal;
-use fygimbal::protocol::{target, values};
+use fygimbal::protocol::{target, values, motor_status};
 use fygimbal::util::vec2_encoder_sub;
 use fygimbal::GimbalPort;
 use std::time::{Duration, Instant};
@@ -14,6 +14,8 @@ pub struct GimbalController {
     hold_angles: Vector2<i16>,
     hold_active: Vector2<bool>,
     hold_i: Vector2<f32>,
+    current_osc_detector: Vector3<f32>,
+    current_peak_detector: Vector3<f32>,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -32,29 +34,39 @@ impl GimbalController {
             }).collect(),
             yaw_tracking_i: Vec::new(),
             pitch_tracking_i: Vec::new(),
-            hold_angles: [0, 0],
-            hold_active: [false, false],
-            hold_i: [0.0, 0.0],
+            hold_angles: [0; 2],
+            hold_active: [false; 2],
+            hold_i: [0.0; 2],
+            current_osc_detector: [0.0; 3],
+            current_peak_detector: [0.0; 3],
         }
     }
 
     pub fn tick(&mut self, config: &Config, gimbal: &GimbalPort, tracked: &CameraTrackedRegion) -> GimbalControlStatus {
         let mut stale_flag = false;
+        let supply_voltage = self.request(gimbal, &mut stale_flag, RequestType::Infrequent, values::SUPPLY_VOLTAGE, target::IMU_ADJACENT) as f32 * 0.1;
         let center_cal = self.request_vec2(gimbal, &mut stale_flag, RequestType::Infrequent, values::CALIBRATION_ANGLE_0_CENTER);
         let raw_angles = self.request_vec2(gimbal, &mut stale_flag, RequestType::Continuous, values::ENCODER_ANGLE);
+        let current = self.request_vec3(gimbal, &mut stale_flag, RequestType::Continuous, values::MOTOR_FILTERED_CURRENT);
+        let motor_status = self.request_vec3(gimbal, &mut stale_flag, RequestType::Infrequent, values::MOTOR_STATUS_FLAGS);
         let angles = vec2_encoder_sub(raw_angles, center_cal);
 
         let mut status = GimbalControlStatus {
             angles,
-            rates: [0, 0],
-            tracking_p_rates: [0.0, 0.0],
-            tracking_i_rates: [0.0, 0.0],
-            hold_p_rates: [0.0, 0.0],
-            hold_i_rates: [0.0, 0.0],
+            rates: [0; 2],
+            tracking_p_rates: [0.0; 2],
+            tracking_i_rates: [0.0; 2],
+            hold_p_rates: [0.0; 2],
+            hold_i_rates: [0.0; 2],
             yaw_gain_activations: config.gimbal.yaw_gains.iter().map(|_| 0.0).collect(),
             pitch_gain_activations: config.gimbal.pitch_gains.iter().map(|_| 0.0).collect(),
             hold_angles: self.hold_angles,
             hold_active: self.hold_active,
+            motor_power: vec3_nonzero(vec3_bitand(motor_status, [motor_status::POWER_ON; 3])),
+            current,
+            current_osc_detector: self.current_osc_detector,
+            current_peak_detector: self.current_peak_detector,
+            supply_voltage
         };
 
         if !stale_flag {
@@ -193,10 +205,10 @@ impl GimbalController {
                 slot.value_with_max_age(stale_flag, 250)
             },
             RequestType::Infrequent => {
-                if slot.poll_for_request(1000) {
+                if slot.poll_for_request(3000) {
                     gimbal.request_once(index, target);
                 }
-                slot.value_with_max_age(stale_flag, 2000)
+                slot.value_with_max_age(stale_flag, 5000)
             }
         }
     }
@@ -208,12 +220,47 @@ impl GimbalController {
         ]
     }
 
-    pub fn value_received(&mut self, data: GimbalValueData) {
+    fn request_vec3(&mut self, gimbal: &GimbalPort, stale_flag: &mut bool, rtype: RequestType, index: u8) -> Vector3<i16> {
+        [
+            self.request(gimbal, stale_flag, rtype, index, target::YAW),
+            self.request(gimbal, stale_flag, rtype, index, target::ROLL),
+            self.request(gimbal, stale_flag, rtype, index, target::PITCH),
+        ]
+    }
+
+    pub fn value_received(&mut self, config: &Config, data: GimbalValueData) {
         let index = data.addr.index as usize;
         let target = data.addr.target as usize;
+
         if index < fygimbal::protocol::NUM_VALUES && target < fygimbal::protocol::NUM_AXES {
-            self.values[index][target].last_update = Some((Instant::now(), data));
+            let value = &mut self.values[index][target];
+
+            if index == values::MOTOR_FILTERED_CURRENT as usize {
+                if let Some((_, ref prev_data)) = value.last_update {
+                    let positive_diff = (data.value as i32 - prev_data.value as i32).abs() as f32;
+                    let accum = &mut self.current_osc_detector[target];
+                    *accum = *accum - *accum * config.gimbal.current_osc_detector_decay_rate + positive_diff;
+                }
+
+                let peak_ptr = &mut self.current_peak_detector[target];
+                let positive_current = data.value.abs() as f32;
+                let peak_decay = *peak_ptr - *peak_ptr * config.gimbal.current_peak_detector_decay_rate;
+                *peak_ptr = if positive_current > peak_decay {
+                    peak_decay + (positive_current - peak_decay) * config.gimbal.current_peak_detector_update_rate
+                } else {
+                    peak_decay
+                }
+            }
+
+            value.last_update = Some((Instant::now(), data));
         }
+    }
+
+    pub fn set_motor_enable(&mut self, gimbal: &GimbalPort, en: bool) {
+        gimbal.set_motor_enable(en);
+        gimbal.request_once(values::MOTOR_STATUS_FLAGS, target::YAW);
+        gimbal.request_once(values::MOTOR_STATUS_FLAGS, target::ROLL);
+        gimbal.request_once(values::MOTOR_STATUS_FLAGS, target::PITCH);
     }
 }
 

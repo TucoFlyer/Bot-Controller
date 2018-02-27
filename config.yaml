@@ -59,7 +59,7 @@ gimbal:
     - -1710
     - 1710
   pitch_limits:
-    - -480
+    - -602
     - 232
   limiter_gain: 0.4740000069141388
   limiter_slowdown_extent:
@@ -69,6 +69,9 @@ gimbal:
   hold_i_gain: 0.0000759899994591251
   tracking_i_decay_rate: 0.004399999976158142
   hold_i_decay_rate: 0.007499999832361937
+  current_osc_detector_decay_rate: 0.016100000590085983
+  current_peak_detector_decay_rate: 0.008700000122189522
+  current_peak_detector_update_rate: 1
 overlay:
   halt_color:
     - 1
