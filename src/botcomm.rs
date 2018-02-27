@@ -203,7 +203,7 @@ impl BotReceiver {
                 }
             },
 
-            MSG_LOOPBACK => (),  
+            MSG_LOOPBACK => (),
             _ => (),
         }
     }
