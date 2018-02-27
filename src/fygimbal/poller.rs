@@ -43,14 +43,14 @@ impl GimbalPort {
         self.write_value(GimbalValueData {
             addr: GimbalValueAddress {
                 target: protocol::target::YAW,
-                index: protocol::values::CONTROL_RATE
+                index: protocol::values::CONTROLLER_VELOCITY_INPUT
             },
             value: rates[0]
         });
         self.write_value(GimbalValueData {
             addr: GimbalValueAddress {
                 target: protocol::target::PITCH,
-                index: protocol::values::CONTROL_RATE
+                index: protocol::values::CONTROLLER_VELOCITY_INPUT
             },
             value: rates[1]
         });

@@ -40,8 +40,8 @@ impl GimbalController {
 
     pub fn tick(&mut self, config: &Config, gimbal: &GimbalPort, tracked: &CameraTrackedRegion) -> GimbalControlStatus {
         let mut stale_flag = false;
-        let center_cal = self.request_vec2(gimbal, &mut stale_flag, RequestType::Infrequent, values::CENTER_CALIBRATION);
-        let raw_angles = self.request_vec2(gimbal, &mut stale_flag, RequestType::Continuous, values::ENCODER_ANGLES);
+        let center_cal = self.request_vec2(gimbal, &mut stale_flag, RequestType::Infrequent, values::CALIBRATION_ANGLE_0_CENTER);
+        let raw_angles = self.request_vec2(gimbal, &mut stale_flag, RequestType::Continuous, values::ENCODER_ANGLE);
         let angles = vec2_encoder_sub(raw_angles, center_cal);
 
         let mut status = GimbalControlStatus {
