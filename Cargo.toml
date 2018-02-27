@@ -8,7 +8,12 @@ description = "Control software for a camera robot that hovers on nylon cords"
 readme = "README.md"
 repository = "https://github.com/TucoFlyer/Bot-Controller"
 
+# Try to build web app also
 build = "build.rs"
+
+# Default unoptimized build is too slow to be useful, we need optimization in dev builds too.
+[profile.dev]
+opt-level = 3
 
 [build-dependencies]
 subprocess = "0.1.11"
