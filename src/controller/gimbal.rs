@@ -74,11 +74,8 @@ impl GimbalController {
             supply_voltage
         };
 
-        if current_error_duration > config.gimbal.error_duration_for_poweroff {
-            self.set_motor_enable(gimbal, false);
-        }
-
         if !stale_flag {
+            self.motor_poweroff_check(config, &status, gimbal);
             self.tracking_tick(config, &mut status, tracked);
             self.hold_tick(config, &mut status);
             self.gimbal_rate_tick(config, &mut status);
@@ -86,6 +83,16 @@ impl GimbalController {
 
         gimbal.write_control_rates(status.rates);
         status
+    }
+
+    fn motor_poweroff_check(&mut self, config: &Config, status: &GimbalControlStatus, gimbal: &GimbalPort) {
+        if status.motor_power != [false; 3] {
+            if status.supply_voltage < config.gimbal.motor_voltage_min ||
+               status.supply_voltage > config.gimbal.motor_voltage_max ||
+               status.current_error_duration > config.gimbal.error_duration_for_poweroff {
+                self.set_motor_enable(gimbal, false);
+            }
+        }
     }
 
     fn check_for_current_error(&self, config: &Config, motor_power: Vector3<bool>) -> bool {

@@ -60,7 +60,7 @@ gimbal:
     - 1710
   pitch_limits:
     - -649
-    - 232
+    - 74
   rehome_gain: 0.10279999673366547
   limiter_gain: 0.4740000069141388
   limiter_slowdown_extent:
@@ -77,6 +77,8 @@ gimbal:
   current_peak_detector_threshold: 20044
   error_duration_for_rehome: 0.05000000074505806
   error_duration_for_poweroff: 4.5
+  motor_voltage_min: 8
+  motor_voltage_max: 13.5
 overlay:
   halt_color:
     - 1

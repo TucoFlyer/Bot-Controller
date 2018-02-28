@@ -198,6 +198,8 @@ pub struct GimbalConfig {
     pub current_peak_detector_threshold: f32,
     pub error_duration_for_rehome: f32,
     pub error_duration_for_poweroff: f32,
+    pub motor_voltage_min: f32,
+    pub motor_voltage_max: f32,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
