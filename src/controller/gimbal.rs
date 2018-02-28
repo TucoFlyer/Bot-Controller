@@ -129,6 +129,7 @@ impl GimbalController {
         let top_dist = rect_top(tracked.rect) - rect_top(border);
         let right_dist = rect_right(border) - rect_right(tracked.rect);
         let bottom_dist = rect_bottom(border) - rect_bottom(tracked.rect);
+        let is_halted = config.mode == ControllerMode::Halted;
 
         let axis = |i_state: &mut Vec<f32>, errs: &mut Vec<f32>, gains: &Vec<GimbalTrackingGain>, lower_dist: f32, upper_dist: f32| {
             // Initialize internal integrator state at init or when number of gains change
@@ -148,8 +149,14 @@ impl GimbalController {
                     i_state[index] -= i_state[index] * config.gimbal.tracking_i_decay_rate;
                 }
                 i_state[index] += err;
-                p += err * gain.p_gain;
-                i += i_state[index] * gain.i_gain;
+
+                if is_halted {
+                    // Integrator clears during halt and no tracking happens
+                    i_state[index] = 0.0;
+                } else {
+                    p += err * gain.p_gain;
+                    i += i_state[index] * gain.i_gain;
+                }
             }
             (p, i)
         };
@@ -161,6 +168,14 @@ impl GimbalController {
     }
 
     fn hold_tick(&mut self, config: &Config, status: &mut GimbalControlStatus) {
+        let is_halted = config.mode == ControllerMode::Halted;
+        if is_halted {
+            // Integrators clear during halt
+            for axis in 0..2 {
+                self.hold_i[axis] = 0.0;
+            }
+        }
+
         // If we're trying to rehome, reset the hold state too
         if status.current_error_duration > config.gimbal.error_duration_for_rehome {
             self.hold_angles = [0; 2];
@@ -168,7 +183,7 @@ impl GimbalController {
         }
 
         // Normally we need to track rising edges on the hold state
-        let next_hold_active = if config.mode == ControllerMode::Halted {
+        let next_hold_active = if is_halted {
             // Always hold position in halt mode
             [true, true]
         } else {
@@ -209,14 +224,7 @@ impl GimbalController {
         } else {
             // Unless we're in error recovery, rates come from a combination of
             // the tracking and hold loops each with PI components.
-
-            // In halt, tracking is disabled (but limiter and hold mode work)
-            let tracking_rates = if config.mode == ControllerMode::Halted {
-                [0.0, 0.0]
-            } else {
-                vec2_add(status.tracking_i_rates, status.tracking_p_rates)
-            };
-
+            let tracking_rates = vec2_add(status.tracking_i_rates, status.tracking_p_rates);
             let hold_rates = vec2_add(status.hold_i_rates, status.hold_p_rates);
             vec2_add(tracking_rates, hold_rates)
         };
