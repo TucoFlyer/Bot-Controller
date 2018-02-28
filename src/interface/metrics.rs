@@ -117,6 +117,20 @@ impl MetricSampler {
                     p.add_field("angle.y", Value::Integer(status.angles[1].into()));
                     p.add_field("rate.x", Value::Integer(status.rates[0].into()));
                     p.add_field("rate.y", Value::Integer(status.rates[1].into()));
+                    p.add_field("motor_power.0", Value::Boolean(status.motor_power[0]));
+                    p.add_field("motor_power.1", Value::Boolean(status.motor_power[1]));
+                    p.add_field("motor_power.2", Value::Boolean(status.motor_power[2]));
+                    p.add_field("current.0", Value::Float(status.current[0].into()));
+                    p.add_field("current.1", Value::Float(status.current[1].into()));
+                    p.add_field("current.2", Value::Float(status.current[2].into()));
+                    p.add_field("current_osc_detector.0", Value::Float(status.current_osc_detector[0].into()));
+                    p.add_field("current_osc_detector.1", Value::Float(status.current_osc_detector[1].into()));
+                    p.add_field("current_osc_detector.2", Value::Float(status.current_osc_detector[2].into()));
+                    p.add_field("current_peak_detector.0", Value::Float(status.current_peak_detector[0].into()));
+                    p.add_field("current_peak_detector.1", Value::Float(status.current_peak_detector[1].into()));
+                    p.add_field("current_peak_detector.2", Value::Float(status.current_peak_detector[2].into()));
+                    p.add_field("current_error_duration", Value::Float(status.current_error_duration.into()));
+                    p.add_field("supply_voltage", Value::Float(status.supply_voltage.into()));
                     points.push(p);
                 }
             },

@@ -184,6 +184,7 @@ pub struct GimbalConfig {
     pub pitch_gains: Vec<GimbalTrackingGain>,
     pub yaw_limits: (i16, i16),
     pub pitch_limits: (i16, i16),
+    pub rehome_gain: f32,
     pub limiter_gain: f32,
     pub limiter_slowdown_extent: Vector2<f32>,
     pub hold_p_gain: f32,
@@ -191,8 +192,12 @@ pub struct GimbalConfig {
     pub tracking_i_decay_rate: f32,
     pub hold_i_decay_rate: f32,
     pub current_osc_detector_decay_rate: f32,
+    pub current_osc_detector_threshold: f32,
     pub current_peak_detector_decay_rate: f32,
     pub current_peak_detector_update_rate: f32,
+    pub current_peak_detector_threshold: f32,
+    pub error_duration_for_rehome: f32,
+    pub error_duration_for_poweroff: f32,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]

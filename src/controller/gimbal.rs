@@ -16,6 +16,7 @@ pub struct GimbalController {
     hold_i: Vector2<f32>,
     current_osc_detector: Vector3<f32>,
     current_peak_detector: Vector3<f32>,
+    current_error_timestamp: Option<Instant>,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -39,6 +40,7 @@ impl GimbalController {
             hold_i: [0.0; 2],
             current_osc_detector: [0.0; 3],
             current_peak_detector: [0.0; 3],
+            current_error_timestamp: None,
         }
     }
 
@@ -50,6 +52,8 @@ impl GimbalController {
         let current = self.request_vec3(gimbal, &mut stale_flag, RequestType::Continuous, values::MOTOR_FILTERED_CURRENT);
         let motor_status = self.request_vec3(gimbal, &mut stale_flag, RequestType::Infrequent, values::MOTOR_STATUS_FLAGS);
         let angles = vec2_encoder_sub(raw_angles, center_cal);
+        let motor_power = vec3_nonzero(vec3_bitand(motor_status, [motor_status::POWER_ON; 3]));
+        let current_error_duration = self.update_current_error_duration(config, motor_power);
 
         let mut status = GimbalControlStatus {
             angles,
@@ -62,12 +66,17 @@ impl GimbalController {
             pitch_gain_activations: config.gimbal.pitch_gains.iter().map(|_| 0.0).collect(),
             hold_angles: self.hold_angles,
             hold_active: self.hold_active,
-            motor_power: vec3_nonzero(vec3_bitand(motor_status, [motor_status::POWER_ON; 3])),
+            motor_power,
             current,
             current_osc_detector: self.current_osc_detector,
             current_peak_detector: self.current_peak_detector,
+            current_error_duration,
             supply_voltage
         };
+
+        if current_error_duration > config.gimbal.error_duration_for_poweroff {
+            self.set_motor_enable(gimbal, false);
+        }
 
         if !stale_flag {
             self.tracking_tick(config, &mut status, tracked);
@@ -77,6 +86,41 @@ impl GimbalController {
 
         gimbal.write_control_rates(status.rates);
         status
+    }
+
+    fn check_for_current_error(&self, config: &Config, motor_power: Vector3<bool>) -> bool {
+        for axis in 0..fygimbal::protocol::NUM_AXES {
+            // Current readings are only sensible if the motor is on. An off motor is a fine motor.
+            if motor_power[axis] {
+                if self.current_osc_detector[axis] > config.gimbal.current_osc_detector_threshold {
+                    return true;
+                }
+                if self.current_peak_detector[axis] > config.gimbal.current_peak_detector_threshold {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    fn update_current_error_duration(&mut self, config: &Config, motor_power: Vector3<bool>) -> f32 {
+        if self.check_for_current_error(config, motor_power) {
+            let now = Instant::now();
+            let prev_timestamp = self.current_error_timestamp;
+            match prev_timestamp {
+                None => {
+                    self.current_error_timestamp = Some(now);
+                    0.0
+                },
+                Some(in_error_state_since_timestamp) => {
+                    let duration = now - in_error_state_since_timestamp;
+                    duration.as_secs() as f32 + duration.subsec_millis() as f32 * 1e-3
+                }
+            }
+        } else {
+            self.current_error_timestamp = None;
+            0.0
+        }
     }
 
     fn tracking_tick(&mut self, config: &Config, status: &mut GimbalControlStatus, tracked: &CameraTrackedRegion) {
@@ -117,6 +161,13 @@ impl GimbalController {
     }
 
     fn hold_tick(&mut self, config: &Config, status: &mut GimbalControlStatus) {
+        // If we're trying to rehome, reset the hold state too
+        if status.current_error_duration > config.gimbal.error_duration_for_rehome {
+            self.hold_angles = [0; 2];
+            self.hold_active = [true; 2];
+        }
+
+        // Normally we need to track rising edges on the hold state
         let next_hold_active = if config.mode == ControllerMode::Halted {
             // Always hold position in halt mode
             [true, true]
@@ -149,16 +200,28 @@ impl GimbalController {
     }
 
     fn gimbal_rate_tick(&mut self, config: &Config, status: &mut GimbalControlStatus) {
-        // In halt, tracking is disabled (but limiter and hold mode work)
-        let tracking_rates = if config.mode == ControllerMode::Halted {
-            [0.0, 0.0]
+        let rates = if status.current_error_duration > config.gimbal.error_duration_for_rehome {
+            // Re-homing for error recovery
+            [
+                status.angles[0] as f32 * -config.gimbal.rehome_gain,
+                status.angles[1] as f32 * -config.gimbal.rehome_gain,
+            ]
         } else {
-            vec2_add(status.tracking_i_rates, status.tracking_p_rates)
+            // Unless we're in error recovery, rates come from a combination of
+            // the tracking and hold loops each with PI components.
+
+            // In halt, tracking is disabled (but limiter and hold mode work)
+            let tracking_rates = if config.mode == ControllerMode::Halted {
+                [0.0, 0.0]
+            } else {
+                vec2_add(status.tracking_i_rates, status.tracking_p_rates)
+            };
+
+            let hold_rates = vec2_add(status.hold_i_rates, status.hold_p_rates);
+            vec2_add(tracking_rates, hold_rates)
         };
 
-        let hold_rates = vec2_add(status.hold_i_rates, status.hold_p_rates);
-
-        let rates = vec2_add(tracking_rates, hold_rates);
+        // Software endstops
         let rates = self.limiter(config, status.angles, rates);
         let rates = vec2_clamp_len(rates, config.gimbal.max_rate);
         status.rates = self.dither_rates(rates);
@@ -258,9 +321,15 @@ impl GimbalController {
 
     pub fn set_motor_enable(&mut self, gimbal: &GimbalPort, en: bool) {
         gimbal.set_motor_enable(en);
-        gimbal.request_once(values::MOTOR_STATUS_FLAGS, target::YAW);
-        gimbal.request_once(values::MOTOR_STATUS_FLAGS, target::ROLL);
-        gimbal.request_once(values::MOTOR_STATUS_FLAGS, target::PITCH);
+
+        // The motor enable won't take effect synchronously with the command processing
+        // on the gimbal, it takes a control loop tick for the request to propagate
+        // into the motor status flags. Issue a continuous request which will, for a short time,
+        // ask the poller to request these status flags at a high rate. When the continuous
+        // request expires, these flags will go back to being requested only infrequently.
+        gimbal.request_continuous(values::MOTOR_STATUS_FLAGS, target::YAW);
+        gimbal.request_continuous(values::MOTOR_STATUS_FLAGS, target::ROLL);
+        gimbal.request_continuous(values::MOTOR_STATUS_FLAGS, target::PITCH);
     }
 }
 
