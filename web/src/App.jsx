@@ -11,6 +11,7 @@ import Network from './pages/Network';
 import FlyerSensors from './pages/FlyerSensors';
 import Lighting from './pages/Lighting';
 import Vision from './pages/Vision';
+import Video from './pages/Video';
 import Overlay from './pages/Overlay';
 import Gimbal from './pages/Gimbal';
 
@@ -24,6 +25,7 @@ export default () => (
 
         <Nav pills>
             <NavItem><NavLink to="/" exact activeClassName="active" tag={RRNavLink}> Bot </NavLink></NavItem>
+            <NavItem><NavLink to="/video" exact activeClassName="active" tag={RRNavLink}> Video </NavLink></NavItem>
             <NavItem><NavLink to="/gimbal" activeClassName="active" tag={RRNavLink}> Gimbal </NavLink></NavItem>
             <NavItem><NavLink to="/winch" activeClassName="active" tag={RRNavLink}> Winch </NavLink></NavItem>
             <NavItem><NavLink to="/overlay" activeClassName="active" tag={RRNavLink}> Overlay </NavLink></NavItem>
@@ -40,6 +42,7 @@ export default () => (
             <Route path="/net" component={Network} />
             <Route path="/lighting" component={Lighting} />
             <Route path="/vision" component={Vision} />
+            <Route path="/video" component={Video} />
             <Route path="/overlay" component={Overlay} />
             <Route path="/gimbal" component={Gimbal} />
             <Route path="/flyer/sensors" component={FlyerSensors} />

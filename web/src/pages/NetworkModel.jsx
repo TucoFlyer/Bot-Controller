@@ -1,37 +1,28 @@
 import React, { Component } from 'react';
-import PropTypes from 'prop-types';
-import { BotConnection } from '../BotConnection';
-import JSONPretty from 'react-json-pretty';
+import BotJSON from '../BotJSON';
 
 export default class NetworkModel extends Component {
-    constructor() {
-        super();
-        this.state = {
-            model: {},
-        };
-    }
-
-    static contextTypes = {
-        botConnection: PropTypes.instanceOf(BotConnection),
-    }
-
     render() {
-        return (
+        return <div>
+
+            <h2>Flyer</h2>
+
             <div className="NetworkModel">
-                <JSONPretty json={this.state.model} /> 
+                <BotJSON value={ (model) => model.flyer } />
             </div>
-        );
-    }
 
-    componentDidMount() {
-        this.context.botConnection.events.on('frame', this.handleFrame);
-    }
+            <h2>Winches</h2>
 
-    componentWillUnmount() {
-        this.context.botConnection.events.removeListener('frame', this.handleFrame);
-    }
+            <div className="NetworkModel">
+                <BotJSON value={ (model) => model.winches } />
+            </div>
 
-    handleFrame = (model) => {
-        this.setState({ model });
+            <h2>Camera</h2>
+
+            <div className="NetworkModel">
+                <BotJSON value={ (model) => model.camera } />
+            </div>
+
+        </div>;
     }
 }

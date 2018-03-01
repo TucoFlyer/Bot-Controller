@@ -15,6 +15,7 @@ export class BotModel {
         this.gimbal_values = [];
         this.gimbal_status = {};
         this.camera = {};
+        this.camera.outputs = {};
     }
 
     update(msg) {
@@ -42,6 +43,9 @@ export class BotModel {
             }
             if (cmd.CameraRegionTracking) {
                 this.camera.region_tracking = msg;
+            }
+            if (cmd.CameraOutputStatus) {
+                this.camera.outputs = msg;
             }
         }
     }

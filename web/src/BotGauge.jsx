@@ -30,21 +30,21 @@ export default class Gauge extends Component {
             borderInnerWidth: 0,
             borderShadowWidth: 0,
             colorBorderShadow: false,
-            
+
             barBeginCircle: false,
-            
+
             tickSide: "right",
             needleSide: "both",
             numberSide: "right",
-            
+
             height: 80,
             barLength: 90,
-            
+
             colorBar: "#eee",
             colorBarProgress: false,
-            
+
             ...this.props,
-            
+
             value: 0,
             renderTo: this.canvas
         });
