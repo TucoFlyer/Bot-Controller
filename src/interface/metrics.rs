@@ -24,6 +24,7 @@ struct MetricSampler {
     gimbal_control_ts: Instant,
     object_detector_ts: Instant,
     region_tracker_ts: Instant,
+    output_status_ts: Instant,
     manual_axes: HashMap<ManualControlAxis, f32>,
     message_counts: HashMap<&'static str, u64>,
 }
@@ -40,6 +41,7 @@ impl MetricSampler {
             region_tracker_ts: now,
             flush_ts: now,
             gimbal_control_ts: now,
+            output_status_ts: now,
             manual_axes: HashMap::new(),
             message_counts: HashMap::new(),
         }
@@ -221,6 +223,32 @@ impl MetricSampler {
                             p.add_field("psr", Value::Float(v.psr.into()));
                             p.add_field("age", Value::Integer(v.age as i64));
                             points.push(p);
+                        }
+                    },
+
+                    &Command::CameraOutputEnable(_, _) => {
+                        *self.message_counts.entry("camera_output_enable").or_insert(0) += 1;
+                    },
+
+                    &Command::CameraOutputStatus(ref map) => {
+                       *self.message_counts.entry("camera_output_status").or_insert(0) += 1;
+                       if tsm.timestamp >= self.output_status_ts + self.min_interval {
+                            self.output_status_ts = tsm.timestamp;
+                            for (output, status) in map.iter() {
+                                let mut p = Point::new("camera.output_status");
+                                p.add_timestamp(self.sync.to_millis(tsm.timestamp));
+                                p.add_tag("output", Value::String(format!("{:?}", output)));
+                                p.add_field("active", Value::Boolean(status.active));
+                                p.add_field("reconnecting", Value::Boolean(status.reconnecting));
+                                p.add_field("id", Value::String(status.id.clone()));
+                                p.add_field("width", Value::Integer(status.width.into()));
+                                p.add_field("height", Value::Integer(status.height.into()));
+                                p.add_field("congestion", Value::Float(status.congestion.into()));
+                                p.add_field("total_bytes", Value::Integer(status.total_bytes as i64));
+                                p.add_field("total_frames", Value::Integer(status.total_frames as i64));
+                                p.add_field("frames_dropped", Value::Integer(status.frames_dropped as i64));
+                                points.push(p);
+                            }
                         }
                     },
 

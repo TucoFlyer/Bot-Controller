@@ -1,5 +1,6 @@
 use vecmath::*;
 use serde_json::Value;
+use std::collections::HashMap;
 use std::time::Instant;
 use config::{Config, ControllerMode};
 use fygimbal::GimbalPacket;
@@ -14,6 +15,8 @@ pub enum Command {
     ManualControlValue(ManualControlAxis, f32),
     CameraObjectDetection(CameraDetectedObjects),
     CameraRegionTracking(CameraTrackedRegion),
+    CameraOutputStatus(HashMap<CameraOutput, CameraOutputStatus>),
+    CameraOutputEnable(CameraOutput, bool),
     GimbalMotorEnable(bool),
     GimbalPacket(GimbalPacket),
     GimbalValueWrite(GimbalValueData),
@@ -51,6 +54,26 @@ pub enum Message {
     UnhandledGimbalPacket(GimbalPacket),
     CameraOverlayScene(Vec<OverlayRect>),
     CameraInitTrackedRegion(Vector4<f32>),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+pub enum CameraOutput {
+    LocalRecording,
+    LiveStream,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct CameraOutputStatus {
+    pub active: bool,
+    pub reconnecting: bool,
+    pub id: String,
+    pub width: u32,
+    pub height: u32,
+    pub congestion: f32,
+    pub total_bytes: u64,
+    pub total_frames: u64,
+    pub frames_dropped: u64,
+    pub active_seconds: f64,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
