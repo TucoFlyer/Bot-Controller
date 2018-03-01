@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import Gauges from 'canvas-gauges';
 import PropTypes from 'prop-types';
 import { BotConnection } from './BotConnection';
 import JSONPretty from 'react-json-pretty';
