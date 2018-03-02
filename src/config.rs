@@ -85,29 +85,25 @@ impl WinchCalibration {
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct WinchLightingScheme {
-    pub normal_color: Vector3<f32>,
-    pub manual_selected_color: Vector3<f32>,
-    pub manual_deselected_color: Vector3<f32>,
-    pub halt_color: Vector3<f32>,
-    pub error_color: Vector3<f32>,
-    pub stuck_color: Vector3<f32>,
-    pub command_color: Vector3<f32>,
-    pub motion_color: Vector3<f32>,
-    pub wavelength_m: f32,
-    pub wave_window_length_m: f32,
-    pub wave_amplitude: f32,
-    pub wave_exponent: f32,
-    pub speed_for_full_wave_amplitude_m_per_sec: f32,
-    pub velocity_filter_param: f32,
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct LightingScheme {
     pub brightness: f32,
+    pub flyer_saucer_brightness: f32,
     pub flash_rate_hz: f32,
     pub flash_exponent: f32,
-    pub winch: WinchLightingScheme,
+    pub winch_normal_color: Vector3<f32>,
+    pub winch_manual_selected_color: Vector3<f32>,
+    pub winch_manual_deselected_color: Vector3<f32>,
+    pub winch_halt_color: Vector3<f32>,
+    pub winch_error_color: Vector3<f32>,
+    pub winch_stuck_color: Vector3<f32>,
+    pub winch_command_color: Vector3<f32>,
+    pub winch_motion_color: Vector3<f32>,
+    pub winch_wavelength_m: f32,
+    pub winch_wave_window_length_m: f32,
+    pub winch_wave_amplitude: f32,
+    pub winch_wave_exponent: f32,
+    pub winch_speed_for_full_wave_amplitude_m_per_sec: f32,
+    pub winch_velocity_filter_param: f32,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]

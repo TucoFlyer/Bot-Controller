@@ -12,6 +12,7 @@ pub struct LightEnvironment {
 	pub winch_motion_color: Vector3<f32>,
 	pub camera_yaw_angle: f32,
 	pub brightness: f32,
+	pub flyer_saucer_brightness: f32,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -32,6 +33,7 @@ pub struct PixelMapping {
 #[derive(Clone, Debug, PartialEq)]
 pub enum PixelUsage {
 	Winch(usize, f32, f32),
+	FlyerSaucer(usize, f32),
 	FlyerRing(f32, f32),
 }
 
@@ -66,24 +68,32 @@ impl Shader {
 		winch.wave_amplitude * window * pulse_wave(pulse_theta, env.winch_wave_exponent)
 	}
 
+	fn winch_pixel(&self, winch: &WinchLighting, env: &LightEnvironment, loc: f32) -> Vector3<f32> {
+		let c = winch.base_color;
+		let c = vec3_mix(c, winch.flash_color, self.flash(env));
+		let c = vec3_add(c, vec3_scale(env.winch_command_color, self.winch_wave(winch, env, loc, winch.command_phase)));
+		let c = vec3_add(c, vec3_scale(env.winch_motion_color, self.winch_wave(winch, env, loc, winch.motion_phase)));
+		c
+	}
+
 	pub fn pixel(&self, env: &LightEnvironment, mapping: &PixelMapping) -> Vector3<f32> {
 		let c = match &mapping.usage {
 
 			&PixelUsage::Winch(id, loc, _x) => {
-				let winch = &env.winches[id];
-				let c = winch.base_color;
-				let c = vec3_mix(c, winch.flash_color, self.flash(env));
-				let c = vec3_add(c, vec3_scale(env.winch_command_color, self.winch_wave(winch, env, loc, winch.command_phase)));
-				let c = vec3_add(c, vec3_scale(env.winch_motion_color, self.winch_wave(winch, env, loc, winch.motion_phase)));
-				c
+				self.winch_pixel(&env.winches[id], env, loc)
 			},
+
+			&PixelUsage::FlyerSaucer(id, loc) => {
+				let c = self.winch_pixel(&env.winches[id], env, loc);
+				vec3_scale(c, env.flyer_saucer_brightness)
+			}
 
 			&PixelUsage::FlyerRing(angle, _z) => {
 				let angle_diff = (angle - env.camera_yaw_angle) % TAU;
 				let angle_diff = if angle_diff > PI { angle_diff - TAU } else { angle_diff };
 				let angle_diff = if angle_diff < -PI { angle_diff + TAU } else { angle_diff };
-				let blip = (angle_diff * 4.0).max(-PI/2.0).min(PI/2.0).cos();
-				vec3_scale([0.2, 0.1, 0.1], blip)
+				let blip = (angle_diff * 2.5).max(-PI/2.0).min(PI/2.0).cos();
+				vec3_scale([0.1, 0.5, 0.1], blip)
 			},
 
 		};

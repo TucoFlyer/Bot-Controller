@@ -182,15 +182,16 @@ impl Controller {
 
         LightEnvironment {
             winches: self.state.winch_lighting(config),
-            winch_wavelength: config.lighting.current.winch.wavelength_m,
-            winch_wave_window_length: config.lighting.current.winch.wave_window_length_m,
-            winch_wave_exponent: config.lighting.current.winch.wave_exponent,
-            winch_command_color: config.lighting.current.winch.command_color,
-            winch_motion_color: config.lighting.current.winch.motion_color,
+            camera_yaw_angle,
+            winch_wavelength: config.lighting.current.winch_wavelength_m,
+            winch_wave_window_length: config.lighting.current.winch_wave_window_length_m,
+            winch_wave_exponent: config.lighting.current.winch_wave_exponent,
+            winch_command_color: config.lighting.current.winch_command_color,
+            winch_motion_color: config.lighting.current.winch_motion_color,
             flash_exponent: config.lighting.current.flash_exponent,
             flash_rate_hz: config.lighting.current.flash_rate_hz,
             brightness: config.lighting.current.brightness,
-            camera_yaw_angle,
+            flyer_saucer_brightness: config.lighting.current.flyer_saucer_brightness,
         }
     }
 

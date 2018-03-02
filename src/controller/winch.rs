@@ -45,7 +45,7 @@ impl WinchController {
     pub fn motion_tick_with_velocity(&mut self, config: &Config, cal: &WinchCalibration, m_per_s: f32) {
         let distance_m = m_per_s / (TICK_HZ as f32);
         self.move_position_target(cal, distance_m);
-        self.lighting_command_phase += distance_m * TAU / config.lighting.current.winch.wavelength_m;
+        self.lighting_command_phase += distance_m * TAU / config.lighting.current.winch_wavelength_m;
         self.has_nonzero_velocity_command = m_per_s != 0.0;
     }
 
@@ -74,7 +74,7 @@ impl WinchController {
         self.apply_sensed_motion(config, distance_traveled_m);
 
         let velocity_m = cal.dist_to_m(status.sensors.velocity as f32);
-        let velocity_filter_param = config.lighting.current.winch.velocity_filter_param;
+        let velocity_filter_param = config.lighting.current.winch_velocity_filter_param;
         self.lighting_filtered_velocity += (velocity_m - self.lighting_filtered_velocity) * velocity_filter_param;
 
         let pwm_period_high_motion = 1.0 / config.params.pwm_hz_high_motion;
@@ -121,30 +121,30 @@ impl WinchController {
     }
 
     fn apply_sensed_motion(self: &mut WinchController, config: &Config, distance_m: f32) {
-        self.lighting_motion_phase += distance_m * TAU / config.lighting.current.winch.wavelength_m;
+        self.lighting_motion_phase += distance_m * TAU / config.lighting.current.winch_wavelength_m;
     }
 
     fn lighting_base_color(&self, config: &Config) -> Vector3<f32> {
         if self.mech_status != MechStatus::Normal {
-            config.lighting.current.winch.error_color
+            config.lighting.current.winch_error_color
         } else {
             match config.mode {
                 ControllerMode::ManualWinch(id) => {
                     if id == self.id {
-                        config.lighting.current.winch.manual_selected_color
+                        config.lighting.current.winch_manual_selected_color
                     } else {
-                        config.lighting.current.winch.manual_deselected_color
+                        config.lighting.current.winch_manual_deselected_color
                     }
                 },
-                ControllerMode::Halted => config.lighting.current.winch.halt_color,
-                _ => config.lighting.current.winch.normal_color,
+                ControllerMode::Halted => config.lighting.current.winch_halt_color,
+                _ => config.lighting.current.winch_normal_color,
             }
         }
     }
 
     fn lighting_flash_color(&self, config: &Config) -> Vector3<f32> {
         if self.mech_status == MechStatus::Stuck {
-            config.lighting.current.winch.stuck_color
+            config.lighting.current.winch_stuck_color
         } else {
             self.lighting_base_color(config)
         }
@@ -156,8 +156,8 @@ impl WinchController {
             _ => if self.mech_status != MechStatus::Normal {
                 0.0
             } else {
-                let full_scale = config.lighting.current.winch.speed_for_full_wave_amplitude_m_per_sec;
-                (self.lighting_filtered_velocity.abs() / full_scale).min(1.0) * config.lighting.current.winch.wave_amplitude
+                let full_scale = config.lighting.current.winch_speed_for_full_wave_amplitude_m_per_sec;
+                (self.lighting_filtered_velocity.abs() / full_scale).min(1.0) * config.lighting.current.winch_wave_amplitude
             }
         }
     }

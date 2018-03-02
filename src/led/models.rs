@@ -30,7 +30,7 @@ fn flyer() -> Vec<PixelMapping> {
 			let major_axis = led_spacing * led_index as f32;
 			model.push(PixelMapping {
 				format,
-				usage: PixelUsage::Winch(*winch_id, major_axis, 0.0),
+				usage: PixelUsage::FlyerSaucer(*winch_id, major_axis),
 			});
 		}
 	}
