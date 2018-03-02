@@ -1,5 +1,4 @@
 mod format;
-mod ledshape;
 mod models;
 mod shader;
 mod animator;

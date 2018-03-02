@@ -9,6 +9,7 @@ mod gimbal;
 mod draw;
 
 use message::*;
+use vecmath::*;
 use std::sync::mpsc::{SyncSender, Receiver, sync_channel};
 use bus::{Bus, BusReader};
 use config::{SharedConfigFile, Config, ControllerMode};
@@ -17,7 +18,7 @@ use fygimbal::GimbalPort;
 use self::state::ControllerState;
 use self::timer::{ConfigScheduler, ControllerTimers};
 use self::gimbal::GimbalController;
-use led::LightAnimator;
+use led::{LightEnvironment, LightAnimator};
 use overlay::DrawingContext;
 
 pub struct Controller {
@@ -31,6 +32,7 @@ pub struct Controller {
     config_scheduler: ConfigScheduler,
     timers: ControllerTimers,
     draw: DrawingContext,
+    lights: LightAnimator,
     gimbal_ctrl: GimbalController,
     gimbal_status: Option<GimbalControlStatus>,
 }
@@ -70,9 +72,10 @@ impl Controller {
 
         let local_config = config.get_latest();
         let lights = LightAnimator::start(&local_config.lighting.animation, &socket);
-        let state = ControllerState::new(&local_config, lights);
+        let state = ControllerState::new(&local_config);
 
         Controller {
+            lights,
             recv,
             bus,
             port_prototype,
@@ -129,6 +132,8 @@ impl Controller {
 
         if self.timers.tick.poll() {
             self.state.every_tick(&self.local_config);
+            let light_env = self.light_environment(&self.local_config);
+            self.lights.update(light_env);
 
             let gimbal_status = self.gimbal_ctrl.tick(&self.local_config, gimbal_port, &self.state.tracked);
             self.gimbal_status = Some(gimbal_status.clone());
@@ -165,6 +170,27 @@ impl Controller {
             _ => {
                 self.state.tracking_particles.render(config, &mut self.draw);
             }
+        }
+    }
+
+    fn light_environment(&self, config: &Config) -> LightEnvironment {
+        let camera_yaw_angle = if let Some(ref gimbal) = self.gimbal_status {
+            gimbal.angles[0] as f32 * TAU / 4096.0
+        } else {
+            0.0
+        };
+
+        LightEnvironment {
+            winches: self.state.winch_lighting(config),
+            winch_wavelength: config.lighting.current.winch.wavelength_m,
+            winch_wave_window_length: config.lighting.current.winch.wave_window_length_m,
+            winch_wave_exponent: config.lighting.current.winch.wave_exponent,
+            winch_command_color: config.lighting.current.winch.command_color,
+            winch_motion_color: config.lighting.current.winch.motion_color,
+            flash_exponent: config.lighting.current.flash_exponent,
+            flash_rate_hz: config.lighting.current.flash_rate_hz,
+            brightness: config.lighting.current.brightness,
+            camera_yaw_angle,
         }
     }
 

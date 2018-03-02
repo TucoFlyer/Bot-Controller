@@ -113,7 +113,10 @@ impl<'a> AnimatorThread<'a> {
     fn render(&self, mapping: &Vec<PixelMapping>, env: &LightEnvironment) -> Vec<u8> {
         let mut buf = Vec::new();
         for pixel_mapping in mapping.iter() {
-            write_apa102_pixel(&mut buf, self.shader.pixel(env, pixel_mapping)).unwrap();
+            let rgb = self.shader.pixel(env, pixel_mapping);
+            let format = pixel_mapping.format;
+            let remapped = [rgb[format[0] as usize], rgb[format[1] as usize], rgb[format[2] as usize]];
+            write_apa102_pixel(&mut buf, remapped).unwrap();
         }
         buf
     }

@@ -4,15 +4,14 @@ use std::time::{Duration, Instant};
 use config::{Config, ControllerMode};
 use controller::manual::ManualControls;
 use controller::winch::{WinchController, MechStatus};
-use led::{LightAnimator, LightEnvironment};
 use overlay::ParticleDrawing;
+use led::WinchLighting;
 
 pub struct ControllerState {
     pub manual: ManualControls,
     pub tracked: CameraTrackedRegion,
     pub detected: (Instant, CameraDetectedObjects),
     pub tracking_particles: ParticleDrawing,
-    lights: LightAnimator,
     winches: Vec<WinchController>,
     flyer_sensors: Option<FlyerSensors>,
     pending_snap: bool,
@@ -20,9 +19,8 @@ pub struct ControllerState {
 }
 
 impl ControllerState {
-    pub fn new(initial_config: &Config, lights: LightAnimator) -> ControllerState {
+    pub fn new(initial_config: &Config) -> ControllerState {
         ControllerState {
-            lights,
             manual: ManualControls::new(),
             winches: initial_config.winches.iter().enumerate().map(|(id, _config)| {
                 WinchController::new(id)
@@ -51,9 +49,10 @@ impl ControllerState {
         self.manual.full_reset();
     }
 
-    fn lighting_tick(&mut self, config: &Config) {
-        let env = self.light_environment(config);
-        self.lights.update(env);
+    pub fn winch_lighting(&self, config: &Config) ->  Vec<WinchLighting> {
+        self.winches.iter().map( |winch| {
+            winch.light_environment(config)
+        }).collect()
     }
 
     pub fn tracking_update(&mut self, config: &Config, time_step: f32) -> Option<Vector4<f32>> {
@@ -76,7 +75,6 @@ impl ControllerState {
 
     pub fn every_tick(&mut self, config: &Config) {
         self.manual.control_tick(config);
-        self.lighting_tick(config);
         self.tracking_particles.follow_rect(config, self.tracked.rect);
     }
 
@@ -208,23 +206,5 @@ impl ControllerState {
         }
         // All winches okay
         return false;
-    }
-
-    pub fn light_environment(&self, config: &Config) -> LightEnvironment {
-        let winches = self.winches.iter().map( |winch| {
-            winch.light_environment(&config)
-        }).collect();
-
-        LightEnvironment {
-            winches,
-            winch_wavelength: config.lighting.current.winch.wavelength_m,
-            winch_wave_window_length: config.lighting.current.winch.wave_window_length_m,
-            winch_wave_exponent: config.lighting.current.winch.wave_exponent,
-            winch_command_color: config.lighting.current.winch.command_color,
-            winch_motion_color: config.lighting.current.winch.motion_color,
-            flash_exponent: config.lighting.current.flash_exponent,
-            flash_rate_hz: config.lighting.current.flash_rate_hz,
-            brightness: config.lighting.current.brightness,
-        }
     }
 }

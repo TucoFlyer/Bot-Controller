@@ -1,63 +1,53 @@
 use vecmath::*;
-use std::env;
-use led::ledshape::{LEDShapeTemplate, to_point_cloud_file};
-use led::shader::{PixelMapping, PixelUsage};
+use led::shader::{PixelUsage, PixelMapping};
 use botcomm::{BotSocket, LEDWriter};
 
 fn winch(id: usize) -> Vec<PixelMapping> {
 	let mut model = Vec::new();
+	let format = [1,2,0];
 
-	let side_strip = LEDShapeTemplate {
-		usage: PixelUsage::Winch(id),
-		spacing: 1.0 / 60.0,
-		count: 7,
-	};
-
-	let left_center = [-0.06, 0.0, 0.0];
-	let right_center = [0.06, 0.0, 0.0];
-
-	let vertical_direction = [0.0, 0.0, 1.0];
-
-	side_strip.line(&mut model, left_center, vertical_direction);
-	side_strip.line(&mut model, right_center, vertical_direction);
+	for minor_axis in [-1.0, 1.0].iter() {
+		for led_index in 0..8 {
+			let led_spacing = 1.0 / 60.0;
+			let major_axis = led_spacing * led_index as f32;
+			model.push(PixelMapping {
+				format,
+				usage: PixelUsage::Winch(id, major_axis, *minor_axis),
+			});
+		}
+	}
 
 	model
 }
 
 fn flyer() -> Vec<PixelMapping> {
 	let mut model = Vec::new();
+	let format = [2,1,0];
 
-	let top_strip = LEDShapeTemplate {
-		usage: PixelUsage::FlyerTop,
-		spacing: 1.0 / 144.0,
-		count: 7,
-	};
-
-	let ring_strip = LEDShapeTemplate {
-		usage: PixelUsage::FlyerRing,
-		spacing: 1.0 / 144.0,
-		count: 36,
-	};
-
-	let top_center = [0.0, 0.0, 0.45];
-	let top_radius = [0.07, 0.0, 0.0];
-
-	let upper_ring = [0.0, 0.0, 0.015];
-	let middle_ring = [0.0, 0.0, 0.0];
-	let lower_ring = [0.0, 0.0, -0.015];
-	let ring_normal = [0.0, 0.0, 1.0];
-
-	const NUM_STRIPS : usize = 4;
-	for index in 0..NUM_STRIPS {
-		let theta = (index as f32) / (NUM_STRIPS as f32) * TAU;
-		let mat = rotation_matrix([0.0, 0.0, 1.0], theta);
-		let radius = row_mat3x4_transform_vec3(mat, top_radius);
-		top_strip.line(&mut model, vec3_add(top_center, radius), radius);
+	for winch_id in [3, 0, 1, 2].iter() {
+		for led_index in 0..7 {
+			let led_spacing = 1.0 / 144.0;
+			let major_axis = led_spacing * led_index as f32;
+			model.push(PixelMapping {
+				format,
+				usage: PixelUsage::Winch(*winch_id, major_axis, 0.0),
+			});
+		}
 	}
 
-	ring_strip.circle(&mut model, upper_ring, ring_normal, [1.0, 0.0, 0.0]);
-	ring_strip.circle(&mut model, middle_ring, ring_normal, [-1.0, 0.0, 0.0]);
-	ring_strip.circle(&mut model, lower_ring, ring_normal, [1.0, 0.0, 0.0]);
+	for &(ring_offset, ring_z) in [
+		(PI, 1.0),
+		(0.0, 0.0),
+		(PI, -1.0),
+	].iter() {
+		for led_index in 0..36 {
+			let led_angle = led_index as f32 * -(PI * 2.0 / 36.0);
+			model.push(PixelMapping {
+				format,
+				usage: PixelUsage::FlyerRing(led_angle + ring_offset, ring_z),
+			});
+		}
+	}
 
 	model
 }
@@ -87,12 +77,6 @@ impl<'a> LEDModel<'a> {
 				writer: socket.winch_leds(id),
 				pixels: winch(id),
 			});
-		}
-
-		if let Ok(_) = env::var("SAVE_LED_MODEL") {
-			to_point_cloud_file(&flyer(), "flyer_leds.xyz").unwrap();
-			to_point_cloud_file(&winch(0), "winch_leds.xyz").unwrap();
-			println!("Saved LED models as point cloud files");
 		}
 
 		LEDModel { vec }
