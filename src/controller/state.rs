@@ -150,7 +150,11 @@ impl ControllerState {
                 self.manual_multi_winch_controller(config, id)
             }
 
-            _ => 0.0
+            ControllerMode::Normal => {
+                self.manual_multi_winch_controller(config, id)
+            }
+
+            ControllerMode::Halted => 0.0
         };
 
         self.winches[id].motion_tick_with_velocity(config, cal, velocity);
