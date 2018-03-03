@@ -4,6 +4,14 @@ import { ConfigColor } from '../Config';
 export default (props) => {
     return <div>
 
+        <h4>Flyer ring colors</h4>
+
+        <h6>Background color</h6>
+        <ConfigColor item="lighting.current.flyer_ring_background_color" />
+
+        <h6>Dot color</h6>
+        <ConfigColor item="lighting.current.flyer_dot_color" />
+
         <h4>Winch colors</h4>
 
         <h6>Normal-mode background color</h6>

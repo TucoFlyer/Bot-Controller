@@ -1,5 +1,5 @@
 ---
-mode: Normal
+mode: Halted
 controller_addr: "10.32.0.1:9024"
 flyer_addr: "10.32.0.8:9024"
 web:
@@ -254,6 +254,28 @@ lighting:
   current:
     brightness: 1
     flyer_saucer_brightness: 0.30000001192092896
+    flyer_ring_z_scale: 0.18000000715255737
+    flyer_ring_background_color:
+      - 0.01568627543747425
+      - 0.019607843831181526
+      - 0.0470588244497776
+    flyer_dot_color:
+      - 1
+      - 0
+      - 0
+    flyer_dot_size: 0.6000000238418579
+    flyer_dot_pattern_rate: 13
+    flyer_dot_pattern_smoothness: 0.8830000162124634
+    flyer_dot_pattern_base:
+      - -5
+    flyer_dot_pattern_is_recording:
+      - 1
+      - -5
+    flyer_dot_pattern_is_streaming:
+      - 1
+      - -1
+      - 1
+      - -5
     flash_rate_hz: 1.9199999570846558
     flash_exponent: 3.180000066757202
     winch_normal_color:

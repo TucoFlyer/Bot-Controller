@@ -143,3 +143,10 @@ pub fn vec2_clamp_len<T: Float + Sqrt>(vec: Vector2<T>, limit: T) -> Vector2<T> 
     let len = vec2_len(vec);
     if len < limit { vec } else { vec2_scale(vec, limit / len) }
 }
+
+pub fn angle_normalize(a: f32) -> f32 {
+	let a = a % TAU;
+	let a = if a > PI { a - TAU } else { a };
+	let a = if a < -PI { a + TAU } else { a };
+	a
+}

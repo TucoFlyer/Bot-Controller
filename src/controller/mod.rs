@@ -181,17 +181,11 @@ impl Controller {
         };
 
         LightEnvironment {
+            config: config.lighting.current.clone(),
             winches: self.state.winch_lighting(config),
             camera_yaw_angle,
-            winch_wavelength: config.lighting.current.winch_wavelength_m,
-            winch_wave_window_length: config.lighting.current.winch_wave_window_length_m,
-            winch_wave_exponent: config.lighting.current.winch_wave_exponent,
-            winch_command_color: config.lighting.current.winch_command_color,
-            winch_motion_color: config.lighting.current.winch_motion_color,
-            flash_exponent: config.lighting.current.flash_exponent,
-            flash_rate_hz: config.lighting.current.flash_rate_hz,
-            brightness: config.lighting.current.brightness,
-            flyer_saucer_brightness: config.lighting.current.flyer_saucer_brightness,
+            is_recording: self.state.camera_output_is_active(&CameraOutput::LocalRecording),
+            is_streaming: self.state.camera_output_is_active(&CameraOutput::LiveStream),
         }
     }
 
@@ -238,6 +232,10 @@ impl Controller {
 
             Message::Command(Command::CameraRegionTracking(tr)) => {
                 self.state.camera_region_tracking_update(tr);
+            },
+
+            Message::Command(Command::CameraOutputStatus(outs)) => {
+                self.state.camera_output_status_update(outs);
             },
 
             Message::Command(Command::SetMode(mode)) => {

@@ -1,5 +1,6 @@
 use message::*;
 use vecmath::*;
+use std::collections::HashMap;
 use std::time::{Duration, Instant};
 use config::{Config, ControllerMode};
 use controller::manual::ManualControls;
@@ -14,6 +15,7 @@ pub struct ControllerState {
     pub tracking_particles: ParticleDrawing,
     winches: Vec<WinchController>,
     flyer_sensors: Option<FlyerSensors>,
+    camera_outputs: HashMap<CameraOutput, CameraOutputStatus>,
     pending_snap: bool,
     last_mode: ControllerMode,
 }
@@ -31,6 +33,7 @@ impl ControllerState {
             tracked: CameraTrackedRegion::new(),
             tracking_particles: ParticleDrawing::new(),
             last_mode: initial_config.mode.clone(),
+            camera_outputs: HashMap::new(),
         }
     }
 
@@ -126,6 +129,10 @@ impl ControllerState {
         }
     }
 
+    pub fn camera_output_status_update(&mut self, outputs: HashMap<CameraOutput, CameraOutputStatus>) {
+        self.camera_outputs = outputs;
+    }
+
     pub fn flyer_sensor_update(&mut self, sensors: FlyerSensors) {
         self.flyer_sensors = Some(sensors);
     }
@@ -206,5 +213,13 @@ impl ControllerState {
         }
         // All winches okay
         return false;
+    }
+
+    pub fn camera_output_is_active(&self, output: &CameraOutput) -> bool {
+        if let Some(status) = self.camera_outputs.get(output) {
+            status.active
+        } else {
+            false
+        }
     }
 }
