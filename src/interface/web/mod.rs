@@ -13,7 +13,7 @@ pub mod auth;
 pub fn start(config: &SharedConfigFile, controller: &ControllerPort) {
     let web_config = config.get_latest().web;
     let secret_key = auth::make_random_string();
-    let connect_string = make_connect_string(&web_config.http_uri(&secret_key, None));
+    let connect_string = make_connect_string(&web_config.http_uri(&secret_key, 0));
 
     http::start(&web_config);
     ws::start(controller, config, secret_key.clone());

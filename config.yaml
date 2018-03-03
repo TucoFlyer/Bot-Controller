@@ -8,7 +8,7 @@ web:
   web_root_path: web/build
   connection_file_path: connection.txt
   open_browser: true
-  browser_port_override: 3000
+  browser_port_override: 0
 metrics:
   influxdb_host: "http://10.0.0.40:8086"
   database: tucoflyer
@@ -254,8 +254,8 @@ lighting:
     filter_param: 0.15000000596046448
   current:
     brightness: 1
-    flyer_saucer_brightness: 0.30000001192092896
-    flyer_z_scale: 0.2800000011920929
+    flyer_saucer_brightness: 0.10000000149011612
+    flyer_z_scale: 0.44999998807907104
     flyer_background_color:
       - 0.01568627543747425
       - 0.019607843831181526
@@ -265,7 +265,7 @@ lighting:
       - 0
       - 0
     flyer_dot_size: 1.2999999523162842
-    flyer_dot_pattern_rate: 13
+    flyer_dot_pattern_rate: 13.899999618530273
     flyer_dot_pattern_smoothness: 0.8830000162124634
     flyer_dot_pattern_base:
       - -5
@@ -277,20 +277,20 @@ lighting:
       - -1
       - 1
       - -5
-    flyer_ring_size: 1.2999999523162842
-    flyer_ring_thickness: 2
+    flyer_ring_size: 0.8999999761581421
+    flyer_ring_thickness: 0.8999999761581421
     flyer_ring_halt_color:
-      - 0.21960784494876862
-      - 0.10196078568696976
-      - 0.10196078568696976
+      - 0.239215686917305
+      - 0.03529411926865578
+      - 0.03529411926865578
     flyer_ring_bored_color:
-      - 0.06666667014360428
-      - 0.09019608050584793
-      - 0.09019608050584793
+      - 0.07058823853731155
+      - 0.13333334028720856
+      - 0.13333334028720856
     flyer_ring_tracking_color:
-      - 0.08627451211214066
-      - 0.10196078568696976
-      - 0
+      - 0.0941176488995552
+      - 0.30980393290519714
+      - 0.027450980618596077
     flash_rate_hz: 1.9199999570846558
     flash_exponent: 3.180000066757202
     winch_normal_color:

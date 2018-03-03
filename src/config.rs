@@ -263,7 +263,7 @@ pub struct WebConfig {
     pub web_root_path: String,
     pub connection_file_path: String,
     pub open_browser: bool,
-    pub browser_port_override: Option<u16>,
+    pub browser_port_override: u16,
 }
 
 fn all_if_addr() -> IpAddr {
@@ -280,10 +280,10 @@ impl WebConfig {
         SocketAddr::new(all_if_addr(), self.ws_addr.port())
     }
 
-    pub fn http_uri(self: &WebConfig, secret_key: &str, custom_port: Option<u16>) -> String {
+    pub fn http_uri(self: &WebConfig, secret_key: &str, custom_port: u16) -> String {
         let mut http_addr = self.http_addr.clone();
-        if let Some(port) = custom_port {
-            http_addr.set_port(port);
+        if custom_port > 0 {
+            http_addr.set_port(custom_port);
         }
         format!("http://{}/#?k={}", http_addr, secret_key)
     }

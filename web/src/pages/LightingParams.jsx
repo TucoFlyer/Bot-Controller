@@ -15,7 +15,7 @@ export default (props) => {
         <h4>Flyer</h4>
 
         <h6>Brightness of saucer section</h6>
-        <ConfigSlider item="lighting.current.flyer_saucer_brightness" min="0" max="4" step="0.1" />
+        <ConfigSlider item="lighting.current.flyer_saucer_brightness" min="0" max="0.75" step="1e-3" />
 
         <h6>Z scale</h6>
         <ConfigSlider item="lighting.current.flyer_z_scale" min="0" max="2" step="0.01" />
@@ -30,7 +30,7 @@ export default (props) => {
         <ConfigSlider item="lighting.current.flyer_dot_size" min="0" max="4" step="0.1" />
 
         <h6>Dot pattern rate</h6>
-        <ConfigSlider item="lighting.current.flyer_dot_pattern_rate" min="0" max="100" step="0.1" />
+        <ConfigSlider item="lighting.current.flyer_dot_pattern_rate" min="0" max="30" step="0.1" />
 
         <h6>Dot pattern smoothness</h6>
         <ConfigSlider item="lighting.current.flyer_dot_pattern_smoothness" min="0" max="1" step="1e-4" />
