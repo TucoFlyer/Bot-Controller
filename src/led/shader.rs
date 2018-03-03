@@ -5,6 +5,7 @@ use config::LightingScheme;
 pub struct LightEnvironment {
 	pub config: LightingScheme,
 	pub winches: Vec<WinchLighting>,
+	pub ring_color: Vector3<f32>,
 	pub camera_yaw_angle: f32,
 	pub is_streaming: bool,
 	pub is_recording: bool,
@@ -124,12 +125,16 @@ impl Shader {
 
 			&PixelUsage::FlyerRing(angle, z) => {
 				let x = angle_normalize(angle - env.camera_yaw_angle);
-				let z = z * env.config.flyer_ring_z_scale;
-				let r = (x*x + z*z).sqrt();
-				let dot = cos_single(r * PI / env.config.flyer_dot_size);
+				let z = z * env.config.flyer_z_scale;
+				let distance_from_center = (x*x + z*z).sqrt();
+
+				let dot = cos_single(distance_from_center * PI / env.config.flyer_dot_size);
 				let dot_color = vec3_scale(env.config.flyer_dot_color, dot * self.dot_output_filter);
 
-				let c = env.config.flyer_ring_background_color;
+				let ring = cos_single((distance_from_center - env.config.flyer_ring_size) * PI / env.config.flyer_ring_thickness);
+
+				let c = env.config.flyer_background_color;
+				let c = vec3_mix(c, env.ring_color, ring);
 				let c = vec3_mix(c, dot_color, dot);
 				c
 			},

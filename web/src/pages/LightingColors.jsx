@@ -7,10 +7,19 @@ export default (props) => {
         <h4>Flyer ring colors</h4>
 
         <h6>Background color</h6>
-        <ConfigColor item="lighting.current.flyer_ring_background_color" />
+        <ConfigColor item="lighting.current.flyer_background_color" />
 
         <h6>Dot color</h6>
         <ConfigColor item="lighting.current.flyer_dot_color" />
+
+        <h6>Ring halt color</h6>
+        <ConfigColor item="lighting.current.flyer_ring_halt_color" />
+
+        <h6>Ring bored color</h6>
+        <ConfigColor item="lighting.current.flyer_ring_bored_color" />
+
+        <h6>Ring tracking color</h6>
+        <ConfigColor item="lighting.current.flyer_ring_tracking_color" />
 
         <h4>Winch colors</h4>
 

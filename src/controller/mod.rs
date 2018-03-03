@@ -180,12 +180,21 @@ impl Controller {
             0.0
         };
 
+        let ring_color = if config.mode == ControllerMode::Halted {
+            config.lighting.current.flyer_ring_halt_color
+        } else if self.state.tracked.age > config.vision.tracking_age_boredom_threshold {
+            config.lighting.current.flyer_ring_bored_color
+        } else {
+            config.lighting.current.flyer_ring_tracking_color
+        };
+
         LightEnvironment {
             config: config.lighting.current.clone(),
             winches: self.state.winch_lighting(config),
             camera_yaw_angle,
             is_recording: self.state.camera_output_is_active(&CameraOutput::LocalRecording),
             is_streaming: self.state.camera_output_is_active(&CameraOutput::LiveStream),
+            ring_color,
         }
     }
 

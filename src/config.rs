@@ -88,8 +88,8 @@ impl WinchCalibration {
 pub struct LightingScheme {
     pub brightness: f32,
     pub flyer_saucer_brightness: f32,
-    pub flyer_ring_z_scale: f32,
-    pub flyer_ring_background_color: Vector3<f32>,
+    pub flyer_z_scale: f32,
+    pub flyer_background_color: Vector3<f32>,
     pub flyer_dot_color: Vector3<f32>,
     pub flyer_dot_size: f32,
     pub flyer_dot_pattern_rate: f32,
@@ -97,6 +97,11 @@ pub struct LightingScheme {
     pub flyer_dot_pattern_base: Vec<i8>,
     pub flyer_dot_pattern_is_recording: Vec<i8>,
     pub flyer_dot_pattern_is_streaming: Vec<i8>,
+    pub flyer_ring_size: f32,
+    pub flyer_ring_thickness: f32,
+    pub flyer_ring_halt_color: Vector3<f32>,
+    pub flyer_ring_bored_color: Vector3<f32>,
+    pub flyer_ring_tracking_color: Vector3<f32>,
     pub flash_rate_hz: f32,
     pub flash_exponent: f32,
     pub winch_normal_color: Vector3<f32>,
@@ -179,6 +184,7 @@ pub struct VisionConfig {
     pub tracking_default_area: f32,
     pub tracking_min_area: f32,
     pub tracking_max_area: f32,
+    pub tracking_age_boredom_threshold: u32,
     pub snap_tracked_region_to: Vec<(String, f32)>,
 }
 

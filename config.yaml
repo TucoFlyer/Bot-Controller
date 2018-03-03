@@ -1,5 +1,5 @@
 ---
-mode: Halted
+mode: Normal
 controller_addr: "10.32.0.1:9024"
 flyer_addr: "10.32.0.8:9024"
 web:
@@ -59,7 +59,7 @@ gimbal:
     - -1710
     - 1710
   pitch_limits:
-    - -649
+    - -972
     - 74
   rehome_gain: 0.10279999673366547
   limiter_gain: 0.4740000069141388
@@ -74,7 +74,7 @@ gimbal:
   current_osc_detector_threshold: 3510
   current_peak_detector_decay_rate: 0.04259999841451645
   current_peak_detector_update_rate: 0.34299999475479126
-  current_peak_detector_threshold: 20044
+  current_peak_detector_threshold: 22792
   error_duration_for_rehome: 0.05000000074505806
   error_duration_for_poweroff: 4.5
   motor_voltage_min: 8
@@ -199,6 +199,7 @@ vision:
   tracking_default_area: 0.16779999434947968
   tracking_min_area: 0.03220000118017197
   tracking_max_area: 1.080199956893921
+  tracking_age_boredom_threshold: 45
   snap_tracked_region_to:
     - - cat
       - 0.5
@@ -254,8 +255,8 @@ lighting:
   current:
     brightness: 1
     flyer_saucer_brightness: 0.30000001192092896
-    flyer_ring_z_scale: 0.18000000715255737
-    flyer_ring_background_color:
+    flyer_z_scale: 0.2800000011920929
+    flyer_background_color:
       - 0.01568627543747425
       - 0.019607843831181526
       - 0.0470588244497776
@@ -263,7 +264,7 @@ lighting:
       - 1
       - 0
       - 0
-    flyer_dot_size: 0.6000000238418579
+    flyer_dot_size: 1.2999999523162842
     flyer_dot_pattern_rate: 13
     flyer_dot_pattern_smoothness: 0.8830000162124634
     flyer_dot_pattern_base:
@@ -276,6 +277,20 @@ lighting:
       - -1
       - 1
       - -5
+    flyer_ring_size: 1.2999999523162842
+    flyer_ring_thickness: 2
+    flyer_ring_halt_color:
+      - 0.21960784494876862
+      - 0.10196078568696976
+      - 0.10196078568696976
+    flyer_ring_bored_color:
+      - 0.06666667014360428
+      - 0.09019608050584793
+      - 0.09019608050584793
+    flyer_ring_tracking_color:
+      - 0.08627451211214066
+      - 0.10196078568696976
+      - 0
     flash_rate_hz: 1.9199999570846558
     flash_exponent: 3.180000066757202
     winch_normal_color:

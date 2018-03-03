@@ -17,8 +17,14 @@ export default (props) => {
         <h6>Brightness of saucer section</h6>
         <ConfigSlider item="lighting.current.flyer_saucer_brightness" min="0" max="4" step="0.1" />
 
-        <h6>Ring Z scale</h6>
-        <ConfigSlider item="lighting.current.flyer_ring_z_scale" min="0" max="2" step="0.01" />
+        <h6>Z scale</h6>
+        <ConfigSlider item="lighting.current.flyer_z_scale" min="0" max="2" step="0.01" />
+
+        <h6>Ring size</h6>
+        <ConfigSlider item="lighting.current.flyer_ring_size" min="0" max="4" step="0.1" />
+
+        <h6>Ring thickness</h6>
+        <ConfigSlider item="lighting.current.flyer_ring_thickness" min="0" max="4" step="0.1" />
 
         <h6>Dot size</h6>
         <ConfigSlider item="lighting.current.flyer_dot_size" min="0" max="4" step="0.1" />
