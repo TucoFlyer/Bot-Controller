@@ -17,13 +17,13 @@ metrics:
 params:
   gimbal_max_control_rate: 10000
   manual_control_velocity_m_per_sec: 0.3199999928474426
-  accel_limit_m_per_sec2: 0.14000000059604645
-  force_neg_motion_min_kg: 0.14000000059604645
+  accel_limit_m_per_sec2: 0.5199999809265137
+  force_neg_motion_min_kg: 0.17000000178813934
   force_pos_motion_max_kg: 3.0299999713897705
   force_lockout_below_kg: 0.029999999329447746
   force_lockout_above_kg: 4.5
   force_filter_param: 0.06760100275278091
-  force_return_velocity_max_m_per_sec: 0.09000000357627869
+  force_return_velocity_max_m_per_sec: 0.05999999865889549
   deadband_position_err_m: 0.02370000071823597
   deadband_velocity_limit_m_per_sec: 0.00039999998989515007
   pos_err_filter_param: 0.3103010058403015
@@ -50,17 +50,17 @@ gimbal:
       i_gain: 3.8833999633789063
   pitch_gains:
     - width: 0.3001999855041504
-      p_gain: 201.77369689941406
-      i_gain: 0.21480000019073486
+      p_gain: 155.73770141601563
+      i_gain: 0.22990000247955322
     - width: 0.05389999970793724
-      p_gain: 505.7572021484375
-      i_gain: 0.041099999099969864
+      p_gain: 703.5003051757813
+      i_gain: 0.8407999873161316
   yaw_limits:
     - -1710
     - 1710
   pitch_limits:
-    - -972
-    - 74
+    - -870
+    - 13
   rehome_gain: 0.10279999673366547
   limiter_gain: 0.4740000069141388
   limiter_slowdown_extent:
@@ -71,7 +71,7 @@ gimbal:
   tracking_i_decay_rate: 0.004399999976158142
   hold_i_decay_rate: 0.007499999832361937
   current_osc_detector_decay_rate: 0.1858000010251999
-  current_osc_detector_threshold: 3510
+  current_osc_detector_threshold: 6970
   current_peak_detector_decay_rate: 0.04259999841451645
   current_peak_detector_update_rate: 0.34299999475479126
   current_peak_detector_threshold: 22792
@@ -97,9 +97,9 @@ overlay:
     - 0
     - 0
   debug_text_height: 0.027300000190734863
-  detector_outline_min_prob: 0.3098999857902527
+  detector_outline_min_prob: 0
   detector_outline_max_thickness: 0.027000000700354576
-  detector_label_min_prob: 0.07199999690055847
+  detector_label_min_prob: 0
   detector_label_prob_values: true
   detector_default_outline_color:
     - 0.34117648005485535
@@ -192,10 +192,10 @@ vision:
     - 2
     - 1.125
   manual_control_deadzone: 0.1404999941587448
-  manual_control_speed: 1.989300012588501
-  manual_control_restoring_force: 7.347400188446045
+  manual_control_speed: 2.625499963760376
+  manual_control_restoring_force: 4.984399795532227
   manual_control_restoring_force_width: 1.149999976158142
-  manual_control_timeout_sec: 0.9296000003814697
+  manual_control_timeout_sec: 0.14890000224113464
   tracking_default_area: 0.16779999434947968
   tracking_min_area: 0.03220000118017197
   tracking_max_area: 1.080199956893921
