@@ -1,12 +1,14 @@
-use message::{Message, Command, PublicInput, TimestampedMessage};
+use message::{Message, Command, TimestampedMessage};
 use controller::ControllerPort;
 use config::SharedConfigFile;
-use serde_json::{to_string, from_str, Value};
+use serde_json::{to_string, from_str, to_value, Value};
 use std::net::TcpStream;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{mpsc, Arc, Mutex};
+use std::collections::{HashSet, HashMap};
 use std::thread;
 use std::time::{Duration, Instant};
+use std::mem;
 use websocket;
 use interface::web::auth;
 
@@ -25,12 +27,14 @@ enum MessageToClient {
     Error(ClientError),
 }
 
+type Subscription = HashSet<String>;
+
 #[derive(Deserialize, Clone, Debug)]
 enum MessageToServer {
     Auth(AuthResponse),
     Command(Command),
-    PublicInput(PublicInput),
     UpdateConfig(Value),
+    Subscription(Subscription),
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -44,6 +48,7 @@ enum ErrorCode {
     ParseFailed,
     AuthRequired,
     UpdateConfigFailed,
+    RequestQueueFull,
 }
 
 pub fn start(controller: &ControllerPort, config: &SharedConfigFile, secret_key: String) {
@@ -61,6 +66,7 @@ pub fn start(controller: &ControllerPort, config: &SharedConfigFile, secret_key:
                 // Per-connection thread
 
                 let (receiver, sender) = request.accept().unwrap().split().unwrap();
+                let mut default_subscription = HashSet::new();
                 let client_info = ClientInfo::new(secret_key);
 
                 // Message sender thread, with a port for queueing new outgoing messages
@@ -70,29 +76,49 @@ pub fn start(controller: &ControllerPort, config: &SharedConfigFile, secret_key:
                 send_port.direct.send(MessageToClient::Auth(client_info.challenge.clone())).unwrap();
 
                 // Send the first config state this client will see
-                send_port.stream.send(Message::ConfigIsCurrent(config.get_latest()).timestamp()).unwrap();
+                let config_is_current = Message::ConfigIsCurrent(config.get_latest());
+                default_subscription.insert(name_for_message_type(&config_is_current));
+                send_port.stream.send(config_is_current.timestamp()).unwrap();
 
                 // Start the message pump that reads from controller's Bus and writes to 'send_port'
-                start_ws_bus_receiver(&client_info, &controller, &send_port);
+                let subscription_sender = start_ws_bus_receiver(&client_info, &controller, &send_port);
+                subscription_sender.send(default_subscription).unwrap();
 
                 // Now handle incoming messages
-                let handler = MessageHandler { client_info, send_port, controller, config };
+                let handler = MessageHandler { client_info, send_port, controller, config, subscription_sender };
                 handler.receive(receiver);
             }).unwrap();
         }
     }).unwrap();
 }
 
-fn start_ws_bus_receiver(client_info: &ClientInfo, controller: &ControllerPort, send_port: &MessageSendPort) {
+fn name_for_message_type(msg: &Message) -> String {
+    let msg_value = to_value(msg).unwrap();
+    if let Value::Object(obj) = msg_value {
+        for (key, _) in obj.into_iter() {
+            return key;
+        }
+    }
+    panic!("Unexpected serialization format in name_for_message_type");
+}
+
+fn start_ws_bus_receiver(client_info: &ClientInfo, controller: &ControllerPort, send_port: &MessageSendPort) -> mpsc::SyncSender<Subscription> {
     // This thread just shuttles messages from the (fast, must not block)
-    // internal message bus to the per-connection batching fifo buffer.
+    // internal message bus to the per-connection batching fifo buffer,
+    // while filtering them against a subscription list. Returns a channel
+    // for new subscription list updates.
 
     let mut bus_receiver = controller.add_rx();
     let send_port = send_port.clone();
     let client_flags = client_info.flags.clone();
+    let (subscription_sender, subscription_reader) = mpsc::sync_channel(16);
 
     thread::Builder::new().name("WebSocket bus receiver".into()).spawn(move || {
+        let mut subscription = HashSet::new();
+        let mut subscription_memo = HashMap::new();
+
         loop {
+            // Wait for messages from our read queue
             let msg = match bus_receiver.recv() {
                 Ok(msg) => msg,
                 _ => break,
@@ -100,7 +126,20 @@ fn start_ws_bus_receiver(client_info: &ClientInfo, controller: &ControllerPort, 
             if !client_flags.is_alive() {
                 break;
             }
-            if send_port.stream.try_send(msg).is_err() {
+
+            // After each message, check for updated filter subscription lists.
+            // These start out as strings, but we memoize them here using enum
+            // discriminant values.
+            for newest_subs in subscription_reader.try_iter() {
+                subscription = newest_subs;
+                subscription_memo.clear();
+            }
+            let msg_type = mem::discriminant(&msg.message);
+            let filter_result = *subscription_memo.entry(msg_type).or_insert_with(|| {
+                subscription.contains(&name_for_message_type(&msg.message))
+            });
+
+            if filter_result && send_port.stream.try_send(msg).is_err() {
                 // If we lost packets here, the batching flow control mechanism has failed
                 // and we don't have anything better to do. Instead of silently losing data
                 // let's end the connection.
@@ -109,6 +148,8 @@ fn start_ws_bus_receiver(client_info: &ClientInfo, controller: &ControllerPort, 
         }
         client_flags.kill();
     }).unwrap();
+
+    subscription_sender
 }
 
 #[derive(Clone)]
@@ -331,6 +372,7 @@ struct MessageHandler {
     send_port: MessageSendPort,
     controller: ControllerPort,
     config: SharedConfigFile,
+    subscription_sender: mpsc::SyncSender<Subscription>,
 }
 
 impl MessageHandler {
@@ -388,14 +430,14 @@ impl MessageHandler {
 
     fn handle_message(&self, message: MessageToServer) -> ClientResult {
         match message {
-            MessageToServer::Auth(r) => self.try_authenticate(r),
-            MessageToServer::Command(r) => self.try_command(r),
-            MessageToServer::PublicInput(r) => self.try_public_input(r),
-            MessageToServer::UpdateConfig(r) => self.try_update_config(r),
+            MessageToServer::Auth(r) => self.handle_authenticate(r),
+            MessageToServer::Command(r) => self.handle_command(r),
+            MessageToServer::Subscription(r) => self.handle_subscription(r),
+            MessageToServer::UpdateConfig(r) => self.handle_update_config(r),
         }
     }
 
-    fn try_authenticate(&self, response: AuthResponse) -> ClientResult {
+    fn handle_authenticate(&self, response: AuthResponse) -> ClientResult {
         let challenge = &self.client_info.challenge.challenge;
         let key = &self.client_info.secret_key;
         let status = auth::authenticate(challenge, key, &response.digest);
@@ -405,7 +447,7 @@ impl MessageHandler {
         Ok(Some(MessageToClient::AuthStatus(status)))
     }
 
-    fn try_command(&self, command: Command) -> ClientResult {
+    fn handle_command(&self, command: Command) -> ClientResult {
         if !self.client_info.flags.is_authenticated() {
             Err(ClientError { code: ErrorCode::AuthRequired, message: None })
         } else {
@@ -414,12 +456,17 @@ impl MessageHandler {
         }
     }
 
-    fn try_public_input(&self, input: PublicInput) -> ClientResult {
-        self.controller.send(Message::PublicInput(input).timestamp());
-        Ok(None)
+    fn handle_subscription(&self, subs: Subscription) -> ClientResult {
+        match self.subscription_sender.send(subs) {
+            Ok(_) => Ok(None),
+            Err(_) => Err(ClientError {
+                code: ErrorCode::RequestQueueFull,
+                message: None,
+            }),
+        }
     }
 
-    fn try_update_config(&self, updates: Value) -> ClientResult {
+    fn handle_update_config(&self, updates: Value) -> ClientResult {
         if !self.client_info.flags.is_authenticated() {
             Err(ClientError { code: ErrorCode::AuthRequired, message: None })
         } else {

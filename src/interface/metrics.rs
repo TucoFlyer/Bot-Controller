@@ -162,10 +162,6 @@ impl MetricSampler {
                 points.push(p);
             },
 
-            &Message::PublicInput(_) => {
-                *self.message_counts.entry("public_input").or_insert(0) += 1;
-            },
-
             &Message::UpdateConfig(_) => {
                 *self.message_counts.entry("update_config").or_insert(0) += 1;
             },

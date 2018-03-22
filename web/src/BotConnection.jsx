@@ -59,6 +59,10 @@ export class BotConnection extends Component {
 
     constructor() {
         super();
+        this.message_subscription = [
+            "ConfigIsCurrent", "Command", "FlyerSensors", "WinchStatus",
+            "GimbalControlStatus", "GimbalValue", "UnhandledGimbalPacket",
+        ];
         this.events = new EventEmitter();
         this.events.setMaxListeners(100);
         this.socket = null;
@@ -152,6 +156,7 @@ export class BotConnection extends Component {
     }
 
     handleSocketOpen = () => {
+        this.send({Subscription: this.message_subscription});
         this.setState({
             authenticated: false,
             connected: true,
