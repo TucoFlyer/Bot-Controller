@@ -71,15 +71,16 @@ function pathArray(str_or_list) {
     return array;
 }
 
-// Inverse of getByPath, creates intermediate nodes as needed
+// Inverse of getByPath, creates intermediate nodes as needed.
+// Can't tell the difference between lists and maps here, so we
+// always create maps and the server will merge those into
+// existing sequences if necessary.
 export const setByPath = function(config, path, item) {
     let parts = pathArray(path);
     let obj = config;
     for (let i = 0; i < parts.length - 1; i++) {
         if (parts[i] in obj) {
             obj = obj[parts[i]];
-        } else if (typeof parts[i+1] === 'number') {
-            obj = obj[parts[i]] = [];
         } else {
             obj = obj[parts[i]] = {};
         }

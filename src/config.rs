@@ -2,7 +2,7 @@
 
 use vecmath::*;
 use atomicwrites;
-use serde_json::{Value, from_value, to_value};
+use serde_json::{Value, Map, from_value, to_value};
 use serde_json;
 use serde_yaml;
 use std::collections::BTreeMap;
@@ -190,6 +190,7 @@ pub struct VisionConfig {
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct GimbalConfig {
+    pub values: BTreeMap<u8, Vector3<Option<i16>>>,
     pub max_rate: f32,
     pub yaw_gains: Vec<GimbalTrackingGain>,
     pub pitch_gains: Vec<GimbalTrackingGain>,
@@ -349,47 +350,74 @@ impl SharedConfigFile {
     }
 }
 
-fn merge_values(base: &mut Value, updates: Value) {
-    match updates {
-        Value::Array(update_arr) => {
-            if let Value::Array(ref mut base_arr) = *base {
-                for (i, item) in update_arr.into_iter().enumerate() {
-                    match item {
-                        // Nulls in an array are used to skip that element
-                        Value::Null => {},
-                        item => {
-                            while i >= base_arr.len() {
-                                base_arr.push(Value::Null);
-                            }
-                            merge_values(&mut base_arr[i], item);
-                        }
-                    }
+fn merge_array_into_array(base: &mut Vec<Value>, update: Vec<Value>) {
+    // Updating an array with an array, this can create new elements
+    for (i, item) in update.into_iter().enumerate() {
+        match item {
+            // Nulls in an array are used to skip that element
+            Value::Null => {},
+            item => {
+                while i >= base.len() {
+                    base.push(Value::Null);
                 }
-            } else {
-                *base = Value::Array(update_arr);
+                merge_values(&mut base[i], item);
+            }
+        }
+    }
+}
+
+fn merge_map_into_map(base: &mut Map<String, Value>, update: Map<String, Value>) {
+    // Updating a map with a map
+    for (key, item) in update.into_iter() {
+        match item {
+            // Nulls in an object will *delete* that element.
+            // This is used to remove elements in the lighting scheme map.
+            Value::Null => {
+                base.remove(&key);
+            },
+            item => {
+                if let Some(value) = base.get_mut(&key) {
+                    merge_values(value, item);
+                    continue;
+                }
+                base.insert(key, item);
+            }
+        }
+    }
+}
+
+fn merge_map_into_array(base: &mut Vec<Value>, update: &Map<String, Value>) -> bool {
+    // Updating an array with a map, fails unless all keys
+    // in the map are numeric and already exist in the array.
+    // The possibility for failure means we take a ref to update and copy inserted items.
+    for (key, item) in update.iter() {
+        if let Ok(index) = key.parse::<usize>() {
+            if index < base.len() {
+                merge_values(&mut base[index], item.clone());
+                continue;
+            }
+        }
+        return false;
+    }
+    true
+}
+
+fn merge_values(base: &mut Value, update: Value) {
+    match update {
+        Value::Array(update) => {
+            if let Value::Array(ref mut base) = *base {
+                return merge_array_into_array(base, update);
             }
         },
-        Value::Object(update_obj) => {
-            if let Value::Object(ref mut base_obj) = *base {
-                for (key, item) in update_obj.into_iter() {
-                    match item {
-                        // Nulls in an object will *delete* that element.
-                        // This is used to remove elements in the lighting scheme map.
-                        Value::Null => {
-                            base_obj.remove(&key);
-                        },
-                        item => {
-                            if let Some(value) = base_obj.get_mut(&key) {
-                                merge_values(value, item);
-                                continue;
-                            }
-                            base_obj.insert(key, item);
-                        }
-                    }
+        Value::Object(update) => {
+            if let Value::Object(ref mut base) = *base {
+                return merge_map_into_map(base, update);
+            } else if let Value::Array(ref mut base) = *base {
+                if merge_map_into_array(base, &update) {
+                    return;
                 }
-            } else {
-                *base = Value::Object(update_obj);
             }
+            *base = Value::Object(update);
         },
         update => {
             *base = update;
