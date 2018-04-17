@@ -1,5 +1,5 @@
 ---
-mode: Normal
+mode: Halted
 controller_addr: "10.32.0.1:9024"
 flyer_addr: "10.32.0.8:9024"
 web:
@@ -40,6 +40,19 @@ params:
   pwm_velocity_threshold: 0.0036200000904500484
   winch_watchdog_millis: 20
 gimbal:
+  values:
+    77:
+      - 2111
+      - 3813
+      - 598
+    98:
+      - 400
+      - 280
+      - 400
+    100:
+      - 3240
+      - 3710
+      - 278
   max_rate: 208
   yaw_gains:
     - width: 0.30709999799728394

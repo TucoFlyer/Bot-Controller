@@ -156,5 +156,22 @@ export default (props) => {
         <h6>Integral gain</h6>
         <ConfigSlider item="gimbal.pitch_gains.1.i_gain" min="0" max="10.0" step="1e-4" />
 
+        <h4>Firmware Configuration</h4>
+
+        <h6>Scale for gyro feedback (gain)</h6>
+        <ConfigSlider item="gimbal.values.98.0" min="0" max="1000" step="1" />
+        <ConfigSlider item="gimbal.values.98.1" min="0" max="1000" step="1" />
+        <ConfigSlider item="gimbal.values.98.2" min="0" max="1000" step="1" />
+
+        <h6>Calibration point 0 (center)</h6>
+        <ConfigSlider item="gimbal.values.77.0" min="0" max="4095" step="1" />
+        <ConfigSlider item="gimbal.values.77.1" min="0" max="4095" step="1" />
+        <ConfigSlider item="gimbal.values.77.2" min="0" max="4095" step="1" />
+
+        <h6>Calibration point 1 (motor)</h6>
+        <ConfigSlider item="gimbal.values.100.0" min="0" max="4095" step="1" />
+        <ConfigSlider item="gimbal.values.100.1" min="0" max="4095" step="1" />
+        <ConfigSlider item="gimbal.values.100.2" min="0" max="4095" step="1" />
+
     </div>;
 }

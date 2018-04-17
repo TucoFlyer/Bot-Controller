@@ -46,6 +46,7 @@ impl GimbalController {
 
     pub fn tick(&mut self, config: &Config, gimbal: &GimbalPort, tracked: &CameraTrackedRegion) -> GimbalControlStatus {
         let mut stale_flag = false;
+        self.requests_from_config(config, gimbal, &mut stale_flag);
         let supply_voltage = self.request(gimbal, &mut stale_flag, RequestType::Infrequent, values::SUPPLY_VOLTAGE, target::IMU_ADJACENT) as f32 * 0.1;
         let center_cal = self.request_vec2(gimbal, &mut stale_flag, RequestType::Infrequent, values::CALIBRATION_ANGLE_0_CENTER);
         let raw_angles = self.request_vec2(gimbal, &mut stale_flag, RequestType::Continuous, values::ENCODER_ANGLE);
@@ -289,6 +290,24 @@ impl GimbalController {
                     gimbal.request_once(index, target);
                 }
                 slot.value_with_max_age(stale_flag, 5000)
+            }
+        }
+    }
+
+    fn requests_from_config(&mut self, config: &Config, gimbal: &GimbalPort, stale_flag: &mut bool) {
+        for (&index, vector) in config.gimbal.values.iter() {
+            for (target, value) in vector.iter().enumerate() {
+                let target = target as u8;
+                let addr = GimbalValueAddress { target, index };
+                if let &Some(value) = value {
+                    let mut item_is_stale = false;
+                    let cached_value = self.request(gimbal, &mut item_is_stale, RequestType::Infrequent, index, target);
+                    if item_is_stale || cached_value != value {
+                        // Don't wait for the cache, send new value right away.
+                        *stale_flag = true;
+                        gimbal.write_value(GimbalValueData { addr, value });
+                    }
+                }
             }
         }
     }
