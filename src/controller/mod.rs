@@ -136,10 +136,11 @@ impl Controller {
             self.lights.update(light_env);
 
             let gimbal_status = self.gimbal_ctrl.tick(&self.local_config, gimbal_port, &self.state.tracked);
+            let reset_tracking = gimbal_status.current_error_duration > self.local_config.gimbal.error_duration_for_rehome;
             self.gimbal_status = Some(gimbal_status.clone());
             self.broadcast(Message::GimbalControlStatus(gimbal_status).timestamp());
 
-            if let Some(tracking_rect) = self.state.tracking_update(&self.local_config, 1.0 / TICK_HZ as f32) {
+            if let Some(tracking_rect) = self.state.tracking_update(&self.local_config, 1.0 / TICK_HZ as f32, reset_tracking) {
                 self.broadcast(Message::CameraInitTrackedRegion(tracking_rect).timestamp());
             }
         }
@@ -234,7 +235,7 @@ impl Controller {
 
             Message::Command(Command::CameraObjectDetection(obj)) => {
                 self.state.camera_object_detection_update(obj);
-                if let Some(tracking_rect) = self.state.tracking_update(&self.local_config, 0.0) {
+                if let Some(tracking_rect) = self.state.tracking_update(&self.local_config, 0.0, false) {
                     self.broadcast(Message::CameraInitTrackedRegion(tracking_rect).timestamp());
                 }
             },

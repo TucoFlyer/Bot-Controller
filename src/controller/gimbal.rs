@@ -176,22 +176,24 @@ impl GimbalController {
 
     fn hold_tick(&mut self, config: &Config, status: &mut GimbalControlStatus) {
         let is_halted = config.mode == ControllerMode::Halted;
-        if is_halted {
-            // Integrators clear during halt
+        let is_rehoming = status.current_error_duration > config.gimbal.error_duration_for_rehome;
+
+        if is_halted || is_rehoming {
+            // Integrators clear during halt or re-home
             for axis in 0..2 {
                 self.hold_i[axis] = 0.0;
             }
         }
 
         // If we're trying to rehome, reset the hold state too
-        if status.current_error_duration > config.gimbal.error_duration_for_rehome {
+        if is_rehoming {
             self.hold_angles = [0; 2];
             self.hold_active = [true; 2];
         }
 
         // Normally we need to track rising edges on the hold state
-        let next_hold_active = if is_halted {
-            // Always hold position in halt mode
+        let next_hold_active = if is_halted || is_rehoming {
+            // Always hold position in halt mode or re-homing
             [true, true]
         } else {
             // Look for transition in/out of proportional gain region.

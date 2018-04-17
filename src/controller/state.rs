@@ -58,10 +58,15 @@ impl ControllerState {
         }).collect()
     }
 
-    pub fn tracking_update(&mut self, config: &Config, time_step: f32) -> Option<Vector4<f32>> {
+    pub fn tracking_update(&mut self, config: &Config, time_step: f32, reset_tracking: bool) -> Option<Vector4<f32>> {
         if self.manual.camera_control_active() {
             // Manual tracking control temporarily overrides other sources
             self.tracked.rect = self.manual.tracking_update(config, self.tracked.rect, time_step);
+            Some(self.tracked.rect)
+        }
+        else if reset_tracking {
+            // Resets do not override manual controls, just everything else
+            self.tracked = CameraTrackedRegion::new();
             Some(self.tracked.rect)
         }
         else if let Some(obj) = self.find_best_snap_object(config) {
