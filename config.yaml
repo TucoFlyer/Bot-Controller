@@ -3,14 +3,14 @@ mode: Halted
 controller_addr: "10.32.0.1:9024"
 flyer_addr: "10.32.0.8:9024"
 web:
-  http_addr: "10.0.0.5:8080"
+  http_addr: "10.0.0.5:80"
   ws_addr: "10.0.0.5:8081"
   web_root_path: web/build
   connection_file_path: connection.txt
   open_browser: true
   browser_port_override: 0
 metrics:
-  influxdb_host: "http://10.0.0.40:8086"
+  influxdb_host: "http://10.0.0.9:8086"
   database: tucoflyer
   batch_size: 4000
   max_sample_hz: 50
@@ -24,8 +24,10 @@ params:
   force_lockout_above_kg: 4.5
   force_filter_param: 0.06760100275278091
   force_return_velocity_max_m_per_sec: 0.05999999865889549
-  deadband_position_err_m: 0.02370000071823597
-  deadband_velocity_limit_m_per_sec: 0.00039999998989515007
+  deadband_position_err_m: 0.014299999922513962
+  deadband_position_err_hysteresis_m: 0
+  deadband_velocity_limit_m_per_sec: 0.002199999988079071
+  deadband_velocity_limit_hysteresis_m_per_sec: 0
   pos_err_filter_param: 0.3103010058403015
   vel_err_filter_param: 0.007999000139534473
   integral_err_decay_param: 0.0071229999884963036
@@ -34,10 +36,10 @@ params:
   pwm_gain_d: 0.22065000236034393
   pwm_bias: 0.025989999994635582
   pwm_minimum: 0.0016799999866634607
-  pwm_hz_low_motion: 267
-  pwm_hz_high_motion: 23447
-  pwm_hz_filter_param: 0.02655000053346157
-  pwm_velocity_threshold: 0.0036200000904500484
+  pwm_hz_low_motion: 100
+  pwm_hz_high_motion: 21820
+  pwm_hz_filter_param: 0.3928300142288208
+  pwm_velocity_threshold: 0
   winch_watchdog_millis: 20
 gimbal:
   values:
@@ -73,7 +75,7 @@ gimbal:
     - 1710
   pitch_limits:
     - -870
-    - 13
+    - 11
   rehome_gain: 0.10279999673366547
   limiter_gain: 0.4740000069141388
   limiter_slowdown_extent:

@@ -46,18 +46,30 @@ export default class extends Component {
             </Chart>
 
             <IfAuthenticated>{ this.state.editable && <div>
-                <h6>Deadband position error, all winches (m)</h6>
-                <ConfigSlider item="params.deadband_position_err_m" min="0.0" max="0.04" step="1e-4" />
+                <h6>Deadband position error, center and hysteresis width, all winches (m)</h6>
+                <ConfigSlider item="params.deadband_position_err_m" min="0.0" max="0.5" step="1e-4" />
+                <ConfigSlider item="params.deadband_position_err_hysteresis_m" min="0.0" max="0.5" step="1e-4" />
             </div> }</IfAuthenticated>
             <IfAuthenticated>{ this.state.editable && <div>
-                <h6>Deadband velocity, all winches (m)</h6>
+                <h6>Deadband velocity, center and hysteresis width, all winches (m)</h6>
                 <ConfigSlider item="params.deadband_velocity_limit_m_per_sec" min="0.0" max="0.04" step="1e-4" />
+                <ConfigSlider item="params.deadband_velocity_limit_hysteresis_m_per_sec" min="0.0" max="0.01" step="1e-4" />
             </div> }</IfAuthenticated>
             <IfAuthenticated>{ this.state.editable && <div>
                 <h6>Position error filter rate, all winches</h6>
                 <ConfigSlider item="params.pos_err_filter_param" min="0.0" max="0.4" step="1e-6" />
             </div> }</IfAuthenticated>
 
+            <h6>Instantaneous velocity feedback (m/s)</h6>
+            <Chart>
+                <Series
+                    value={ () => 0 } strokeStyle='#aaa'
+                    trigger={tick_trigger} timestamp={winch_timestamp} />
+                <Series
+                    fullDataRate
+                    value={ (model) => distToMeters(model, id, model.winches[id].message.WinchStatus[1].sensors.velocity) }
+                    trigger={tick_trigger} timestamp={winch_timestamp} />
+            </Chart>
 
             <h6>Integral error (m&middot;s)</h6>
             <Chart>

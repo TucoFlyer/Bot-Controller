@@ -289,8 +289,10 @@ pub struct PIDGains {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct WinchDeadband {
-    pub position: i32,          // How close is close enough when stopped?
-    pub velocity: f32,          // By "stopped", we mean under this instantaneous velocity
+    pub position_center: i32,   // How close is close enough when stopped?
+    pub position_width: i32,    //    width of hysteresis region, same units
+    pub velocity_center: f32,   // By "stopped", we mean under this instantaneous velocity
+    pub velocity_width: f32,    //    width of corresponding hysteresis region
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]

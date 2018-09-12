@@ -15,9 +15,11 @@ use fygimbal::{GimbalPoller, GimbalPort};
 const MSG_LOOPBACK          : u8 = 0x20;    // copy data
 const MSG_GIMBAL            : u8 = 0x01;    // fygimbal protocol data
 const MSG_FLYER_SENSORS     : u8 = 0x02;    // struct flyer_sensors
-const MSG_WINCH_STATUS      : u8 = 0x03;    // struct winch_status
-const MSG_WINCH_COMMAND     : u8 = 0x04;    // struct winch_command
+//                                 0x03        old version of winch_status
+//                                 0x04        old version of winch_command
 const MSG_LEDS              : u8 = 0x05;    // apa102 data, 32 bits/pixel
+const MSG_WINCH_STATUS      : u8 = 0x06;    // struct winch_status
+const MSG_WINCH_COMMAND     : u8 = 0x07;    // struct winch_command
 
 #[derive(Debug)]
 pub struct BotSocket {
